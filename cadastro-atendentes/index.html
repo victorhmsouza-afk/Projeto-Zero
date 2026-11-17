@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Health | Equipe de atendentes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><a class="brand" href="./index.html"><span aria-hidden="true">+</span> health</a><span>Gestão de equipe <b> / Atendentes</b></span></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">PESSOAS QUE FAZEM O CUIDADO ACONTECER</p><h1>Sua equipe, em um só lugar.</h1><p>Organize os atendentes, suas funções e os acessos de cada grupo.</p></div><a class="primary" href="#nome">+ Cadastrar atendente</a></section>
+    <section class="stats" aria-label="Resumo da equipe"><article><span>Atendentes cadastrados</span><strong id="total">20</strong></article><article><span>Grupos de trabalho</span><strong>04 <small>A a D</small></strong></article><article><span>Áreas de acesso</span><strong>03 <small>Atendimento · Triagem · Compras</small></strong></article></section>
+    <div class="layout">
+      <section class="panel directory" aria-labelledby="team-title">
+        <div class="section-head"><div><p class="eyebrow">EQUIPE HEALTH</p><h2 id="team-title">Atendentes</h2></div><span class="pill" id="result-count">20 pessoas</span></div>
+        <div class="filters"><div><label for="busca">Buscar por nome ou função</label><input id="busca" type="search" placeholder="Digite para buscar…"></div><div><label for="filtro">Grupo</label><select id="filtro"><option value="">Todos os grupos</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Atendente / função</th><th scope="col">Grupo</th><th scope="col">Acessos cadastrados</th></tr></thead><tbody id="equipe"></tbody></table></div>
+        <p id="empty" hidden>Nenhum atendente encontrado. Tente outro nome ou grupo.</p>
+      </section>
+      <aside class="panel" aria-labelledby="form-title"><p class="eyebrow">AMPLIE SUA EQUIPE</p><h2 id="form-title">Novo atendente</h2><p class="helper">Preencha o nome, a função e as áreas de acesso.</p>
+        <form id="cadastro">
+          <label for="nome">Nome completo *</label><input id="nome" name="nome" required maxlength="80" autocomplete="name" placeholder="Ex.: Ana Souza">
+          <label for="grupo">Grupo *</label><select id="grupo" name="grupo" required><option value="">Selecione um grupo</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+          <label for="funcao">Função *</label><select id="funcao" name="funcao" required><option value="">Selecione uma função</option><option>Atendente de recepção</option><option>Atendente de triagem</option><option>Assistente de compras</option><option>Atendente multifuncional</option><option>Supervisor de atendimento</option></select>
+          <fieldset><legend>Áreas de acesso *</legend><label class="check"><input type="checkbox" name="acesso" value="Atendimento" checked>Atendimento</label><label class="check"><input type="checkbox" name="acesso" value="Triagem" checked>Triagem</label><label class="check"><input type="checkbox" name="acesso" value="Compra de materiais" checked>Compra de materiais</label></fieldset>
+          <button class="primary" type="submit">Cadastrar atendente <span aria-hidden="true">→</span></button>
+          <p id="status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="storage-note">Dados salvos apenas neste navegador. Os acessos são registros de organização; esta página não controla permissões de um sistema real.</p>
+      </aside>
+    </div>
+    <footer>Health · Gestão de atendentes <span>Cadastro inicial com nomes fictícios.</span></footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
