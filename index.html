@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health | Seu bem-estar começa aqui</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f3f6f1; color: #233e35; font-family: 'Segoe UI', Arial, sans-serif; }
+        header, main, footer { max-width: 1120px; margin: auto; }
+        header { padding: 28px 32px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .brand { color: #176753; font-size: 26px; font-weight: 750; text-decoration: none; }
+        .brand span { background: #176753; color: white; padding: 0 9px 3px; border-radius: 10px; margin-right: 8px; }
+        .muted { color: #687a71; font-size: 13px; }
+        main { display: grid; grid-template-columns: 1fr 1fr; gap: 65px; align-items: center; padding: 38px 32px 64px; }
+        .eyebrow { color: #176753; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+        h1 { font-size: clamp(38px, 5vw, 60px); line-height: 1.1; letter-spacing: -2px; margin: 22px 0; font-weight: 650; }
+        h1 em { font-style: normal; color: #176753; }
+        .intro { color: #687a71; font-size: 17px; line-height: 1.8; }
+        .art { height: 190px; background: #e0eadb; border-radius: 100px 100px 24px 24px; margin: 30px 0 24px; display: grid; place-items: center; }
+        .art span { display: grid; place-items: center; width: 125px; height: 125px; border-radius: 50%; background: #f3f6f1; color: #176753; font-size: 100px; font-weight: 300; }
+        .benefits { display: flex; gap: 24px; flex-wrap: wrap; color: #526a5d; font-size: 12px; }
+        .card { padding: 32px; background: white; border: 1px solid #e0e7dc; border-radius: 24px; box-shadow: 0 20px 60px #243f3008; }
+        h2 { font-size: 28px; letter-spacing: -.8px; margin: 12px 0 8px; }
+        .description { color: #687a71; font-size: 14px; line-height: 1.6; margin: 0 0 26px; }
+        .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; }
+        .field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+        .full { grid-column: 1 / -1; }
+        label { font-size: 13px; font-weight: 600; }
+        label small { color: #687a71; font-weight: 400; }
+        input, select, textarea { width: 100%; background: #fafbf8; border: 1px solid #d8e1d7; border-radius: 9px; padding: 12px; color: #233e35; font: inherit; font-size: 14px; }
+        textarea { resize: vertical; min-height: 88px; }
+        input:focus, select:focus, textarea:focus { outline: 3px solid #d8eadd; border-color: #176753; }
+        .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; font-weight: 400; line-height: 1.6; color: #687a71; margin: 22px 0; }
+        .consent input { width: 16px; height: 16px; flex-shrink: 0; margin: 2px 0 0; accent-color: #176753; }
+        button { background: #176753; color: white; width: 100%; padding: 15px; border: 0; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; }
+        button:hover { background: #104b3c; }
+        button:focus-visible { outline: 3px solid #82b99f; outline-offset: 3px; }
+        .note { text-align: center; font-size: 11px; color: #687a71; line-height: 1.6; margin-bottom: 0; }
+        #feedback { color: #176753; font-size: 14px; line-height: 1.6; margin-bottom: 0; }
+        #feedback:empty { display: none; }
+        footer { border-top: 1px solid #dfe6dc; padding: 22px 32px; display: flex; justify-content: space-between; gap: 16px; color: #687a71; font-size: 12px; }
+        @media (max-width: 800px) { main { grid-template-columns: 1fr; gap: 32px; max-width: 580px; padding-top: 20px; } .art { height: 150px; } }
+        @media (max-width: 440px) { header { padding: 24px 20px; } header .muted { max-width: 130px; text-align: right; } main { padding: 16px 20px 36px; } .card { padding: 24px 20px; } .fields { grid-template-columns: 1fr; } footer { padding: 22px 20px; flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand" href="./index.html" aria-label="Health, início"><span aria-hidden="true">+</span>health</a>
+        <span class="muted">Um novo olhar para o seu bem-estar.</span>
+    </header>
+    <main>
+        <section aria-labelledby="welcome-title">
+            <span class="eyebrow">Cuidado que começa com você</span>
+            <h1 id="welcome-title">Seu bem-estar.<br>Um novo <em>começo.</em></h1>
+            <p class="intro">Reserve um momento para você. Conte um pouco sobre seus interesses e dê o primeiro passo para uma rotina com mais cuidado e equilíbrio.</p>
+            <div class="art" aria-hidden="true"><span>+</span></div>
+            <div class="benefits"><span>✓ Preenchimento simples</span><span>✓ No seu ritmo</span><span>✓ Feito para você</span></div>
+        </section>
+        <section class="card" aria-labelledby="form-title">
+            <span class="eyebrow">Vamos nos conhecer</span>
+            <h2 id="form-title">Comece por aqui</h2>
+            <p class="description">Preencha seus dados abaixo.<br>Os campos com * são obrigatórios.</p>
+            <form id="contact-form">
+                <div class="fields">
+                    <div class="field full"><label for="nome">Nome completo *</label><input id="nome" name="nome" autocomplete="name" placeholder="Como podemos chamar você?" required maxlength="100"></div>
+                    <div class="field full"><label for="email">E-mail *</label><input type="email" id="email" name="email" autocomplete="email" placeholder="voce@exemplo.com" required maxlength="150"></div>
+                    <div class="field"><label for="telefone">Telefone <small>(opcional)</small></label><input type="tel" id="telefone" name="telefone" autocomplete="tel" placeholder="(92) 99999-9999" maxlength="25"></div>
+                    <div class="field"><label for="interesse">Seu interesse *</label><select id="interesse" name="interesse" required><option value="" disabled selected>Selecione uma opção</option><option>Bem-estar</option><option>Atividade física</option><option>Alimentação</option><option>Conhecer o projeto</option></select></div>
+                    <div class="field full"><label for="mensagem">Mensagem <small>(opcional)</small></label><textarea id="mensagem" name="mensagem" placeholder="O que você gostaria de compartilhar?" maxlength="1000"></textarea></div>
+                </div>
+                <label class="consent" for="entendido"><input type="checkbox" id="entendido" required><span>Entendo que este formulário é uma demonstração e que meus dados não serão enviados nem armazenados.</span></label>
+                <button type="submit">Concluir preenchimento <span aria-hidden="true">→</span></button>
+                <p class="note">Demonstração visual · Nenhum dado é enviado.</p>
+                <p id="feedback" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+    </main>
+    <footer><span>Health · Cuidar de você faz parte.</span><span>Pequenos passos, novas possibilidades.</span></footer>
+    <script>
+        const form = document.querySelector('#contact-form');
+        const feedback = document.querySelector('#feedback');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const nome = form.elements.nome.value.trim();
+            if (!nome) {
+                form.elements.nome.setCustomValidity('Digite seu nome para continuar.');
+                form.elements.nome.reportValidity();
+                return;
+            }
+            feedback.textContent = `Tudo certo, ${nome}! Preenchimento validado. Esta é uma demonstração: nenhum dado foi enviado ou salvo.`;
+        });
+        form.addEventListener('input', () => {
+            form.elements.nome.setCustomValidity('');
+            feedback.textContent = '';
+        });
+    </script>
+</body>
+</html>
