@@ -15,6 +15,7 @@ const CONFIG = {
 const estado = {
   paciente: null, // paciente selecionado
   setor: '',      // setor selecionado
+  exames: { imagem: [], laboratorial: [] }, // requisição de exames em montagem
 };
 
 // ---------- Utilitários ----------
@@ -67,6 +68,7 @@ const carregadores = {
   painel: carregarPainel,
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
+  exames: carregarExames,
   pacientes: carregarPacientes,
   medicos: carregarMedicos,
   financeiro: carregarFinanceiro,
@@ -280,6 +282,162 @@ $('#btn-recibo').addEventListener('click', () => {
 $('#btn-etiqueta').addEventListener('click', () => {
   // TODO: imprimir etiqueta avulsa
   console.log('Etiqueta avulsa');
+});
+
+// ---------- Tela: Exames ----------
+// A montagem da lista (adicionar, numerar, remover) já funciona.
+// Falta só o salvamento e a lista de médicos (TODO).
+
+const SUGESTOES_EXAMES = {
+  Ultrassonografia: ['USG de abdome total', 'USG de abdome superior', 'USG pélvica', 'USG transvaginal',
+    'USG de tireoide', 'USG de mamas', 'USG de rins e vias urinárias', 'USG de próstata', 'USG obstétrica'],
+  Tomografia: ['TC de crânio', 'TC de tórax', 'TC de abdome total', 'TC de seios da face', 'TC de coluna lombar'],
+  'Ressonância magnética': ['RM de crânio', 'RM de coluna lombar', 'RM de joelho', 'RM de ombro'],
+  'Raio-X': ['RX de tórax PA e perfil', 'RX de coluna lombar', 'RX de joelho', 'RX de seios da face'],
+  Mamografia: ['Mamografia bilateral'],
+  Densitometria: ['Densitometria óssea'],
+  Eletrocardiograma: ['Eletrocardiograma (ECG)'],
+  Ecocardiograma: ['Ecocardiograma transtorácico'],
+  Endoscopia: ['Endoscopia digestiva alta', 'Colonoscopia'],
+};
+
+function carregarExames() {
+  // TODO: preencher a lista de médicos solicitantes
+  // preencherSelect('#ex-medico', [{ valor: '1', texto: 'Dr. Fulano' }]);
+  if (!$('#ex-data').value) $('#ex-data').value = new Date().toISOString().slice(0, 10);
+  renderPacienteExames();
+  atualizarSugestoesExames();
+  renderExames();
+}
+
+function renderPacienteExames() {
+  const p = estado.paciente;
+  $('#ex-paciente').innerHTML = p
+    ? `<div class="paciente-selecionado"><strong>${esc(p.nome)}</strong>
+         <small style="display:block;color:var(--muted);margin-top:4px">CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small></div>`
+    : `<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Selecione na tela Atendimento</a>.</p>`;
+}
+
+function tipoExameAtual() {
+  return document.querySelector('input[name="tipoExame"]:checked').value;
+}
+
+function atualizarSugestoesExames() {
+  const lista = SUGESTOES_EXAMES[$('#ex-categoria').value] || [];
+  $('#sugestoes-exames').innerHTML = lista.map((n) => `<option value="${esc(n)}">`).join('');
+}
+
+function trocarTipoExame() {
+  const lab = tipoExameAtual() === 'laboratorial';
+  $('#campos-imagem').hidden = lab;
+  $('#campos-lab').hidden = !lab;
+  $('#dica-exame').textContent = lab
+    ? 'Digite o nº laboratorial e tecle Enter. Para vários de uma vez, separe por vírgula ou espaço.'
+    : 'Digite o nome do exame e tecle Enter para adicionar.';
+  (lab ? $('#ex-codigo') : $('#ex-nome')).focus();
+}
+
+document.querySelectorAll('input[name="tipoExame"]').forEach((r) => r.addEventListener('change', trocarTipoExame));
+$('#ex-categoria').addEventListener('change', () => { atualizarSugestoesExames(); $('#ex-nome').focus(); });
+
+$('#form-exame').addEventListener('submit', (e) => {
+  e.preventDefault();
+  $('#status-exames').textContent = '';
+
+  if (tipoExameAtual() === 'imagem') {
+    const campo = $('#ex-nome');
+    const nome = campo.value.trim();
+    if (!nome) { campo.setCustomValidity('Digite o nome do exame.'); campo.reportValidity(); return; }
+    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome });
+    campo.value = '';
+    campo.focus();
+  } else {
+    const campo = $('#ex-codigo');
+    const codigos = campo.value.split(/[\s,;]+/).filter(Boolean);
+    if (!codigos.length) { campo.setCustomValidity('Digite o nº laboratorial.'); campo.reportValidity(); return; }
+    const nome = codigos.length === 1 ? $('#ex-nome-lab').value.trim() : '';
+    const repetidos = [];
+    codigos.forEach((codigo) => {
+      if (estado.exames.laboratorial.some((x) => x.codigo === codigo)) repetidos.push(codigo);
+      else estado.exames.laboratorial.push({ codigo, nome });
+    });
+    if (repetidos.length) $('#status-exames').textContent = `Já estava na lista: ${repetidos.join(', ')}`;
+    campo.value = '';
+    $('#ex-nome-lab').value = '';
+    campo.focus();
+  }
+  renderExames();
+});
+
+['#ex-nome', '#ex-codigo'].forEach((s) => $(s).addEventListener('input', (e) => e.target.setCustomValidity('')));
+
+function renderExames() {
+  const { imagem, laboratorial } = estado.exames;
+
+  $('#tabela-ex-imagem').innerHTML = imagem.map((x, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(x.categoria)}</td>
+      <td>${esc(x.nome)}</td>
+      <td><button type="button" class="btn-icone btn-remover" data-remover="imagem" data-indice="${i}" title="Remover"><svg class="i"><use href="#i-trash"/></svg></button></td>
+    </tr>`).join('');
+
+  $('#tabela-ex-lab').innerHTML = laboratorial.map((x, i) => `
+    <tr>
+      <td><span class="num-lab">${String(i + 1).padStart(2, '0')}</span></td>
+      <td><input class="input-tabela" data-editar-lab="${i}" value="${esc(x.codigo)}" aria-label="Nº laboratorial do item ${i + 1}"></td>
+      <td>${esc(x.nome) || '<span style="color:var(--muted)">—</span>'}</td>
+      <td><button type="button" class="btn-icone btn-remover" data-remover="laboratorial" data-indice="${i}" title="Remover"><svg class="i"><use href="#i-trash"/></svg></button></td>
+    </tr>`).join('');
+
+  $('#vazio-ex-imagem').hidden = imagem.length > 0;
+  $('#vazio-ex-lab').hidden = laboratorial.length > 0;
+  $('#pill-imagem').textContent = `${imagem.length} exame${imagem.length === 1 ? '' : 's'}`;
+  $('#pill-lab').textContent = `${laboratorial.length} exame${laboratorial.length === 1 ? '' : 's'}`;
+  $('#ex-total-imagem').textContent = imagem.length;
+  $('#ex-total-lab').textContent = laboratorial.length;
+  $('#btn-salvar-exames').disabled = imagem.length + laboratorial.length === 0;
+}
+
+// Remover exame
+document.addEventListener('click', (e) => {
+  const botao = e.target.closest('[data-remover]');
+  if (!botao) return;
+  estado.exames[botao.dataset.remover].splice(Number(botao.dataset.indice), 1);
+  renderExames();
+});
+
+// Corrigir o nº laboratorial direto na tabela
+$('#tabela-ex-lab').addEventListener('input', (e) => {
+  const i = e.target.dataset.editarLab;
+  if (i !== undefined) estado.exames.laboratorial[i].codigo = e.target.value.trim();
+});
+
+$('#btn-limpar-exames').addEventListener('click', () => {
+  const total = estado.exames.imagem.length + estado.exames.laboratorial.length;
+  if (total && !confirm('Remover todos os exames da requisição?')) return;
+  estado.exames = { imagem: [], laboratorial: [] };
+  $('#ex-obs').value = '';
+  $('#status-exames').textContent = '';
+  renderExames();
+});
+
+$('#btn-salvar-exames').addEventListener('click', () => {
+  if (!estado.paciente) {
+    $('#status-exames').textContent = 'Selecione um paciente na tela Atendimento antes de salvar.';
+    return;
+  }
+  const requisicao = {
+    paciente: estado.paciente,
+    medico: $('#ex-medico').value,
+    data: $('#ex-data').value,
+    observacoes: $('#ex-obs').value.trim(),
+    imagem: estado.exames.imagem,             // [{ categoria, nome }]
+    laboratorial: estado.exames.laboratorial.map((x, i) => ({ numero: i + 1, ...x })), // [{ numero, codigo, nome }]
+  };
+  // TODO: salvar a requisição (e depois limpar a lista, se quiser)
+  console.log('Salvar requisição de exames', requisicao);
+  $('#status-exames').textContent = 'Requisição montada. Falta ligar ao salvamento (TODO em app.js).';
 });
 
 // ---------- Tela: Painel ----------

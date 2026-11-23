@@ -35,6 +35,11 @@
       <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
       <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
       <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3M7 15h10"/></symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
     </defs>
   </svg>
 
@@ -63,6 +68,7 @@
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
+        <a href="#exames" data-tela="exames"><svg class="i"><use href="#i-flask"/></svg><span>Exames</span></a>
         <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
         <a href="#medicos" data-tela="medicos"><svg class="i"><use href="#i-steth"/></svg><span>Médicos</span></a>
         <a href="#financeiro" data-tela="financeiro"><svg class="i"><use href="#i-dollar"/></svg><span>Financeiro</span></a>
@@ -103,6 +109,7 @@
             <div class="barra-abas">
               <span class="aba ativa"><svg class="i"><use href="#i-steth"/></svg>Abertura de Atendimento</span>
               <div class="barra-acoes">
+                <a class="btn" href="#exames"><svg class="i"><use href="#i-flask"/></svg>Exames</a>
                 <button type="button" class="btn" id="btn-recibo"><svg class="i"><use href="#i-receipt"/></svg>Recibo de consulta</button>
                 <button type="button" class="btn" id="btn-etiqueta"><svg class="i"><use href="#i-tag"/></svg>Etiqueta avulsa</button>
               </div>
@@ -149,6 +156,119 @@
                 </table>
               </div>
               <p class="vazio centro" id="vazio-anteriores">Selecione um paciente para visualizar os atendimentos anteriores.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===================== EXAMES ===================== -->
+      <section class="tela" id="tela-exames">
+        <div class="atendimento">
+
+          <!-- Coluna da requisição -->
+          <div class="col-paciente">
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-user"/></svg>Paciente</h2>
+              <div id="ex-paciente"></div>
+            </div>
+
+            <div class="card bloco">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-clipboard"/></svg>Requisição</h2>
+              <div><label for="ex-medico">Médico solicitante</label><select id="ex-medico"><option value="">Selecione</option></select></div>
+              <div><label for="ex-data">Data da requisição</label><input type="date" id="ex-data"></div>
+              <div><label for="ex-obs">Observações</label><textarea id="ex-obs" maxlength="1000" placeholder="Indicação clínica, urgência…"></textarea></div>
+            </div>
+
+            <div class="card bloco">
+              <div class="resumo-exames">
+                <div><span>Imagem e outros</span><strong id="ex-total-imagem">0</strong></div>
+                <div><span>Laboratoriais</span><strong id="ex-total-lab">0</strong></div>
+              </div>
+              <button type="button" class="btn-primario largo" id="btn-salvar-exames" disabled><svg class="i"><use href="#i-save"/></svg>Salvar requisição</button>
+              <button type="button" class="btn largo" id="btn-limpar-exames">Limpar tudo</button>
+              <p class="status" id="status-exames" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <!-- Coluna dos exames -->
+          <div class="col-atendimento">
+            <div class="barra-abas">
+              <span class="aba ativa"><svg class="i"><use href="#i-flask"/></svg>Requisição de Exames</span>
+            </div>
+
+            <form class="card form-exame" id="form-exame" autocomplete="off">
+              <div class="segmentado" role="radiogroup" aria-label="Tipo de exame">
+                <label><input type="radio" name="tipoExame" value="imagem" checked><span><svg class="i"><use href="#i-scan"/></svg>Imagem e outros</span></label>
+                <label><input type="radio" name="tipoExame" value="laboratorial"><span><svg class="i"><use href="#i-flask"/></svg>Laboratorial</span></label>
+              </div>
+
+              <!-- Imagem e outros: nome por nome -->
+              <div class="campos-exame" id="campos-imagem">
+                <div>
+                  <label for="ex-categoria">Tipo</label>
+                  <select id="ex-categoria">
+                    <option>Ultrassonografia</option>
+                    <option>Tomografia</option>
+                    <option>Ressonância magnética</option>
+                    <option>Raio-X</option>
+                    <option>Mamografia</option>
+                    <option>Densitometria</option>
+                    <option>Eletrocardiograma</option>
+                    <option>Ecocardiograma</option>
+                    <option>Endoscopia</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+                <div class="grow">
+                  <label for="ex-nome">Nome do exame *</label>
+                  <input id="ex-nome" list="sugestoes-exames" maxlength="150" placeholder="Ex.: USG de abdome total">
+                  <datalist id="sugestoes-exames"></datalist>
+                </div>
+              </div>
+
+              <!-- Laboratorial: numeração -->
+              <div class="campos-exame" id="campos-lab" hidden>
+                <div>
+                  <label for="ex-codigo">Nº laboratorial *</label>
+                  <input id="ex-codigo" maxlength="200" placeholder="Ex.: 40301630">
+                </div>
+                <div class="grow">
+                  <label for="ex-nome-lab">Nome do exame <small>(opcional)</small></label>
+                  <input id="ex-nome-lab" maxlength="150" placeholder="Ex.: Hemograma completo">
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
+              <p class="dica full" id="dica-exame">Digite o nome do exame e tecle Enter para adicionar.</p>
+            </form>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-scan"/></svg>Exames de imagem e outros</h2>
+                <span class="pill" id="pill-imagem">0 exames</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>Tipo</th><th>Exame</th><th>Ações</th></tr></thead>
+                  <tbody id="tabela-ex-imagem"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ex-imagem">Nenhum exame adicionado.</p>
+            </div>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-flask"/></svg>Exames laboratoriais</h2>
+                <span class="pill" id="pill-lab">0 exames</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Nº</th><th>Nº laboratorial</th><th>Exame</th><th>Ações</th></tr></thead>
+                  <tbody id="tabela-ex-lab"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ex-lab">Nenhum exame laboratorial adicionado.</p>
             </div>
           </div>
 
