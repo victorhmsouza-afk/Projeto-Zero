@@ -273,6 +273,35 @@ a.btn { text-decoration: none; color: inherit; }
 .troco { font-size: 20px; font-variant-numeric: tabular-nums; }
 .pg-erro { margin: 0; color: var(--perigo); font-size: 13px; }
 .pg-erro:empty { display: none; }
+/* Etapas do atendimento */
+.etapas { list-style: none; margin: 0; padding: 12px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.etapas li { display: flex; align-items: flex-start; gap: 10px; position: relative; min-width: 0; }
+.etapas li:not(:last-child)::after { content: ""; position: absolute; left: 40px; right: 8px; top: 13px; height: 2px; background: var(--linha); }
+.etapas li.feito:not(:last-child)::after { background: var(--verde); }
+.etapa-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 12px; font-weight: 700;
+  background: var(--fundo); color: var(--muted); border: 2px solid var(--linha); position: relative; z-index: 1; }
+.etapas li.feito .etapa-num { background: var(--verde); border-color: var(--verde); color: #fff; }
+.etapas li.atual .etapa-num { background: var(--branco); border-color: var(--verde); color: var(--verde-escuro); box-shadow: 0 0 0 3px var(--verde-claro); }
+.etapa-texto { display: flex; flex-direction: column; gap: 2px; background: var(--branco); padding-right: 8px; position: relative; z-index: 1; min-width: 0; margin-top: 3px; }
+.etapa-texto strong { font-size: 13px; font-weight: 600; color: var(--texto-2); }
+.etapas li.atual .etapa-texto strong, .etapas li.feito .etapa-texto strong { color: var(--texto); }
+.etapa-texto small { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.etapas li.atual .etapa-texto small { color: var(--verde-escuro); font-weight: 500; }
+
+/* Coluna Ações sempre visível na lista de atendimentos */
+#tela-atendimento .tabela-card th:last-child,
+#tela-atendimento .tabela-card td:last-child { position: sticky; right: 0; background: var(--branco); box-shadow: -8px 0 8px -8px #0000001f; }
+#tela-atendimento .tabela-card th:last-child { background: #fafbfb; }
+
+/* Cadastro rápido */
+.cadastro-rapido { margin-top: 12px; padding: 12px; border: 1px dashed var(--verde); border-radius: 8px; display: flex; flex-direction: column; gap: 10px; background: #fbfdfc; }
+.cadastro-rapido[hidden] { display: none; }
+.cadastro-titulo { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; font-size: 13.5px; color: var(--verde-escuro); }
+.cadastro-rapido .dica { margin: 0; }
+.duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tag-aguardando { background: #fff4e0; color: #8a5a00; }
+.btn-acao.destaque { background: var(--verde); border-color: var(--verde); color: #fff; }
+
 .tag-pago { background: var(--verde-claro); color: var(--verde-escuro); }
 .tag-pendente { background: #fbeceb; color: var(--perigo); }
 .valor-pago { display: flex; align-items: center; gap: 6px; }
@@ -306,6 +335,8 @@ a.btn { text-decoration: none; color: inherit; }
   .btn { flex: 1; justify-content: center; }
   .campos-exame { flex-direction: column; min-width: 100%; }
   .pg-campos { grid-template-columns: 1fr; }
+  .etapas { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .etapas li::after { display: none; }
   .pg-total { flex-direction: column; align-items: flex-start; }
   .campo-valor { width: 100%; }
   .form-preco > div { min-width: 100%; }

@@ -38,7 +38,7 @@ const MODALIDADES = {
     nome: 'Pronto Socorro',
     tipo: 'Pronto Socorro · exames particulares',
     titulo: 'Abrir atendimento de Pronto Socorro',
-    dica: 'Exames pedidos pelo médico são pagos antes de serem feitos',
+    dica: 'Basta o nome do paciente. Exames pedidos pelo médico são pagos antes de serem feitos',
     botao: 'Abrir atendimento',
     botaoIcone: '#i-clipboard',
     icone: '#i-heart',
@@ -67,6 +67,7 @@ function tagStatus(status) {
   const nomes = {
     AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
     ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta', PAGO: 'Pago', PENDENTE: 'Pendente',
+    AGUARDANDO: 'Aguardando consulta',
   };
   const s = String(status || '').toUpperCase();
   return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
@@ -170,7 +171,8 @@ function selecionarPaciente(paciente) {
     caixa.innerHTML = `
       <strong>${esc(paciente.nome)}</strong>
       <small style="display:block;color:var(--muted);margin-top:4px">
-        CPF ${esc(paciente.cpf)} · Nasc. ${formatarData(paciente.nascimento)}
+        ${[paciente.cpf && `CPF ${esc(paciente.cpf)}`, paciente.nascimento && `Nasc. ${formatarData(paciente.nascimento)}`]
+          .filter(Boolean).join(' · ') || 'Cadastro rápido (só o nome)'}
       </small>`;
   }
   atualizarBotaoAbrir();
@@ -195,17 +197,74 @@ function renderAnteriores(atendimentos) {
       <td>${a.valor
         ? `<span class="valor-pago">${formatarMoeda(a.valor)} ${tagStatus(a.pago ? 'PAGO' : 'PENDENTE')}</span>`
         : '<span style="color:var(--muted)">—</span>'}</td>
-      <td><div class="acoes-linha">
-        <button class="btn-acao" data-id="${esc(a.numero)}">Abrir</button>
-        ${(a.tipo || estado.modalidade) === 'PRONTO_SOCORRO'
-          ? `<button class="btn-acao" data-exames-atend="${esc(a.numero)}" title="Requisitar exames particulares deste atendimento">Exames</button>`
-          : ''}
-      </div></td>
+      <td><div class="acoes-linha">${acoesAtendimento(a)}</div></td>
     </tr>`).join('');
+  renderEtapas();
   $('#vazio-anteriores').hidden = atendimentos.length > 0;
   $('#vazio-anteriores').textContent = estado.paciente
     ? `Nenhum atendimento de ${MODALIDADES[estado.modalidade].nome} para este paciente.`
     : 'Selecione um paciente para visualizar os atendimentos anteriores.';
+}
+
+// Botões de cada atendimento, conforme o fluxo:
+//   Consulta:       paga → "Concluir consulta" → depois "Pedir exames"
+//   Pronto Socorro: "Pedir exames" a qualquer momento
+function consultaConcluida(a) {
+  return ['ATENDIDA', 'ALTA'].includes(String(a.status).toUpperCase());
+}
+
+function acoesAtendimento(a) {
+  const tipo = a.tipo || estado.modalidade;
+  const n = esc(a.numero);
+  const qtd = a.exames ? ` (${a.exames})` : '';
+  const botaoExames = (destaque) =>
+    `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="Exames pedidos pelo médico neste atendimento">Pedir exames${qtd}</button>`;
+  if (tipo === 'CONSULTA') {
+    if (!consultaConcluida(a)) {
+      return a.pago
+        ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
+        : `<span class="dica">Aguardando pagamento</span>`;
+    }
+    return botaoExames(!a.exames);
+  }
+  return botaoExames(!a.exames);
+}
+
+// Etapas mostradas no topo do Atendimento
+const ETAPAS = {
+  CONSULTA: [
+    { titulo: 'Paciente', dica: 'Buscar ou cadastrar' },
+    { titulo: 'Pagamento', dica: 'Paga antes da consulta' },
+    { titulo: 'Consulta', dica: 'Médico atende' },
+    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
+  ],
+  PRONTO_SOCORRO: [
+    { titulo: 'Paciente', dica: 'Basta o nome' },
+    { titulo: 'Pronto Socorro', dica: 'Atendimento aberto' },
+    { titulo: 'Exames', dica: 'Se o médico pedir' },
+    { titulo: 'Pagamento', dica: 'Exames pagos antes de fazer' },
+  ],
+};
+
+function atendimentoDeHoje() {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return estado.anteriores.find((a) => String(a.entrada || '').slice(0, 10) === hoje && (a.tipo || estado.modalidade) === estado.modalidade);
+}
+
+function renderEtapas() {
+  const a = estado.paciente ? atendimentoDeHoje() : null;
+  let feitas;
+  if (estado.modalidade === 'CONSULTA') {
+    feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  } else {
+    feitas = [!!estado.paciente, !!a, !!a?.exames, !!a?.exames];
+  }
+  const atual = feitas.indexOf(false);
+  $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
+    <li class="${feitas[i] ? 'feito' : i === atual ? 'atual' : ''}">
+      <span class="etapa-num">${feitas[i] ? '✓' : i + 1}</span>
+      <span class="etapa-texto"><strong>${e.titulo}</strong><small>${e.dica}</small></span>
+    </li>`).join('');
 }
 
 function renderProximos(consultas) {
@@ -350,10 +409,42 @@ $('#btn-historico-busca').addEventListener('click', () => {
   console.log('Histórico de buscas');
 });
 
+// Cadastro rápido (no Pronto Socorro basta o nome)
 $('#btn-novo-paciente').addEventListener('click', () => {
-  // TODO: abrir cadastro de novo paciente
-  location.hash = '#nova-consulta';
+  const f = $('#form-paciente-rapido');
+  f.hidden = !f.hidden;
+  if (!f.hidden) {
+    const termo = $('#atend-busca').value.trim();
+    if (termo && !/\d/.test(termo)) $('#rap-nome').value = termo; // aproveita o nome digitado na busca
+    $('#rap-nome').focus();
+  }
 });
+
+$('#btn-cancelar-rapido').addEventListener('click', () => {
+  $('#form-paciente-rapido').reset();
+  $('#form-paciente-rapido').hidden = true;
+});
+
+$('#form-paciente-rapido').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const paciente = {
+    nome: $('#rap-nome').value.trim(),
+    cpf: $('#rap-cpf').value.trim(),
+    nascimento: $('#rap-nascimento').value,
+    telefone: $('#rap-telefone').value.trim(),
+  };
+  if (!paciente.nome) return;
+  const salvo = await cadastrarPaciente(paciente);
+  e.target.reset();
+  e.target.hidden = true;
+  selecionarPaciente(salvo);
+});
+
+async function cadastrarPaciente(paciente) {
+  // TODO: salvar o paciente novo e devolver com o id gerado
+  console.log('Cadastrar paciente', paciente);
+  return { id: `novo-${Date.now()}`, ...paciente };
+}
 
 $('#atend-setor').addEventListener('change', (e) => {
   estado.setor = e.target.value;
@@ -519,6 +610,21 @@ document.addEventListener('click', (e) => {
   estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico };
   location.hash = '#exames';
 });
+
+// Botão "Concluir consulta": o médico atendeu; a partir daí pode pedir exames
+document.addEventListener('click', async (e) => {
+  const botao = e.target.closest('[data-concluir-atend]');
+  if (!botao) return;
+  const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.concluirAtend);
+  if (!a || !(await confirmar(`Marcar a consulta ${a.numero} como realizada?`, 'Concluir consulta'))) return;
+  await registrarConclusaoConsulta(a);
+  carregarAtendimentosAnteriores();
+});
+
+async function registrarConclusaoConsulta(atendimento) {
+  // TODO: marcar a consulta como realizada (status ATENDIDA) no seu sistema
+  console.log('Concluir consulta', atendimento);
+}
 
 // Botão "Exames" do topo: requisição avulsa, sem vínculo
 $('#btn-exames-avulso').addEventListener('click', () => { estado.vinculoExames = null; });
@@ -739,7 +845,7 @@ function renderVinculoExames() {
     ? `<div class="paciente-selecionado"><strong>${esc(MODALIDADES[v.modalidade]?.nome || v.modalidade)} · Atend. ${esc(v.numero)}</strong>
          <small style="display:block;color:var(--muted);margin-top:4px">Entrada ${formatarDataHora(v.entrada)}${v.medico && v.medico !== '—' ? ' · ' + esc(v.medico) : ''}</small></div>
        <div class="vinculo-acoes"><button type="button" class="btn btn-pequeno" id="btn-desvincular">Tornar avulsa</button></div>`
-    : `<p class="paciente-vazio">Requisição avulsa.<br>Para vincular a um atendimento de Pronto Socorro, use o botão <strong>Exames</strong> na lista de atendimentos.</p>`;
+    : `<p class="paciente-vazio">Requisição avulsa.<br>Para vincular a uma consulta ou atendimento de Pronto Socorro, use o botão <strong>Pedir exames</strong> na lista de atendimentos.</p>`;
   $('#btn-desvincular')?.addEventListener('click', () => { estado.vinculoExames = null; renderVinculoExames(); });
 }
 
@@ -1087,12 +1193,13 @@ $('#btn-sair').addEventListener('click', () => {
 // Clique nos botões "Abrir / Ver / Editar" das tabelas
 document.addEventListener('click', (e) => {
   const botao = e.target.closest('.btn-acao');
-  if (!botao || botao.dataset.examesAtend) return;
+  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend) return;
   // TODO: abrir detalhes do registro botao.dataset.id
   console.log('Ação no registro', botao.dataset.id);
 });
 
 // ---------- Início ----------
+renderEtapas();
 carregarUsuario();
 carregarSetores();
 carregarMedicosConsulta();

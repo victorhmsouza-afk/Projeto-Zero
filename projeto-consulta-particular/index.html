@@ -102,6 +102,22 @@
               </form>
               <ul class="lista-resultados" id="atend-resultados"></ul>
               <div class="paciente-selecionado" id="atend-paciente" hidden></div>
+
+              <!-- Cadastro rápido: no Pronto Socorro basta o nome -->
+              <form class="cadastro-rapido" id="form-paciente-rapido" autocomplete="off" hidden>
+                <p class="cadastro-titulo"><svg class="i"><use href="#i-user-plus"/></svg>Cadastro rápido</p>
+                <div><label for="rap-nome">Nome completo *</label><input id="rap-nome" maxlength="100" required></div>
+                <div class="duas-colunas">
+                  <div><label for="rap-cpf">CPF</label><input id="rap-cpf" maxlength="14" placeholder="000.000.000-00"></div>
+                  <div><label for="rap-nascimento">Nascimento</label><input type="date" id="rap-nascimento"></div>
+                </div>
+                <div><label for="rap-telefone">Telefone</label><input type="tel" id="rap-telefone" maxlength="15" placeholder="(92) 99999-9999"></div>
+                <p class="dica">No Pronto Socorro basta o nome. Os outros dados podem ser completados depois.</p>
+                <div class="acoes">
+                  <button type="button" class="btn" id="btn-cancelar-rapido">Cancelar</button>
+                  <button type="submit" class="btn-primario">Cadastrar e selecionar</button>
+                </div>
+              </form>
             </div>
           </div>
 
@@ -118,6 +134,8 @@
                 <button type="button" class="btn" id="btn-etiqueta"><svg class="i"><use href="#i-tag"/></svg>Etiqueta avulsa</button>
               </div>
             </div>
+
+            <ol class="card etapas" id="atend-etapas" aria-label="Etapas do atendimento"></ol>
 
             <div class="card linha">
               <label class="rotulo" for="atend-setor"><svg class="i"><use href="#i-building"/></svg>Setor:</label>
@@ -143,7 +161,7 @@
             <div class="card linha tracejado">
               <svg class="i verde"><use href="#i-steth" id="atend-abrir-icone"/></svg>
               <strong id="atend-abrir-titulo">Abrir consulta particular</strong>
-              <span class="dica" id="atend-abrir-dica">A consulta será cobrada como particular</span>
+              <span class="dica" id="atend-abrir-dica">O pagamento é feito antes de abrir a consulta</span>
               <button type="button" class="btn-primario" id="btn-abrir-atendimento" disabled>
                 <svg class="i"><use href="#i-dollar" id="atend-abrir-btn-icone"/></svg><span id="atend-abrir-btn-texto">Pagar e abrir consulta</span>
               </button>

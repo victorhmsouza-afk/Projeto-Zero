@@ -70,3 +70,21 @@ Nada é concluído sem pagamento:
 Formas: Pix (ID da transação), crédito (1x a 6x, NSU), débito (NSU) e dinheiro (valor recebido e troco).
 Use `abrirPagamento({ descricao, itens, valor, valorEditavel, desconto })` em qualquer tela: devolve o pagamento
 confirmado ou `null` se a pessoa cancelar.
+
+## Fluxo do atendimento
+
+As etapas aparecem no topo da tela de Atendimento:
+
+| Consulta particular | Pronto Socorro |
+|---|---|
+| 1. Paciente (buscar ou cadastrar) | 1. Paciente (basta o nome: cadastro rápido) |
+| 2. **Pagamento** (antes da consulta) | 2. Pronto Socorro (atendimento aberto, sem cobrança) |
+| 3. Consulta (botão **Concluir consulta**) | 3. Exames (se o médico pedir) |
+| 4. Exames (se o médico pedir, **pagos antes**) | 4. **Pagamento** dos exames |
+
+- Depois de pagar, a consulta fica **Aguardando consulta** (status `AGUARDANDO`). Grave esse status em `registrarAtendimento()`.
+- **Concluir consulta** chama `registrarConclusaoConsulta(atendimento)` (status `ATENDIDA`).
+  Só depois disso aparece **Pedir exames**.
+- No Pronto Socorro, **Pedir exames** aparece desde o início.
+- O botão de cadastro ao lado da busca abre o **cadastro rápido** (`cadastrarPaciente()`): só o nome é obrigatório.
+- Cada atendimento pode ter o campo `exames` (quantidade já pedida), mostrado como "Pedir exames (2)".
