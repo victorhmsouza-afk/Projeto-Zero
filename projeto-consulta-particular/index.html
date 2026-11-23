@@ -142,7 +142,7 @@
               <div class="select-wrap">
                 <select id="atend-setor"><option value="">Selecione o setor</option></select>
               </div>
-              <span class="unidade" id="atend-unidade">Sua unidade</span>
+              <span class="unidade" id="atend-unidade">Hospital da Saúde</span>
               <button type="button" class="btn-icone" id="btn-atualizar-setor" title="Atualizar"><svg class="i"><use href="#i-refresh"/></svg></button>
             </div>
 
@@ -153,11 +153,11 @@
             </div>
 
             <div class="card linha" id="linha-medico">
-              <label class="rotulo" for="atend-medico"><svg class="i"><use href="#i-steth"/></svg>Médico:</label>
+              <label class="rotulo" for="atend-medico"><svg class="i"><use href="#i-steth"/></svg><span id="atend-medico-rotulo">Médico:</span></label>
               <div class="select-wrap">
                 <select id="atend-medico"><option value="">Selecione o médico</option></select>
               </div>
-              <span class="unidade">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
+              <span class="unidade" id="atend-valor-consulta-linha">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
             </div>
 
             <div class="card linha">
@@ -471,7 +471,7 @@
         <div class="card tabela-card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Valor da consulta</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Atende</th><th>Valor da consulta</th><th>Ações</th></tr></thead>
               <tbody id="tabela-medicos"></tbody>
             </table>
           </div>

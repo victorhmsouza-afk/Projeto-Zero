@@ -11,13 +11,52 @@ const CONFIG = {
   apiUrl: '',
   // Dados que aparecem no cabeçalho do recibo (TODO: preencher com os dados reais)
   empresa: {
-    nome: 'Nome do hospital',
+    nome: 'Hospital da Saúde',
     cnpj: '00.000.000/0000-00',
     endereco: 'Endereço da unidade',
     telefone: '(00) 0000-0000',
   },
   reciboAutomatico: true, // abre o recibo logo depois de cada pagamento
 };
+
+// =========================================================
+//   CADASTROS DO HOSPITAL (pode editar aqui)
+//   Nomes, CRMs e valores são EXEMPLOS: troque pelos reais.
+//   Quando tiver banco de dados, carregue estas listas de lá.
+// =========================================================
+const DADOS = {
+  unidade: 'Hospital da Saúde',
+  setores: {
+    CONSULTA: [{ id: 1, nome: 'Consultórios' }],
+    // No Pronto Socorro o setor é a Emergência; o valor é o da consulta de emergência
+    PRONTO_SOCORRO: [{ id: 10, nome: 'Emergência', valorConsulta: 250 }],
+  },
+  // Médicos da consulta particular (valor da consulta de cada um)
+  medicosConsulta: [
+    { id: 1, nome: 'Dra. Fernanda Costa', crm: 'CRM 1001', especialidade: 'Cardiologia', valorConsulta: 350 },
+    { id: 2, nome: 'Dr. Ricardo Mendes', crm: 'CRM 1002', especialidade: 'Ortopedia', valorConsulta: 300 },
+    { id: 3, nome: 'Dra. Juliana Rocha', crm: 'CRM 1003', especialidade: 'Ginecologia', valorConsulta: 320 },
+    { id: 4, nome: 'Dr. Paulo Nogueira', crm: 'CRM 1004', especialidade: 'Clínica geral', valorConsulta: 200 },
+  ],
+  // Médicos de plantão da Emergência (o valor vem do setor Emergência)
+  medicosEmergencia: [
+    { id: 101, nome: 'Dr. Rafael Monteiro', crm: 'CRM 2001', especialidade: 'Clínica médica' },
+    { id: 102, nome: 'Dra. Camila Andrade', crm: 'CRM 2002', especialidade: 'Clínica médica' },
+    { id: 103, nome: 'Dr. Thiago Barbosa', crm: 'CRM 2003', especialidade: 'Pediatria' },
+    { id: 104, nome: 'Dra. Larissa Pinheiro', crm: 'CRM 2004', especialidade: 'Cirurgia geral' },
+    { id: 105, nome: 'Dr. Eduardo Farias', crm: 'CRM 2005', especialidade: 'Ortopedia' },
+  ],
+  horarios: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'],
+};
+
+function todosMedicos() {
+  const valorEmergencia = DADOS.setores.PRONTO_SOCORRO[0]?.valorConsulta || 0;
+  return [
+    ...DADOS.medicosConsulta.map((m) => ({ ...m, atende: 'Consulta' })),
+    ...DADOS.medicosEmergencia.map((m) => ({ ...m, atende: 'Emergência (plantão)', valorConsulta: valorEmergencia })),
+  ];
+}
 
 // Estado da tela de atendimento
 const estado = {
@@ -188,8 +227,7 @@ function selecionarPaciente(paciente) {
 }
 
 function atualizarBotaoAbrir() {
-  const precisaMedico = estado.modalidade === 'CONSULTA';
-  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && (!precisaMedico || $('#atend-medico').value));
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && $('#atend-medico').value);
 }
 
 function renderAnteriores(atendimentos) {
@@ -319,6 +357,7 @@ function renderMedicos(medicos) {
       <td>${esc(m.nome)}</td>
       <td>${esc(m.crm)}</td>
       <td>${esc(m.especialidade)}</td>
+      <td>${esc(m.atende || '')}</td>
       <td>${formatarMoeda(m.valorConsulta)}</td>
       <td><button class="btn-acao" data-id="${esc(m.id)}">Editar</button></td>
     </tr>`).join('');
@@ -387,16 +426,22 @@ function carregarAtendimento() {
 
 // Setores da aba aberta (Consulta ou Pronto Socorro)
 function carregarSetores() {
-  // TODO: buscar os setores de estado.modalidade e chamar preencherSetores(lista).
-  //   No Pronto Socorro, cada setor traz o valor da consulta de emergência:
-  //   preencherSetores([{ id: 10, nome: 'Pronto Socorro Adulto', valorConsulta: 250 }]);
-  preencherSetores([]);
+  // Setores de estado.modalidade (vêm de DADOS; troque por banco de dados quando tiver).
+  //   No Pronto Socorro, cada setor traz o valor da consulta de emergência.
+  preencherSetores(DADOS.setores[estado.modalidade] || []);
 }
 
 function preencherSetores(lista) {
   estado.setores = lista;
   preencherSelect('#atend-setor', lista.map((s) => ({ valor: s.id, texto: s.nome })), 'Selecione o setor');
+  // Se só existe um setor, ele já vem selecionado
+  if (lista.length === 1) {
+    $('#atend-setor').value = String(lista[0].id);
+    estado.setor = String(lista[0].id);
+  }
   atualizarValorPS();
+  if (typeof atualizarTituloAnteriores === 'function') atualizarTituloAnteriores();
+  if (typeof atualizarBotaoAbrir === 'function') atualizarBotaoAbrir();
 }
 
 function setorSelecionado() {
@@ -423,10 +468,10 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-icone').setAttribute('href', m.icone);
   $('#atend-abrir-btn-texto').textContent = m.botao;
   $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
-  $('#linha-medico').hidden = modalidade !== 'CONSULTA';
   $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
   estado.setor = '';
   carregarSetores();
+  carregarMedicosConsulta();
   atualizarTituloAnteriores();
   atualizarBotaoAbrir();
   carregarAtendimentosAnteriores();
@@ -520,15 +565,22 @@ $('#btn-atualizar-anteriores').addEventListener('click', () => carregarAtendimen
 
 // ---------- Médicos da aba Consulta ----------
 function carregarMedicosConsulta() {
-  // TODO: buscar médicos que atendem consulta particular e chamar:
-  // preencherMedicosConsulta([{ id: 1, nome: 'Dr. Fulano', valorConsulta: 250 }]);
-  preencherMedicosConsulta([]);
+  // Consulta: médicos da consulta particular. Pronto Socorro: médicos de plantão da Emergência.
+  // (vêm de DADOS; troque por banco de dados quando tiver)
+  const ps = estado.modalidade === 'PRONTO_SOCORRO';
+  preencherMedicosConsulta(ps ? DADOS.medicosEmergencia : DADOS.medicosConsulta);
 }
 
 function preencherMedicosConsulta(lista) {
   estado.medicosConsulta = lista;
-  preencherSelect('#atend-medico', lista.map((m) => ({ valor: m.id, texto: m.nome })), 'Selecione o médico');
+  const ps = estado.modalidade === 'PRONTO_SOCORRO';
+  preencherSelect('#atend-medico',
+    lista.map((m) => ({ valor: m.id, texto: m.especialidade ? `${m.nome} · ${m.especialidade}` : m.nome })),
+    ps ? 'Selecione o médico de plantão' : 'Selecione o médico');
+  $('#atend-medico-rotulo').textContent = ps ? 'Médico de plantão:' : 'Médico:';
+  $('#atend-valor-consulta-linha').hidden = ps;
   $('#atend-valor-consulta').textContent = '—';
+  if (typeof atualizarBotaoAbrir === 'function') atualizarBotaoAbrir();
 }
 
 function medicoConsultaSelecionado() {
@@ -563,15 +615,17 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
     dados.pagamento = pagamento;
   } else {
     const s = setorSelecionado();
+    const m = medicoConsultaSelecionado();
     const valor = s?.valorConsulta || 0;
     const pagamento = await abrirPagamento({
       descricao: `Pronto Socorro · ${estado.paciente.nome}`,
-      itens: [{ nome: `Consulta de emergência · ${setor}`, valor }],
+      itens: [{ nome: `Consulta de emergência · ${m?.nome || 'plantão'} · ${setor}`, valor }],
       valor,
       valorEditavel: true,
-      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: setor },
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: m?.nome || setor },
     });
     if (!pagamento) return; // cancelou: o paciente NÃO é liberado
+    dados.medico = m;
     dados.valor = pagamento.valor;
     dados.pagamento = pagamento;
   }
@@ -1046,8 +1100,9 @@ $('#btn-restaurar-precos').addEventListener('click', async () => {
 // Falta só o salvamento e a lista de médicos (TODO).
 
 function carregarExames() {
-  // TODO: preencher a lista de médicos solicitantes
-  // preencherSelect('#ex-medico', [{ valor: '1', texto: 'Dr. Fulano' }]);
+  const medicoAtual = $('#ex-medico').value;
+  preencherSelect('#ex-medico', todosMedicos().map((m) => ({ valor: m.id, texto: m.nome })));
+  $('#ex-medico').value = medicoAtual;
   if (!$('#ex-data').value) $('#ex-data').value = new Date().toISOString().slice(0, 10);
   renderPacienteExames();
   renderVinculoExames();
@@ -1313,8 +1368,9 @@ function carregarPainel() {
 
 // ---------- Tela: Agenda ----------
 function carregarAgenda() {
-  // TODO: preencher a lista de médicos do filtro
-  // preencherSelect('#filtro-medico', [...], 'Todos');
+  const atual = $('#filtro-medico').value;
+  preencherSelect('#filtro-medico', todosMedicos().map((m) => ({ valor: m.id, texto: m.nome })), 'Todos');
+  $('#filtro-medico').value = atual;
 }
 
 $('#form-filtro-agenda').addEventListener('submit', (e) => {
@@ -1331,20 +1387,25 @@ $('#form-filtro-agenda').addEventListener('submit', (e) => {
 
 // ---------- Tela: Agendar consulta ----------
 function carregarFormularioConsulta() {
-  // TODO: preencher especialidades
-  // preencherSelect('#cons-especialidade', [...]);
+  const atual = $('#cons-especialidade').value;
+  const especialidades = [...new Set(DADOS.medicosConsulta.map((m) => m.especialidade))];
+  preencherSelect('#cons-especialidade', especialidades.map((e) => ({ valor: e, texto: e })));
+  $('#cons-especialidade').value = atual;
 }
 
 $('#cons-especialidade').addEventListener('change', (e) => {
-  // TODO: carregar médicos da especialidade escolhida
-  // preencherSelect('#cons-medico', [...]);
-  console.log('Especialidade', e.target.value);
+  preencherSelect('#cons-medico', DADOS.medicosConsulta
+    .filter((m) => m.especialidade === e.target.value)
+    .map((m) => ({ valor: m.id, texto: m.nome })));
+  preencherSelect('#cons-horario', []);
+  $('#pag-valor').value = '';
 });
 
-$('#cons-medico').addEventListener('change', () => {
-  // TODO: carregar horários livres e o valor da consulta do médico
-  // preencherSelect('#cons-horario', [...]);
-  // $('#pag-valor').value = ...
+$('#cons-medico').addEventListener('change', (e) => {
+  // TODO: quando tiver agenda de verdade, mostrar só os horários livres
+  const m = DADOS.medicosConsulta.find((x) => String(x.id) === e.target.value);
+  preencherSelect('#cons-horario', m ? DADOS.horarios.map((h) => ({ valor: h, texto: h })) : []);
+  $('#pag-valor').value = m ? valorCampo(m.valorConsulta) : '';
 });
 
 $('#cons-data').addEventListener('change', () => {
@@ -1409,8 +1470,7 @@ $('#form-busca-paciente').addEventListener('submit', (e) => {
 
 // ---------- Tela: Médicos ----------
 function carregarMedicos() {
-  // TODO: buscar médicos e chamar renderMedicos(lista)
-  renderMedicos([]);
+  renderMedicos(todosMedicos());
 }
 
 // ---------- Tela: Financeiro ----------

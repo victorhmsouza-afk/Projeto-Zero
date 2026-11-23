@@ -118,3 +118,16 @@ No Pronto Socorro o valor vem do setor: `preencherSetores([{ id, nome, valorCons
 `demonstracao.html` é o sistema com **dados fictícios** (pacientes, médicos, setores e valores), igual ao link de teste.
 Abra com dois cliques para testar o fluxo sem precisar da sua lógica. Ela começa do zero e nada é salvo de verdade.
 O sistema de verdade continua sendo o `index.html` (com `css/style.css` e `js/app.js`).
+
+## Cadastros do hospital (`DADOS` em `js/app.js`)
+
+- **Unidade:** Hospital da Saúde (aparece no atendimento e no recibo).
+- **Setores:** Consulta → *Consultórios*; Pronto Socorro → *Emergência* (valor da consulta de emergência: R$ 250,00).
+  Quando só existe um setor, ele já vem selecionado.
+- **Médicos da consulta:** Dra. Fernanda Costa (Cardiologia), Dr. Ricardo Mendes (Ortopedia),
+  Dra. Juliana Rocha (Ginecologia) e Dr. Paulo Nogueira (Clínica geral), cada um com seu valor.
+- **Médicos de plantão da Emergência:** Dr. Rafael Monteiro, Dra. Camila Andrade, Dr. Thiago Barbosa,
+  Dra. Larissa Pinheiro e Dr. Eduardo Farias.
+- No Pronto Socorro é obrigatório escolher o **médico de plantão** antes de pagar; o pagamento entra no Financeiro no nome dele.
+
+Nomes, CRMs e valores são **exemplos**: edite o objeto `DADOS` para colocar os reais.
