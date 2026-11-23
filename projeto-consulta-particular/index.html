@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Health | Consulta Particular</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===================== MENU LATERAL ===================== -->
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#painel"><span aria-hidden="true">+</span>health</a>
+      <p class="sidebar-label">Consulta particular</p>
+      <nav class="menu" aria-label="Menu principal">
+        <a href="#painel" data-tela="painel" class="ativo"><span class="ico">▦</span>Painel</a>
+        <a href="#agenda" data-tela="agenda"><span class="ico">◷</span>Agenda</a>
+        <a href="#nova-consulta" data-tela="nova-consulta"><span class="ico">＋</span>Nova consulta</a>
+        <a href="#pacientes" data-tela="pacientes"><span class="ico">☺</span>Pacientes</a>
+        <a href="#medicos" data-tela="medicos"><span class="ico">✚</span>Médicos</a>
+        <a href="#financeiro" data-tela="financeiro"><span class="ico">$</span>Financeiro</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="#configuracoes" data-tela="configuracoes"><span class="ico">⚙</span>Configurações</a>
+        <button type="button" id="btn-sair" class="link-sair"><span class="ico">⎋</span>Sair</button>
+      </div>
+    </aside>
+
+    <div class="conteudo">
+
+      <!-- ===================== BARRA SUPERIOR ===================== -->
+      <header class="topbar">
+        <button type="button" class="btn-menu" id="btn-menu" aria-label="Abrir menu">☰</button>
+        <div class="breadcrumb"><span>Consulta particular</span> / <b id="titulo-tela">Painel</b></div>
+        <div class="topbar-direita">
+          <label class="sr-only" for="select-unidade">Unidade</label>
+          <select id="select-unidade">
+            <option value="">Selecione a unidade</option>
+          </select>
+          <div class="usuario">
+            <span class="avatar" id="usuario-iniciais">--</span>
+            <div><strong id="usuario-nome">Usuário</strong><small id="usuario-perfil">Perfil</small></div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+
+        <!-- ===================== PAINEL ===================== -->
+        <section class="tela ativa" id="tela-painel">
+          <div class="intro">
+            <div>
+              <p class="eyebrow">VISÃO GERAL DO DIA</p>
+              <h1>Consultas particulares</h1>
+              <p class="sub">Acompanhe agendamentos, atendimentos e recebimentos.</p>
+            </div>
+            <a class="primary" href="#nova-consulta">+ Nova consulta</a>
+          </div>
+
+          <div class="stats">
+            <article><span>Agendadas hoje</span><strong id="stat-agendadas">0</strong></article>
+            <article><span>Atendidas</span><strong id="stat-atendidas">0</strong></article>
+            <article><span>Aguardando</span><strong id="stat-aguardando">0</strong></article>
+            <article><span>Recebido hoje</span><strong id="stat-recebido">R$ 0,00</strong></article>
+          </div>
+
+          <div class="panel">
+            <div class="section-head">
+              <h2>Próximos atendimentos</h2>
+              <span class="pill" id="painel-contagem">0 consultas</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Horário</th><th>Paciente</th><th>Médico / especialidade</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tabela-proximos"></tbody>
+              </table>
+            </div>
+            <p class="vazio" id="vazio-proximos">Nenhuma consulta para exibir.</p>
+          </div>
+        </section>
+
+        <!-- ===================== AGENDA ===================== -->
+        <section class="tela" id="tela-agenda">
+          <div class="intro">
+            <div><p class="eyebrow">AGENDA</p><h1>Agenda de consultas</h1><p class="sub">Filtre por data, médico ou status.</p></div>
+          </div>
+          <div class="panel">
+            <form class="filtros" id="form-filtro-agenda">
+              <div><label for="filtro-data">Data</label><input type="date" id="filtro-data"></div>
+              <div><label for="filtro-medico">Médico</label><select id="filtro-medico"><option value="">Todos</option></select></div>
+              <div><label for="filtro-status">Status</label>
+                <select id="filtro-status">
+                  <option value="">Todos</option>
+                  <option value="AGENDADA">Agendada</option>
+                  <option value="CONFIRMADA">Confirmada</option>
+                  <option value="ATENDIDA">Atendida</option>
+                  <option value="CANCELADA">Cancelada</option>
+                </select>
+              </div>
+              <button type="submit" class="primary">Buscar</button>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Horário</th><th>Paciente</th><th>Médico</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tabela-agenda"></tbody>
+              </table>
+            </div>
+            <p class="vazio" id="vazio-agenda">Use os filtros para buscar consultas.</p>
+          </div>
+        </section>
+
+        <!-- ===================== NOVA CONSULTA ===================== -->
+        <section class="tela" id="tela-nova-consulta">
+          <div class="intro">
+            <div><p class="eyebrow">AGENDAMENTO</p><h1>Nova consulta particular</h1><p class="sub">Campos com * são obrigatórios.</p></div>
+          </div>
+          <form class="panel form-grid" id="form-consulta">
+            <h2 class="full">Paciente</h2>
+            <div><label for="pac-cpf">CPF *</label><input id="pac-cpf" name="cpf" required maxlength="14" placeholder="000.000.000-00"></div>
+            <div><label for="pac-nome">Nome completo *</label><input id="pac-nome" name="nome" required maxlength="100"></div>
+            <div><label for="pac-nascimento">Data de nascimento *</label><input type="date" id="pac-nascimento" name="nascimento" required></div>
+            <div><label for="pac-telefone">Telefone *</label><input type="tel" id="pac-telefone" name="telefone" required maxlength="15" placeholder="(92) 99999-9999"></div>
+            <div class="full"><label for="pac-email">E-mail</label><input type="email" id="pac-email" name="email" maxlength="150"></div>
+
+            <h2 class="full">Consulta</h2>
+            <div><label for="cons-especialidade">Especialidade *</label><select id="cons-especialidade" name="especialidade" required><option value="">Selecione</option></select></div>
+            <div><label for="cons-medico">Médico *</label><select id="cons-medico" name="medico" required><option value="">Selecione</option></select></div>
+            <div><label for="cons-data">Data *</label><input type="date" id="cons-data" name="data" required></div>
+            <div><label for="cons-horario">Horário *</label><select id="cons-horario" name="horario" required><option value="">Selecione</option></select></div>
+
+            <h2 class="full">Pagamento</h2>
+            <div><label for="pag-valor">Valor (R$) *</label><input id="pag-valor" name="valor" required inputmode="decimal" placeholder="0,00"></div>
+            <div><label for="pag-forma">Forma de pagamento *</label>
+              <select id="pag-forma" name="formaPagamento" required>
+                <option value="">Selecione</option>
+                <option value="PIX">Pix</option>
+                <option value="CREDITO">Cartão de crédito</option>
+                <option value="DEBITO">Cartão de débito</option>
+                <option value="DINHEIRO">Dinheiro</option>
+              </select>
+            </div>
+            <div class="full"><label for="cons-obs">Observações</label><textarea id="cons-obs" name="observacoes" maxlength="1000"></textarea></div>
+
+            <div class="full acoes">
+              <button type="reset" class="secundario">Limpar</button>
+              <button type="submit" class="primary">Agendar consulta →</button>
+            </div>
+            <p class="full status" id="status-consulta" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <!-- ===================== PACIENTES ===================== -->
+        <section class="tela" id="tela-pacientes">
+          <div class="intro"><div><p class="eyebrow">CADASTRO</p><h1>Pacientes</h1><p class="sub">Busque pelo nome ou CPF.</p></div></div>
+          <div class="panel">
+            <form class="filtros" id="form-busca-paciente">
+              <div class="grow"><label for="busca-paciente">Nome ou CPF</label><input type="search" id="busca-paciente" placeholder="Digite para buscar…"></div>
+              <button type="submit" class="primary">Buscar</button>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Paciente</th><th>CPF</th><th>Telefone</th><th>Última consulta</th><th></th></tr></thead>
+                <tbody id="tabela-pacientes"></tbody>
+              </table>
+            </div>
+            <p class="vazio" id="vazio-pacientes">Nenhum paciente encontrado.</p>
+          </div>
+        </section>
+
+        <!-- ===================== MÉDICOS ===================== -->
+        <section class="tela" id="tela-medicos">
+          <div class="intro"><div><p class="eyebrow">CORPO CLÍNICO</p><h1>Médicos</h1><p class="sub">Profissionais que atendem consulta particular e seus valores.</p></div></div>
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Valor da consulta</th><th></th></tr></thead>
+                <tbody id="tabela-medicos"></tbody>
+              </table>
+            </div>
+            <p class="vazio" id="vazio-medicos">Nenhum médico cadastrado.</p>
+          </div>
+        </section>
+
+        <!-- ===================== FINANCEIRO ===================== -->
+        <section class="tela" id="tela-financeiro">
+          <div class="intro"><div><p class="eyebrow">FINANCEIRO</p><h1>Recebimentos</h1><p class="sub">Resumo dos valores recebidos por período.</p></div></div>
+          <div class="stats">
+            <article><span>Total no período</span><strong id="fin-total">R$ 0,00</strong></article>
+            <article><span>Pix</span><strong id="fin-pix">R$ 0,00</strong></article>
+            <article><span>Cartão</span><strong id="fin-cartao">R$ 0,00</strong></article>
+            <article><span>Dinheiro</span><strong id="fin-dinheiro">R$ 0,00</strong></article>
+          </div>
+          <div class="panel">
+            <form class="filtros" id="form-filtro-financeiro">
+              <div><label for="fin-inicio">De</label><input type="date" id="fin-inicio"></div>
+              <div><label for="fin-fim">Até</label><input type="date" id="fin-fim"></div>
+              <button type="submit" class="primary">Filtrar</button>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Paciente</th><th>Médico</th><th>Forma</th><th>Valor</th></tr></thead>
+                <tbody id="tabela-financeiro"></tbody>
+              </table>
+            </div>
+            <p class="vazio" id="vazio-financeiro">Nenhum recebimento no período.</p>
+          </div>
+        </section>
+
+        <!-- ===================== CONFIGURAÇÕES ===================== -->
+        <section class="tela" id="tela-configuracoes">
+          <div class="intro"><div><p class="eyebrow">SISTEMA</p><h1>Configurações</h1><p class="sub">Espaço reservado para as suas configurações.</p></div></div>
+          <div class="panel"><p class="vazio">Em construção.</p></div>
+        </section>
+
+        <footer>Health · Consulta particular <span>Projeto pessoal · Projeto-Zero</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

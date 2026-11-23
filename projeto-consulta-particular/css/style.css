@@ -1,0 +1,156 @@
+/* =========================================================
+   Consulta Particular — estilos
+   Paleta e tipografia seguem os outros projetos "health".
+   ========================================================= */
+:root {
+  --verde: #176753;
+  --verde-escuro: #104e3e;
+  --verde-claro: #edf5ef;
+  --texto: #213b34;
+  --muted: #718078;
+  --linha: #e2e9e3;
+  --fundo: #f3f6f3;
+  --branco: #fff;
+  --alerta: #a8551f;
+  --perigo: #b3261e;
+  --sidebar-largura: 240px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: var(--texto);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---------- Estrutura ---------- */
+.app { display: flex; min-height: 100vh; }
+.conteudo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+main { padding: 32px; max-width: 1340px; width: 100%; margin: 0 auto; }
+
+/* ---------- Menu lateral ---------- */
+.sidebar {
+  width: var(--sidebar-largura); flex-shrink: 0; background: var(--branco);
+  border-right: 1px solid var(--linha); padding: 24px 16px;
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+}
+.brand { font-size: 25px; font-weight: 750; text-decoration: none; color: var(--verde); letter-spacing: -1px; padding: 0 8px; }
+.brand span { background: var(--verde); color: #fff; border-radius: 9px; padding: 0 9px; margin-right: 7px; }
+.sidebar-label { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 28px 8px 10px; }
+.menu { display: flex; flex-direction: column; gap: 4px; }
+.menu a, .sidebar-footer a, .link-sair {
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 9px;
+  color: #3d564c; text-decoration: none; font-size: 14px; font: inherit; font-size: 14px;
+  background: none; border: 0; cursor: pointer; text-align: left; width: 100%;
+}
+.menu a:hover, .sidebar-footer a:hover, .link-sair:hover { background: var(--fundo); }
+.menu a.ativo { background: var(--verde-claro); color: var(--verde); font-weight: 600; }
+.ico { width: 20px; text-align: center; font-size: 15px; }
+.sidebar-footer { margin-top: auto; border-top: 1px solid var(--linha); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Barra superior ---------- */
+.topbar {
+  background: var(--branco); border-bottom: 1px solid var(--linha); padding: 14px 32px;
+  display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 5;
+}
+.btn-menu { display: none; background: none; border: 1px solid var(--linha); border-radius: 8px; padding: 6px 10px; font-size: 18px; cursor: pointer; }
+.breadcrumb { font-size: 13px; color: var(--muted); }
+.breadcrumb b { color: var(--texto); font-weight: 600; }
+.topbar-direita { margin-left: auto; display: flex; align-items: center; gap: 18px; }
+.topbar-direita select { width: 220px; }
+.usuario { display: flex; align-items: center; gap: 10px; }
+.usuario strong { display: block; font-size: 13px; }
+.usuario small { display: block; font-size: 11px; color: var(--muted); }
+.avatar { width: 36px; height: 36px; border-radius: 11px; background: #e9f0e5; color: #3e6652; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+
+/* ---------- Telas ---------- */
+.tela { display: none; }
+.tela.ativa { display: block; }
+.intro { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 26px; }
+.eyebrow { font-size: 10px; letter-spacing: 1.7px; font-weight: 750; color: var(--verde); margin: 0 0 10px; }
+h1 { font-size: clamp(26px, 3vw, 34px); letter-spacing: -1.2px; margin: 0 0 8px; }
+h2 { font-size: 18px; letter-spacing: -.4px; margin: 0; }
+.sub { font-size: 14px; color: var(--muted); margin: 0; }
+
+/* ---------- Cards de resumo ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stats article { background: var(--branco); border: 1px solid var(--linha); border-radius: 13px; padding: 20px 22px; }
+.stats span { font-size: 12px; color: var(--muted); display: block; margin-bottom: 8px; }
+.stats strong { font-size: 28px; font-weight: 650; }
+
+/* ---------- Painéis e tabelas ---------- */
+.panel { background: var(--branco); border: 1px solid var(--linha); border-radius: 16px; padding: 24px; min-width: 0; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.pill { background: var(--verde-claro); color: var(--verde); font-size: 11px; border-radius: 20px; padding: 6px 11px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; text-align: left; }
+th { font-size: 10px; letter-spacing: .7px; text-transform: uppercase; color: var(--muted); font-weight: 600; background: #f6f8f5; padding: 12px 10px; white-space: nowrap; }
+td { padding: 14px 10px; border-bottom: 1px solid #edf1eb; font-size: 13px; }
+tbody tr:last-child td { border-bottom: 0; }
+.vazio { font-size: 13px; color: var(--muted); padding: 18px 0 0; margin: 0; }
+.vazio[hidden] { display: none; }
+
+/* Status das consultas */
+.tag { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; white-space: nowrap; }
+.tag-agendada   { background: #eef1f8; color: #3a4f86; }
+.tag-confirmada { background: var(--verde-claro); color: var(--verde); }
+.tag-atendida   { background: #e6efe9; color: #2d5a45; }
+.tag-cancelada  { background: #fbeceb; color: var(--perigo); }
+
+/* ---------- Formulários ---------- */
+label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+input, select, textarea {
+  width: 100%; padding: 11px 12px; border: 1px solid #d9e2da; border-radius: 8px;
+  background: #fafcf9; color: #29483d; font: inherit; font-size: 13px; min-width: 0;
+}
+textarea { resize: vertical; min-height: 84px; }
+input:focus, select:focus, textarea:focus { outline: 3px solid #dceee3; border-color: var(--verde); }
+button:focus-visible, a:focus-visible { outline: 3px solid #82b99f; outline-offset: 3px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 20px; }
+.filtros > div { min-width: 160px; }
+.filtros .grow { flex: 1; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 16px; }
+.form-grid h2 { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--linha); }
+.form-grid h2:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.full { grid-column: 1 / -1; }
+.acoes { display: flex; justify-content: flex-end; gap: 12px; }
+.status { font-size: 13px; color: var(--verde); margin: 0; }
+.status:empty { display: none; }
+
+/* ---------- Botões ---------- */
+.primary {
+  background: var(--verde); color: #fff; text-decoration: none; border: 0; border-radius: 9px;
+  padding: 12px 18px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.primary:hover { background: var(--verde-escuro); }
+.secundario {
+  background: var(--branco); color: var(--texto); border: 1px solid var(--linha); border-radius: 9px;
+  padding: 12px 18px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.secundario:hover { background: var(--fundo); }
+.btn-acao { background: none; border: 1px solid var(--linha); border-radius: 7px; padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; color: var(--verde); }
+
+footer { display: flex; justify-content: space-between; gap: 15px; color: var(--muted); font-size: 11px; padding: 28px 0 8px; }
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1000px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .topbar-direita select { width: 160px; }
+}
+@media (max-width: 780px) {
+  .sidebar { position: fixed; left: 0; top: 0; z-index: 20; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 40px #0002; }
+  .sidebar.aberta { transform: none; }
+  .btn-menu { display: block; }
+  .topbar { padding: 12px 16px; }
+  .usuario div { display: none; }
+  main { padding: 22px 16px; }
+  .intro { flex-direction: column; align-items: flex-start; }
+  .form-grid { grid-template-columns: 1fr; }
+  .panel { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr; }
+  .breadcrumb span { display: none; }
+  .topbar-direita select { width: 130px; }
+  footer { flex-direction: column; }
+}
