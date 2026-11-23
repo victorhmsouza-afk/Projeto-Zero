@@ -48,3 +48,11 @@ e os formulários já têm o `submit` capturado. Para exibir dados nas tabelas, 
 Os valores e códigos que vêm preenchidos são **exemplos**. Ajuste na tela *Tabela de preços*.
 As alterações ficam salvas no navegador (`localStorage`). Quando tiver API, troque `carregarTabelaPrecos()`
 e `salvarTabelaPrecos()` em `js/app.js`.
+
+## Atendimento: abas Consulta e Pronto Socorro
+
+- **Consulta:** consulta particular, cobrada como particular.
+- **Pronto Socorro:** o paciente é atendido no PS e, se o médico pedir exames, eles são feitos como particulares.
+  Na lista de atendimentos de PS, o botão **Exames** abre a requisição já vinculada àquele atendimento
+  (aparece no quadro **Origem** da tela de Exames e vai no campo `origem` ao salvar).
+- Cada aba tem seus setores (`carregarSetores()`) e seus atendimentos (`carregarAtendimentosAnteriores()`, filtrando por `estado.modalidade`).

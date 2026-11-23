@@ -108,9 +108,12 @@
           <!-- Coluna do atendimento -->
           <div class="col-atendimento">
             <div class="barra-abas">
-              <span class="aba ativa"><svg class="i"><use href="#i-steth"/></svg>Abertura de Atendimento</span>
+              <div class="abas" role="tablist" aria-label="Tipo de atendimento">
+                <button type="button" class="aba ativa" role="tab" aria-selected="true" data-modalidade="CONSULTA"><svg class="i"><use href="#i-steth"/></svg>Consulta</button>
+                <button type="button" class="aba" role="tab" aria-selected="false" data-modalidade="PRONTO_SOCORRO"><svg class="i"><use href="#i-heart"/></svg>Pronto Socorro</button>
+              </div>
               <div class="barra-acoes">
-                <a class="btn" href="#exames"><svg class="i"><use href="#i-flask"/></svg>Exames</a>
+                <a class="btn" href="#exames" id="btn-exames-avulso"><svg class="i"><use href="#i-flask"/></svg>Exames</a>
                 <button type="button" class="btn" id="btn-recibo"><svg class="i"><use href="#i-receipt"/></svg>Recibo de consulta</button>
                 <button type="button" class="btn" id="btn-etiqueta"><svg class="i"><use href="#i-tag"/></svg>Etiqueta avulsa</button>
               </div>
@@ -126,13 +129,13 @@
             </div>
 
             <div class="card linha">
-              <span class="rotulo">Tipo:</span><strong class="valor">Particular</strong>
+              <span class="rotulo">Tipo:</span><strong class="valor" id="atend-tipo">Consulta particular</strong>
             </div>
 
             <div class="card linha tracejado">
-              <svg class="i verde"><use href="#i-steth"/></svg>
-              <strong>Abrir atendimento particular</strong>
-              <span class="dica">Será cobrado como particular</span>
+              <svg class="i verde"><use href="#i-steth" id="atend-abrir-icone"/></svg>
+              <strong id="atend-abrir-titulo">Abrir consulta particular</strong>
+              <span class="dica" id="atend-abrir-dica">A consulta será cobrada como particular</span>
               <button type="button" class="btn-primario" id="btn-abrir-atendimento" disabled>
                 <svg class="i"><use href="#i-clipboard"/></svg>Abrir atendimento
               </button>
@@ -172,6 +175,11 @@
             <div class="card">
               <h2 class="card-titulo"><svg class="i"><use href="#i-user"/></svg>Paciente</h2>
               <div id="ex-paciente"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-heart"/></svg>Origem</h2>
+              <div id="ex-vinculo"></div>
             </div>
 
             <div class="card bloco">
