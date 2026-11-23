@@ -62,6 +62,36 @@ function preencherSelect(seletor, itens, textoPadrao = 'Selecione') {
     itens.map((i) => `<option value="${esc(i.valor)}">${esc(i.texto)}</option>`).join('');
 }
 
+// Confirmação dentro da página (substitui o confirm() do navegador)
+function confirmar(mensagem, textoBotao = 'Confirmar') {
+  return new Promise((resolver) => {
+    const fundo = document.createElement('div');
+    fundo.className = 'confirmacao-fundo';
+    fundo.innerHTML = `
+      <div class="confirmacao" role="alertdialog" aria-modal="true" aria-labelledby="confirmacao-texto">
+        <p id="confirmacao-texto">${esc(mensagem)}</p>
+        <div class="acoes">
+          <button type="button" class="btn" data-resposta="nao">Cancelar</button>
+          <button type="button" class="btn-primario" data-resposta="sim">${esc(textoBotao)}</button>
+        </div>
+      </div>`;
+    const fechar = (resposta) => {
+      fundo.remove();
+      document.removeEventListener('keydown', teclas);
+      resolver(resposta);
+    };
+    const teclas = (e) => { if (e.key === 'Escape') fechar(false); };
+    fundo.addEventListener('click', (e) => {
+      if (e.target === fundo) fechar(false);
+      const b = e.target.closest('[data-resposta]');
+      if (b) fechar(b.dataset.resposta === 'sim');
+    });
+    document.addEventListener('keydown', teclas);
+    document.body.appendChild(fundo);
+    fundo.querySelector('[data-resposta="sim"]').focus();
+  });
+}
+
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
@@ -415,11 +445,11 @@ document.querySelector('#tela-precos').addEventListener('change', (e) => {
   $('#status-precos').textContent = 'Valor atualizado.';
 });
 
-document.querySelector('#tela-precos').addEventListener('click', (e) => {
+document.querySelector('#tela-precos').addEventListener('click', async (e) => {
   const botao = e.target.closest('[data-remover-preco]');
   if (!botao) return;
   const item = precos[botao.dataset.removerPreco][botao.dataset.indice];
-  if (!confirm(`Remover "${item.nome}" da tabela de preços?`)) return;
+  if (!(await confirmar(`Remover "${item.nome}" da tabela de preços?`, 'Remover'))) return;
   precos[botao.dataset.removerPreco].splice(Number(botao.dataset.indice), 1);
   salvarTabelaPrecos();
   renderPrecos();
@@ -454,8 +484,8 @@ $('#form-preco-lab').addEventListener('submit', (e) => {
   $('#status-precos').textContent = existente ? `Valor do nº ${codigo} atualizado.` : `Nº ${codigo} incluído.`;
 });
 
-$('#btn-restaurar-precos').addEventListener('click', () => {
-  if (!confirm('Voltar a tabela de preços para os valores de exemplo? Suas alterações serão perdidas.')) return;
+$('#btn-restaurar-precos').addEventListener('click', async () => {
+  if (!(await confirmar('Voltar a tabela de preços para os valores de exemplo? Suas alterações serão perdidas.', 'Restaurar'))) return;
   precos = copiarExemplos();
   salvarTabelaPrecos();
   renderPrecos();
@@ -641,9 +671,9 @@ document.querySelector('#tela-exames').addEventListener('input', (e) => {
   }
 });
 
-$('#btn-limpar-exames').addEventListener('click', () => {
+$('#btn-limpar-exames').addEventListener('click', async () => {
   const total = estado.exames.imagem.length + estado.exames.laboratorial.length;
-  if (total && !confirm('Remover todos os exames da requisição?')) return;
+  if (total && !(await confirmar('Remover todos os exames da requisição?', 'Limpar tudo'))) return;
   estado.exames = { imagem: [], laboratorial: [] };
   $('#ex-obs').value = '';
   $('#ex-desconto').value = '';
