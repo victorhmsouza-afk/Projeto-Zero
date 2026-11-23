@@ -19,6 +19,8 @@ const estado = {
   modalidade: 'CONSULTA', // aba aberta no Atendimento: 'CONSULTA' ou 'PRONTO_SOCORRO'
   anteriores: [],         // atendimentos mostrados na tabela
   vinculoExames: null,    // atendimento de origem da requisição de exames (ex.: Pronto Socorro)
+  medicosConsulta: [],    // médicos da aba Consulta: [{ id, nome, valorConsulta }]
+  ultimoPagamento: null,  // último pagamento confirmado (para o recibo)
 };
 
 // Textos de cada aba do Atendimento
@@ -27,14 +29,18 @@ const MODALIDADES = {
     nome: 'Consulta',
     tipo: 'Consulta particular',
     titulo: 'Abrir consulta particular',
-    dica: 'A consulta será cobrada como particular',
+    dica: 'O pagamento é feito antes de abrir a consulta',
+    botao: 'Pagar e abrir consulta',
+    botaoIcone: '#i-dollar',
     icone: '#i-steth',
   },
   PRONTO_SOCORRO: {
     nome: 'Pronto Socorro',
     tipo: 'Pronto Socorro · exames particulares',
     titulo: 'Abrir atendimento de Pronto Socorro',
-    dica: 'Se o médico pedir exames, eles serão cobrados como particular',
+    dica: 'Exames pedidos pelo médico são pagos antes de serem feitos',
+    botao: 'Abrir atendimento',
+    botaoIcone: '#i-clipboard',
     icone: '#i-heart',
   },
 };
@@ -60,7 +66,7 @@ function formatarDataHora(dataIso) {
 function tagStatus(status) {
   const nomes = {
     AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
-    ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta',
+    ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta', PAGO: 'Pago', PENDENTE: 'Pendente',
   };
   const s = String(status || '').toUpperCase();
   return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
@@ -172,7 +178,8 @@ function selecionarPaciente(paciente) {
 }
 
 function atualizarBotaoAbrir() {
-  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor);
+  const precisaMedico = estado.modalidade === 'CONSULTA';
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && (!precisaMedico || $('#atend-medico').value));
 }
 
 function renderAnteriores(atendimentos) {
@@ -185,7 +192,9 @@ function renderAnteriores(atendimentos) {
       <td>${formatarDataHora(a.entrada)}</td>
       <td>${formatarDataHora(a.alta)}</td>
       <td>${esc(a.medico)}</td>
-      <td>${formatarMoeda(a.valor)}</td>
+      <td>${a.valor
+        ? `<span class="valor-pago">${formatarMoeda(a.valor)} ${tagStatus(a.pago ? 'PAGO' : 'PENDENTE')}</span>`
+        : '<span style="color:var(--muted)">—</span>'}</td>
       <td><div class="acoes-linha">
         <button class="btn-acao" data-id="${esc(a.numero)}">Abrir</button>
         ${(a.tipo || estado.modalidade) === 'PRONTO_SOCORRO'
@@ -302,6 +311,9 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-titulo').textContent = m.titulo;
   $('#atend-abrir-dica').textContent = m.dica;
   $('#atend-abrir-icone').setAttribute('href', m.icone);
+  $('#atend-abrir-btn-texto').textContent = m.botao;
+  $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
+  $('#linha-medico').hidden = modalidade !== 'CONSULTA';
   estado.setor = '';
   carregarSetores();
   atualizarTituloAnteriores();
@@ -362,11 +374,142 @@ function carregarAtendimentosAnteriores() {
 
 $('#btn-atualizar-anteriores').addEventListener('click', () => carregarAtendimentosAnteriores());
 
-$('#btn-abrir-atendimento').addEventListener('click', () => {
-  const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
-  // TODO: abrir o atendimento (consulta ou pronto socorro) e depois recarregar a lista
-  console.log('Abrir atendimento', dados);
+// ---------- Médicos da aba Consulta ----------
+function carregarMedicosConsulta() {
+  // TODO: buscar médicos que atendem consulta particular e chamar:
+  // preencherMedicosConsulta([{ id: 1, nome: 'Dr. Fulano', valorConsulta: 250 }]);
+  preencherMedicosConsulta([]);
+}
+
+function preencherMedicosConsulta(lista) {
+  estado.medicosConsulta = lista;
+  preencherSelect('#atend-medico', lista.map((m) => ({ valor: m.id, texto: m.nome })), 'Selecione o médico');
+  $('#atend-valor-consulta').textContent = '—';
+}
+
+function medicoConsultaSelecionado() {
+  return estado.medicosConsulta.find((m) => String(m.id) === $('#atend-medico').value);
+}
+
+$('#atend-medico').addEventListener('change', () => {
+  const m = medicoConsultaSelecionado();
+  $('#atend-valor-consulta').textContent = m ? formatarMoeda(m.valorConsulta) : '—';
+  atualizarBotaoAbrir();
 });
+
+// ---------- Abrir atendimento ----------
+// Consulta: abre a janela de pagamento primeiro; só abre a consulta se o pagamento for confirmado.
+// Pronto Socorro: abre direto (os exames são pagos na tela de Exames).
+$('#btn-abrir-atendimento').addEventListener('click', async () => {
+  const setor = $('#atend-setor').selectedOptions[0]?.text || '';
+  const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
+
+  if (estado.modalidade === 'CONSULTA') {
+    const m = medicoConsultaSelecionado();
+    const pagamento = await abrirPagamento({
+      descricao: `Consulta particular · ${estado.paciente.nome}`,
+      itens: [{ nome: `Consulta · ${m?.nome || 'médico'} · ${setor}`, valor: m?.valorConsulta || 0 }],
+      valor: m?.valorConsulta || 0,
+      valorEditavel: true,
+    });
+    if (!pagamento) return; // cancelou: a consulta NÃO é aberta
+    dados.medico = m;
+    dados.valor = pagamento.valor;
+    dados.pagamento = pagamento;
+  }
+
+  await registrarAtendimento(dados);
+  carregarAtendimentosAnteriores();
+});
+
+async function registrarAtendimento(dados) {
+  // TODO: salvar o atendimento (consulta ou pronto socorro).
+  //   dados = { paciente, setor, modalidade, medico?, valor?, pagamento? }
+  //   Na consulta, dados.pagamento sempre existe (já foi confirmado).
+  console.log('Abrir atendimento', dados);
+}
+
+// =========================================================
+//   JANELA DE PAGAMENTO
+//   abrirPagamento({ descricao, itens, valor, valorEditavel, desconto })
+//   devolve o pagamento confirmado, ou null se cancelar.
+// =========================================================
+let resolverPagamento = null;
+
+function abrirPagamento({ descricao = '', itens = [], valor = 0, valorEditavel = false, desconto = 0 } = {}) {
+  const f = $('#form-pagamento');
+  f.reset();
+  $('#pg-descricao').textContent = descricao;
+  $('#pg-itens').innerHTML = itens.map((i) => `<li><span>${esc(i.nome)}</span><span>${formatarMoeda(i.valor)}</span></li>`).join('')
+    + (desconto ? `<li class="desconto"><span>Desconto</span><span>− ${formatarMoeda(desconto)}</span></li>` : '');
+  $('#pg-valor').value = valorCampo(valor);
+  $('#pg-valor').readOnly = !valorEditavel;
+  $('#pg-erro').textContent = '';
+  atualizarFormaPagamento();
+  $('#modal-pagamento').hidden = false;
+  (valorEditavel && !valor ? $('#pg-valor') : f.querySelector('input[name="pgForma"]')).focus();
+  return new Promise((resolver) => { resolverPagamento = resolver; });
+}
+
+function fecharPagamento(resultado) {
+  $('#modal-pagamento').hidden = true;
+  if (resolverPagamento) resolverPagamento(resultado);
+  resolverPagamento = null;
+}
+
+function formaPagamentoAtual() {
+  return document.querySelector('input[name="pgForma"]:checked')?.value || '';
+}
+
+function atualizarFormaPagamento() {
+  const forma = formaPagamentoAtual();
+  ['credito', 'debito', 'pix', 'dinheiro'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
+  const total = lerMoeda($('#pg-valor').value);
+  const sel = $('#pg-parcelas'), atual = sel.value || '1';
+  sel.innerHTML = [1, 2, 3, 4, 5, 6].map((n) =>
+    `<option value="${n}">${n}x de ${formatarMoeda(total / n)}${n === 1 ? ' (à vista)' : ''}</option>`).join('');
+  sel.value = atual;
+  const troco = lerMoeda($('#pg-recebido').value) - total;
+  $('#pg-troco').textContent = formatarMoeda(troco > 0 ? troco : 0);
+  $('#pg-erro').textContent = '';
+}
+
+$('#form-pagamento').addEventListener('input', atualizarFormaPagamento);
+$('#form-pagamento').addEventListener('change', atualizarFormaPagamento);
+document.querySelectorAll('[data-pg-cancelar]').forEach((b) => b.addEventListener('click', () => fecharPagamento(null)));
+$('#modal-pagamento').addEventListener('click', (e) => { if (e.target.id === 'modal-pagamento') fecharPagamento(null); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-pagamento').hidden) fecharPagamento(null); });
+
+$('#form-pagamento').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const valor = lerMoeda($('#pg-valor').value);
+  const forma = formaPagamentoAtual();
+  const erro = (t) => { $('#pg-erro').textContent = t; };
+  if (!valor) return erro('Informe o valor a pagar.');
+  if (!forma) return erro('Escolha a forma de pagamento.');
+
+  const pagamento = { forma, valor, dataHora: new Date().toISOString() };
+  if (forma === 'CREDITO') Object.assign(pagamento, { parcelas: Number($('#pg-parcelas').value), autorizacao: $('#pg-nsu-credito').value.trim() });
+  if (forma === 'DEBITO') pagamento.autorizacao = $('#pg-nsu-debito').value.trim();
+  if (forma === 'PIX') pagamento.idTransacao = $('#pg-id-pix').value.trim();
+  if (forma === 'DINHEIRO') {
+    const recebido = lerMoeda($('#pg-recebido').value);
+    if (recebido < valor) return erro(`Valor recebido menor que o total (${formatarMoeda(valor)}).`);
+    Object.assign(pagamento, { recebido, troco: Math.round((recebido - valor) * 100) / 100 });
+  }
+  // TODO: se quiser, registrar o pagamento no seu sistema aqui (ou junto com o atendimento/requisição)
+  estado.ultimoPagamento = pagamento;
+  fecharPagamento(pagamento);
+});
+
+const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
+function descreverPagamento(p) {
+  if (!p) return '';
+  let t = `${formatarMoeda(p.valor)} no ${NOMES_FORMA[p.forma] || p.forma}`;
+  if (p.parcelas > 1) t += ` em ${p.parcelas}x`;
+  if (p.troco) t += ` (troco ${formatarMoeda(p.troco)})`;
+  return t;
+}
 
 // Botão "Exames" de um atendimento de Pronto Socorro: abre a requisição vinculada a ele
 document.addEventListener('click', (e) => {
@@ -381,7 +524,7 @@ document.addEventListener('click', (e) => {
 $('#btn-exames-avulso').addEventListener('click', () => { estado.vinculoExames = null; });
 
 $('#btn-recibo').addEventListener('click', () => {
-  // TODO: gerar/imprimir recibo da consulta
+  // TODO: gerar/imprimir recibo do último pagamento (estado.ultimoPagamento)
   console.log('Recibo de consulta');
 });
 
@@ -767,7 +910,7 @@ $('#btn-limpar-exames').addEventListener('click', async () => {
   renderExames();
 });
 
-$('#btn-salvar-exames').addEventListener('click', () => {
+$('#btn-salvar-exames').addEventListener('click', async () => {
   if (!estado.paciente) {
     $('#status-exames').textContent = 'Selecione um paciente na tela Atendimento antes de salvar.';
     return;
@@ -790,10 +933,37 @@ $('#btn-salvar-exames').addEventListener('click', () => {
     desconto: t.desconto,
     total: t.total,
   };
-  // TODO: salvar a requisição (e depois limpar a lista, se quiser)
-  console.log('Salvar requisição de exames', requisicao);
-  $('#status-exames').textContent = 'Requisição montada. Falta ligar ao salvamento (TODO em app.js).';
+  if (!t.total) {
+    $('#status-exames').textContent = 'O total está zerado. Confira os valores e o desconto.';
+    return;
+  }
+
+  // Pagamento obrigatório antes de salvar
+  const origem = estado.vinculoExames ? ` · ${MODALIDADES[estado.vinculoExames.modalidade]?.nome} atend. ${estado.vinculoExames.numero}` : '';
+  const pagamento = await abrirPagamento({
+    descricao: `Exames particulares · ${estado.paciente.nome}${origem}`,
+    itens: [
+      ...estado.exames.imagem.map((x) => ({ nome: x.nome, valor: x.valor })),
+      ...estado.exames.laboratorial.map((x, i) => ({ nome: `${String(i + 1).padStart(2, '0')} · ${x.nome || 'Nº ' + x.codigo}`, valor: x.valor })),
+    ],
+    valor: t.total,
+    desconto: t.desconto,
+    valorEditavel: false,
+  });
+  if (!pagamento) {
+    $('#status-exames').textContent = 'Pagamento cancelado. A requisição não foi salva.';
+    return;
+  }
+  requisicao.pagamento = pagamento;
+  await salvarRequisicaoExames(requisicao);
+  $('#status-exames').textContent = `Pagamento confirmado: ${descreverPagamento(pagamento)}.`;
 });
+
+async function salvarRequisicaoExames(requisicao) {
+  // TODO: salvar a requisição (e depois limpar a lista, se quiser).
+  //   requisicao.pagamento sempre existe aqui (já foi confirmado).
+  console.log('Salvar requisição de exames', requisicao);
+}
 
 // ---------- Tela: Painel ----------
 function carregarPainel() {
@@ -925,4 +1095,5 @@ document.addEventListener('click', (e) => {
 // ---------- Início ----------
 carregarUsuario();
 carregarSetores();
+carregarMedicosConsulta();
 abrirTela(location.hash.slice(1) || 'atendimento');

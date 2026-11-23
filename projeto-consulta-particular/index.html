@@ -128,6 +128,14 @@
               <button type="button" class="btn-icone" id="btn-atualizar-setor" title="Atualizar"><svg class="i"><use href="#i-refresh"/></svg></button>
             </div>
 
+            <div class="card linha" id="linha-medico">
+              <label class="rotulo" for="atend-medico"><svg class="i"><use href="#i-steth"/></svg>Médico:</label>
+              <div class="select-wrap">
+                <select id="atend-medico"><option value="">Selecione o médico</option></select>
+              </div>
+              <span class="unidade">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
+            </div>
+
             <div class="card linha">
               <span class="rotulo">Tipo:</span><strong class="valor" id="atend-tipo">Consulta particular</strong>
             </div>
@@ -137,7 +145,7 @@
               <strong id="atend-abrir-titulo">Abrir consulta particular</strong>
               <span class="dica" id="atend-abrir-dica">A consulta será cobrada como particular</span>
               <button type="button" class="btn-primario" id="btn-abrir-atendimento" disabled>
-                <svg class="i"><use href="#i-clipboard"/></svg>Abrir atendimento
+                <svg class="i"><use href="#i-dollar" id="atend-abrir-btn-icone"/></svg><span id="atend-abrir-btn-texto">Pagar e abrir consulta</span>
               </button>
             </div>
 
@@ -198,7 +206,7 @@
                 <div class="total"><dt>Total a pagar</dt><dd id="ex-total">R$ 0,00</dd></div>
               </dl>
               <p class="aviso" id="ex-aviso-sem-valor" hidden></p>
-              <button type="button" class="btn-primario largo" id="btn-salvar-exames" disabled><svg class="i"><use href="#i-save"/></svg>Salvar requisição</button>
+              <button type="button" class="btn-primario largo" id="btn-salvar-exames" disabled><svg class="i"><use href="#i-dollar"/></svg>Pagar e salvar requisição</button>
               <button type="button" class="btn largo" id="btn-limpar-exames">Limpar tudo</button>
               <p class="status" id="status-exames" role="status" aria-live="polite"></p>
             </div>
@@ -493,6 +501,60 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ===================== PAGAMENTO (janela) ===================== -->
+  <div class="modal-fundo" id="modal-pagamento" hidden>
+    <form class="modal" id="form-pagamento" role="dialog" aria-modal="true" aria-labelledby="pg-titulo" autocomplete="off" novalidate>
+      <div class="modal-topo">
+        <div>
+          <h2 id="pg-titulo">Pagamento</h2>
+          <p class="sub" id="pg-descricao"></p>
+        </div>
+        <button type="button" class="btn-icone" data-pg-cancelar aria-label="Fechar">✕</button>
+      </div>
+
+      <ul class="pg-itens" id="pg-itens"></ul>
+
+      <div class="pg-total">
+        <label for="pg-valor">Total a pagar</label>
+        <div class="pg-total-valor">
+          <span>R$</span><input id="pg-valor" class="input-valor" inputmode="decimal" placeholder="0,00">
+        </div>
+      </div>
+
+      <fieldset class="pg-formas">
+        <legend>Forma de pagamento *</legend>
+        <div class="segmentado">
+          <label><input type="radio" name="pgForma" value="PIX"><span>Pix</span></label>
+          <label><input type="radio" name="pgForma" value="CREDITO"><span>Crédito</span></label>
+          <label><input type="radio" name="pgForma" value="DEBITO"><span>Débito</span></label>
+          <label><input type="radio" name="pgForma" value="DINHEIRO"><span>Dinheiro</span></label>
+        </div>
+      </fieldset>
+
+      <div class="pg-campos" id="pg-campos-credito" hidden>
+        <div><label for="pg-parcelas">Parcelas</label><select id="pg-parcelas"></select></div>
+        <div><label for="pg-nsu-credito">Nº autorização / NSU</label><input id="pg-nsu-credito" maxlength="30"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-debito" hidden>
+        <div><label for="pg-nsu-debito">Nº autorização / NSU</label><input id="pg-nsu-debito" maxlength="30"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-pix" hidden>
+        <div><label for="pg-id-pix">ID da transação Pix</label><input id="pg-id-pix" maxlength="40"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-dinheiro" hidden>
+        <div><label for="pg-recebido">Valor recebido (R$) *</label><input id="pg-recebido" class="input-valor" inputmode="decimal" placeholder="0,00"></div>
+        <div><span class="rotulo-troco">Troco</span><strong class="troco" id="pg-troco">R$ 0,00</strong></div>
+      </div>
+
+      <p class="pg-erro" id="pg-erro" role="alert"></p>
+
+      <div class="acoes">
+        <button type="button" class="btn" data-pg-cancelar>Cancelar</button>
+        <button type="submit" class="btn-primario"><svg class="i"><use href="#i-dollar"/></svg>Confirmar pagamento</button>
+      </div>
+    </form>
   </div>
 
   <script src="js/app.js"></script>

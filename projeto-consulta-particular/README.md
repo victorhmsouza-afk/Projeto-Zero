@@ -56,3 +56,17 @@ e `salvarTabelaPrecos()` em `js/app.js`.
   Na lista de atendimentos de PS, o botão **Exames** abre a requisição já vinculada àquele atendimento
   (aparece no quadro **Origem** da tela de Exames e vai no campo `origem` ao salvar).
 - Cada aba tem seus setores (`carregarSetores()`) e seus atendimentos (`carregarAtendimentosAnteriores()`, filtrando por `estado.modalidade`).
+
+## Pagamento obrigatório
+
+Nada é concluído sem pagamento:
+
+- **Consulta:** escolha paciente, setor e médico. O botão **Pagar e abrir consulta** abre a janela de pagamento;
+  a consulta só é aberta (`registrarAtendimento(dados)`) depois que o pagamento é confirmado.
+- **Exames:** o botão **Pagar e salvar requisição** abre a janela com os itens e o total;
+  a requisição só é salva (`salvarRequisicaoExames(requisicao)`) depois do pagamento.
+- **Pronto Socorro:** o atendimento abre sem cobrança; os exames pedidos pelo médico passam pelo pagamento acima.
+
+Formas: Pix (ID da transação), crédito (1x a 6x, NSU), débito (NSU) e dinheiro (valor recebido e troco).
+Use `abrirPagamento({ descricao, itens, valor, valorEditavel, desconto })` em qualquer tela: devolve o pagamento
+confirmado ou `null` se a pessoa cancelar.
