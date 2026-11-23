@@ -88,3 +88,13 @@ As etapas aparecem no topo da tela de Atendimento:
 - No Pronto Socorro, **Pedir exames** aparece desde o início.
 - O botão de cadastro ao lado da busca abre o **cadastro rápido** (`cadastrarPaciente()`): só o nome é obrigatório.
 - Cada atendimento pode ter o campo `exames` (quantidade já pedida), mostrado como "Pedir exames (2)".
+
+## Pagamento por médico e Financeiro
+
+- **Agendar consulta** também exige pagamento: o valor vem do médico escolhido e o botão **Pagar e agendar consulta**
+  abre a janela de pagamento. Só depois de confirmar chama `agendarConsulta(dados)`.
+- Todo pagamento confirmado (consulta ou exames) passa por `registrarPagamento(pagamento)`, com
+  `pagamento.contexto = { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }`. Grave ali o recebimento.
+- O **Financeiro** mostra os totais por forma de pagamento, o quadro **Recebido por médico** (consultas, exames e total)
+  e a lista de recebimentos. Basta chamar `renderFinanceiro(lista)` com
+  `[{ data, paciente, tipo, medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]`.

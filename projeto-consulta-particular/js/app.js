@@ -319,16 +319,43 @@ function renderMedicos(medicos) {
   $('#vazio-medicos').hidden = medicos.length > 0;
 }
 
+// recebimentos: [{ data, paciente, tipo: 'CONSULTA' | 'EXAMES', medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]
 function renderFinanceiro(recebimentos) {
+  const nomeTipo = { CONSULTA: 'Consulta', EXAMES: 'Exames' };
   $('#tabela-financeiro').innerHTML = recebimentos.map((r) => `
     <tr>
       <td>${formatarData(r.data)}</td>
       <td>${esc(r.paciente)}</td>
+      <td>${esc(nomeTipo[r.tipo] || r.tipo || '')}</td>
       <td>${esc(r.medico)}</td>
-      <td>${esc(r.formaPagamento)}</td>
+      <td>${esc(NOMES_FORMA[r.formaPagamento] || r.formaPagamento)}</td>
       <td>${formatarMoeda(r.valor)}</td>
     </tr>`).join('');
   $('#vazio-financeiro').hidden = recebimentos.length > 0;
+
+  // Totais por forma de pagamento
+  const soma = (filtro) => recebimentos.filter(filtro).reduce((t, r) => t + Number(r.valor || 0), 0);
+  $('#fin-total').textContent = formatarMoeda(soma(() => true));
+  $('#fin-pix').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'PIX'));
+  $('#fin-cartao').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'CREDITO' || r.formaPagamento === 'DEBITO'));
+  $('#fin-dinheiro').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'DINHEIRO'));
+
+  // Recebido por médico
+  const porMedico = {};
+  recebimentos.forEach((r) => {
+    const m = (porMedico[r.medico || 'Sem médico'] ||= { consultas: 0, exames: 0, total: 0 });
+    if (r.tipo === 'EXAMES') m.exames += Number(r.valor || 0); else m.consultas += Number(r.valor || 0);
+    m.total += Number(r.valor || 0);
+  });
+  const linhas = Object.entries(porMedico).sort((a, b) => b[1].total - a[1].total);
+  $('#tabela-fin-medicos').innerHTML = linhas.map(([medico, v]) => `
+    <tr>
+      <td>${esc(medico)}</td>
+      <td>${formatarMoeda(v.consultas)}</td>
+      <td>${formatarMoeda(v.exames)}</td>
+      <td><strong>${formatarMoeda(v.total)}</strong></td>
+    </tr>`).join('');
+  $('#vazio-fin-medicos').hidden = linhas.length > 0;
 }
 
 // =========================================================
@@ -502,6 +529,7 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
       itens: [{ nome: `Consulta · ${m?.nome || 'médico'} · ${setor}`, valor: m?.valorConsulta || 0 }],
       valor: m?.valorConsulta || 0,
       valorEditavel: true,
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, medico: m?.nome || '' },
     });
     if (!pagamento) return; // cancelou: a consulta NÃO é aberta
     dados.medico = m;
@@ -527,8 +555,11 @@ async function registrarAtendimento(dados) {
 // =========================================================
 let resolverPagamento = null;
 
-function abrirPagamento({ descricao = '', itens = [], valor = 0, valorEditavel = false, desconto = 0 } = {}) {
+let contextoPagamento = null;
+
+function abrirPagamento({ descricao = '', itens = [], valor = 0, valorEditavel = false, desconto = 0, contexto = null } = {}) {
   const f = $('#form-pagamento');
+  contextoPagamento = contexto; // { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }
   f.reset();
   $('#pg-descricao').textContent = descricao;
   $('#pg-itens').innerHTML = itens.map((i) => `<li><span>${esc(i.nome)}</span><span>${formatarMoeda(i.valor)}</span></li>`).join('')
@@ -571,7 +602,7 @@ document.querySelectorAll('[data-pg-cancelar]').forEach((b) => b.addEventListene
 $('#modal-pagamento').addEventListener('click', (e) => { if (e.target.id === 'modal-pagamento') fecharPagamento(null); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-pagamento').hidden) fecharPagamento(null); });
 
-$('#form-pagamento').addEventListener('submit', (e) => {
+$('#form-pagamento').addEventListener('submit', async (e) => {
   e.preventDefault();
   const valor = lerMoeda($('#pg-valor').value);
   const forma = formaPagamentoAtual();
@@ -588,10 +619,18 @@ $('#form-pagamento').addEventListener('submit', (e) => {
     if (recebido < valor) return erro(`Valor recebido menor que o total (${formatarMoeda(valor)}).`);
     Object.assign(pagamento, { recebido, troco: Math.round((recebido - valor) * 100) / 100 });
   }
-  // TODO: se quiser, registrar o pagamento no seu sistema aqui (ou junto com o atendimento/requisição)
+  if (contextoPagamento) pagamento.contexto = contextoPagamento;
   estado.ultimoPagamento = pagamento;
+  await registrarPagamento(pagamento);
   fecharPagamento(pagamento);
 });
+
+// Todo pagamento confirmado passa por aqui (consulta ou exames).
+// pagamento.contexto = { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }
+async function registrarPagamento(pagamento) {
+  // TODO: gravar o recebimento no seu sistema (é ele que alimenta o Financeiro)
+  console.log('Pagamento confirmado', pagamento);
+}
 
 const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
 function descreverPagamento(p) {
@@ -1055,6 +1094,11 @@ $('#btn-salvar-exames').addEventListener('click', async () => {
     valor: t.total,
     desconto: t.desconto,
     valorEditavel: false,
+    contexto: {
+      tipo: 'EXAMES',
+      paciente: estado.paciente.nome,
+      medico: ($('#ex-medico').value && $('#ex-medico').selectedOptions[0].text) || estado.vinculoExames?.medico || '',
+    },
   });
   if (!pagamento) {
     $('#status-exames').textContent = 'Pagamento cancelado. A requisição não foi salva.';
@@ -1124,13 +1168,39 @@ $('#pac-cpf').addEventListener('blur', (e) => {
   console.log('Buscar CPF', e.target.value);
 });
 
-$('#form-consulta').addEventListener('submit', (e) => {
+// Agendar consulta: o pagamento é feito na hora de agendar
+$('#form-consulta').addEventListener('submit', async (e) => {
   e.preventDefault();
   const dados = Object.fromEntries(new FormData(e.target));
-  // TODO: validar e enviar os dados para salvar a consulta
-  console.log('Nova consulta', dados);
-  $('#status-consulta').textContent = 'Formulário pronto. Falta ligar ao salvamento (TODO em app.js).';
+  const valor = lerMoeda(dados.valor);
+  const medico = $('#cons-medico').selectedOptions[0]?.text || '';
+  if (!valor) {
+    $('#status-consulta').textContent = 'Informe o valor da consulta.';
+    return;
+  }
+  const pagamento = await abrirPagamento({
+    descricao: `Consulta particular · ${dados.nome}`,
+    itens: [{ nome: `Consulta · ${medico} · ${formatarData(dados.data)} às ${dados.horario}`, valor }],
+    valor,
+    valorEditavel: true,
+    contexto: { tipo: 'CONSULTA', paciente: dados.nome, medico },
+  });
+  if (!pagamento) {
+    $('#status-consulta').textContent = 'Pagamento cancelado. A consulta não foi agendada.';
+    return;
+  }
+  dados.valor = pagamento.valor;
+  dados.pagamento = pagamento;
+  await agendarConsulta(dados);
+  e.target.reset();
+  $('#status-consulta').textContent = `Consulta agendada e paga: ${descreverPagamento(pagamento)}.`;
 });
+
+async function agendarConsulta(dados) {
+  // TODO: salvar a consulta agendada. dados.pagamento sempre existe aqui (já foi confirmado).
+  //   dados = { cpf, nome, nascimento, telefone, email, especialidade, medico, data, horario, valor, observacoes, pagamento }
+  console.log('Agendar consulta', dados);
+}
 
 $('#form-consulta').addEventListener('reset', () => {
   $('#status-consulta').textContent = '';

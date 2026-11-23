@@ -293,6 +293,9 @@ a.btn { text-decoration: none; color: inherit; }
 #tela-atendimento .tabela-card td:last-child { position: sticky; right: 0; background: var(--branco); box-shadow: -8px 0 8px -8px #0000001f; }
 #tela-atendimento .tabela-card th:last-child { background: #fafbfb; }
 
+.nota-pagamento { display: flex; align-items: flex-end; padding-bottom: 10px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
 /* Cadastro rápido */
 .cadastro-rapido { margin-top: 12px; padding: 12px; border: 1px dashed var(--verde); border-radius: 8px; display: flex; flex-direction: column; gap: 10px; background: #fbfdfc; }
 .cadastro-rapido[hidden] { display: none; }

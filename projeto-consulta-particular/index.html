@@ -430,20 +430,12 @@
 
           <h2 class="full">Pagamento</h2>
           <div><label for="pag-valor">Valor (R$) *</label><input id="pag-valor" name="valor" required inputmode="decimal" placeholder="0,00"></div>
-          <div><label for="pag-forma">Forma de pagamento *</label>
-            <select id="pag-forma" name="formaPagamento" required>
-              <option value="">Selecione</option>
-              <option value="PIX">Pix</option>
-              <option value="CREDITO">Cartão de crédito</option>
-              <option value="DEBITO">Cartão de débito</option>
-              <option value="DINHEIRO">Dinheiro</option>
-            </select>
-          </div>
+          <div class="nota-pagamento"><span class="dica">O valor vem do médico escolhido. A forma de pagamento (Pix, cartão ou dinheiro) é escolhida na janela de pagamento, ao agendar.</span></div>
           <div class="full"><label for="cons-obs">Observações</label><textarea id="cons-obs" name="observacoes" maxlength="1000"></textarea></div>
 
           <div class="full acoes">
             <button type="reset" class="btn">Limpar</button>
-            <button type="submit" class="btn-primario">Agendar consulta</button>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-dollar"/></svg>Pagar e agendar consulta</button>
           </div>
           <p class="full status" id="status-consulta" role="status" aria-live="polite"></p>
         </form>
@@ -496,9 +488,21 @@
           <button type="submit" class="btn-primario">Filtrar</button>
         </form>
         <div class="card tabela-card">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-steth"/></svg>Recebido por médico</h2></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Data</th><th>Paciente</th><th>Médico</th><th>Forma</th><th>Valor</th></tr></thead>
+              <thead><tr><th>Médico</th><th>Consultas</th><th>Exames</th><th>Total recebido</th></tr></thead>
+              <tbody id="tabela-fin-medicos"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-fin-medicos">Nenhum recebimento no período.</p>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-receipt"/></svg>Recebimentos</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Médico</th><th>Forma</th><th>Valor</th></tr></thead>
               <tbody id="tabela-financeiro"></tbody>
             </table>
           </div>
