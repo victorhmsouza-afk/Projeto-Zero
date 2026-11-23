@@ -508,7 +508,7 @@
           <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-receipt"/></svg>Recebimentos</h2></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Médico</th><th>Forma</th><th>Valor</th></tr></thead>
+              <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Médico</th><th>Forma</th><th>Valor</th><th>Recibo</th></tr></thead>
               <tbody id="tabela-financeiro"></tbody>
             </table>
           </div>
@@ -529,6 +529,17 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ===================== RECIBO (janela) ===================== -->
+  <div class="modal-fundo" id="modal-recibo" hidden>
+    <div class="modal modal-recibo" role="dialog" aria-modal="true" aria-label="Recibo de pagamento">
+      <div id="recibo-area"></div>
+      <div class="acoes nao-imprimir">
+        <button type="button" class="btn" id="btn-fechar-recibo">Fechar</button>
+        <button type="button" class="btn-primario" id="btn-imprimir-recibo"><svg class="i"><use href="#i-receipt"/></svg>Imprimir recibo</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===================== PAGAMENTO (janela) ===================== -->

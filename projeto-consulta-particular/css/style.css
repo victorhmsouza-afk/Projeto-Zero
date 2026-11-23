@@ -310,6 +310,40 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .valor-pago { display: flex; align-items: center; gap: 6px; }
 #linha-medico[hidden], #linha-valor-ps[hidden] { display: none; }
 
+/* ---------- Recibo ---------- */
+.modal-recibo { width: min(640px, 100%); }
+.recibo { color: #1b1b1b; font-size: 13px; line-height: 1.5; }
+.recibo-topo { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #1b1b1b; }
+.recibo-empresa strong { display: block; font-size: 15px; }
+.recibo-empresa span { display: block; color: #555; font-size: 12px; }
+.recibo-numero { text-align: right; }
+.recibo-numero h2 { font-size: 20px; letter-spacing: 3px; margin: 0; }
+.recibo-numero span { display: block; font-size: 12px; color: #555; font-variant-numeric: tabular-nums; }
+.recibo-numero .recibo-valor { display: inline-block; margin-top: 6px; padding: 4px 10px; border: 2px solid #1b1b1b; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.recibo-texto { margin: 14px 0; font-size: 14px; line-height: 1.7; }
+.recibo table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.recibo th { background: none; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 0; border-bottom: 1px solid #999; }
+.recibo td { padding: 6px 0; border-bottom: 1px dotted #bbb; font-size: 13px; white-space: normal; }
+.recibo td:last-child, .recibo th:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.recibo tfoot td { border-bottom: 0; }
+.recibo tfoot tr.total td { font-weight: 700; font-size: 14px; border-top: 1px solid #1b1b1b; padding-top: 8px; }
+.recibo-pagamento { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding: 10px 12px; background: #f4f6f5; border-radius: 6px; font-size: 12.5px; }
+.recibo-pagamento span { color: #555; }
+.recibo-assinatura { margin-top: 36px; display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+.recibo-assinatura div { flex: 1; text-align: center; font-size: 12px; color: #555; }
+.recibo-assinatura div::before { content: ""; display: block; border-top: 1px solid #1b1b1b; margin-bottom: 4px; }
+.recibo-rodape { margin: 16px 0 0; font-size: 11px; color: #666; text-align: center; }
+.recibo-vazio { padding: 20px 0; text-align: center; color: var(--muted); }
+
+@media print {
+  body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  #modal-recibo, #modal-recibo * { visibility: visible !important; }
+  #modal-recibo { position: absolute; inset: 0; background: none; padding: 0; display: block; }
+  .modal-recibo { box-shadow: none; width: 100%; padding: 0; }
+  .nao-imprimir { display: none !important; }
+}
+
 /* ---------- Confirmação ---------- */
 .confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
 .confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
@@ -338,6 +372,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .btn { flex: 1; justify-content: center; }
   .campos-exame { flex-direction: column; min-width: 100%; }
   .pg-campos { grid-template-columns: 1fr; }
+  .recibo-topo { flex-direction: column; }
+  .recibo-numero { text-align: left; }
+  .recibo-pagamento { grid-template-columns: 1fr; }
   .etapas { grid-template-columns: 1fr 1fr; row-gap: 14px; }
   .etapas li::after { display: none; }
   .pg-total { flex-direction: column; align-items: flex-start; }

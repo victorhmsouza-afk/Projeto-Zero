@@ -9,6 +9,14 @@
 const CONFIG = {
   // TODO: endereço da sua API quando ela existir
   apiUrl: '',
+  // Dados que aparecem no cabeçalho do recibo (TODO: preencher com os dados reais)
+  empresa: {
+    nome: 'Nome do hospital',
+    cnpj: '00.000.000/0000-00',
+    endereco: 'Endereço da unidade',
+    telefone: '(00) 0000-0000',
+  },
+  reciboAutomatico: true, // abre o recibo logo depois de cada pagamento
 };
 
 // Estado da tela de atendimento
@@ -220,6 +228,11 @@ function acoesAtendimento(a) {
   const botaoExames = (destaque) =>
     `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="Exames pedidos pelo médico neste atendimento">Pedir exames${qtd}</button>`;
   // Consulta e Pronto Socorro seguem o mesmo fluxo: pago → consulta → exames
+  const recibo = a.pagamento ? `<button class="btn-acao" data-recibo-atend="${n}">Recibo</button>` : '';
+  return recibo + acaoFluxo(a, n, botaoExames);
+}
+
+function acaoFluxo(a, n, botaoExames) {
   if (!consultaConcluida(a)) {
     return a.pago
       ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
@@ -323,7 +336,9 @@ function renderFinanceiro(recebimentos) {
       <td>${esc(r.medico)}</td>
       <td>${esc(NOMES_FORMA[r.formaPagamento] || r.formaPagamento)}</td>
       <td>${formatarMoeda(r.valor)}</td>
+      <td>${r.pagamento ? `<button class="btn-acao" data-recibo-fin="${recebimentos.indexOf(r)}">Recibo</button>` : ''}</td>
     </tr>`).join('');
+  estado.recebimentosTela = recebimentos;
   $('#vazio-financeiro').hidden = recebimentos.length > 0;
 
   // Totais por forma de pagamento
@@ -540,7 +555,7 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
       itens: [{ nome: `Consulta · ${m?.nome || 'médico'} · ${setor}`, valor: m?.valorConsulta || 0 }],
       valor: m?.valorConsulta || 0,
       valorEditavel: true,
-      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, medico: m?.nome || '' },
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: m?.nome || '' },
     });
     if (!pagamento) return; // cancelou: a consulta NÃO é aberta
     dados.medico = m;
@@ -554,7 +569,7 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
       itens: [{ nome: `Consulta de emergência · ${setor}`, valor }],
       valor,
       valorEditavel: true,
-      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, medico: setor },
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: setor },
     });
     if (!pagamento) return; // cancelou: o paciente NÃO é liberado
     dados.valor = pagamento.valor;
@@ -581,10 +596,12 @@ async function registrarAtendimento(dados) {
 let resolverPagamento = null;
 
 let contextoPagamento = null;
+let itensPagamento = null;
 
 function abrirPagamento({ descricao = '', itens = [], valor = 0, valorEditavel = false, desconto = 0, contexto = null } = {}) {
   const f = $('#form-pagamento');
-  contextoPagamento = contexto; // { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }
+  contextoPagamento = contexto; // { tipo: 'CONSULTA' | 'EXAMES', paciente, cpf, medico }
+  itensPagamento = { descricao, itens, desconto };
   f.reset();
   $('#pg-descricao').textContent = descricao;
   $('#pg-itens').innerHTML = itens.map((i) => `<li><span>${esc(i.nome)}</span><span>${formatarMoeda(i.valor)}</span></li>`).join('')
@@ -645,17 +662,154 @@ $('#form-pagamento').addEventListener('submit', async (e) => {
     Object.assign(pagamento, { recebido, troco: Math.round((recebido - valor) * 100) / 100 });
   }
   if (contextoPagamento) pagamento.contexto = contextoPagamento;
+  Object.assign(pagamento, itensPagamento); // descricao, itens, desconto (para o recibo)
   estado.ultimoPagamento = pagamento;
-  await registrarPagamento(pagamento);
+  const registro = await registrarPagamento(pagamento);
+  pagamento.numeroRecibo = registro?.numeroRecibo || gerarNumeroRecibo();
   fecharPagamento(pagamento);
+  if (CONFIG.reciboAutomatico) mostrarRecibo(pagamento);
 });
+
+// Número provisório do recibo. O ideal é o seu sistema devolver o número em registrarPagamento().
+function gerarNumeroRecibo() {
+  const d = new Date();
+  const data = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  return `${data}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+}
 
 // Todo pagamento confirmado passa por aqui (consulta ou exames).
 // pagamento.contexto = { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }
 async function registrarPagamento(pagamento) {
-  // TODO: gravar o recebimento no seu sistema (é ele que alimenta o Financeiro)
+  // TODO: gravar o recebimento no seu sistema (é ele que alimenta o Financeiro).
+  //   Se o sistema gerar o número do recibo, devolva { numeroRecibo: '...' }.
   console.log('Pagamento confirmado', pagamento);
+  return null;
 }
+
+// =========================================================
+//   RECIBO
+// =========================================================
+
+// Valor por extenso em reais: 1250.5 → "mil duzentos e cinquenta reais e cinquenta centavos"
+function valorPorExtenso(valor) {
+  const U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze',
+    'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  const ate999 = (n) => {
+    if (n === 100) return 'cem';
+    const partes = [];
+    const c = Math.floor(n / 100), r = n % 100;
+    if (c) partes.push(C[c]);
+    if (r) partes.push(r < 20 ? U[r] : D[Math.floor(r / 10)] + (r % 10 ? ' e ' + U[r % 10] : ''));
+    return partes.join(' e ');
+  };
+  const inteiro = (n) => {
+    if (n === 0) return 'zero';
+    const mi = Math.floor(n / 1e6), mil = Math.floor((n % 1e6) / 1000), resto = n % 1000;
+    const grupos = []; // [valor do grupo, texto]
+    if (mi) grupos.push([mi, mi === 1 ? 'um milhão' : `${ate999(mi)} milhões`]);
+    if (mil) grupos.push([mil, mil === 1 ? 'mil' : `${ate999(mil)} mil`]);
+    if (resto) grupos.push([resto, ate999(resto)]);
+    // "e" antes do último grupo quando ele é redondo: "mil e cem", "dois milhões e quinhentos mil"
+    const [ultimoValor] = grupos[grupos.length - 1];
+    if (grupos.length > 1 && (ultimoValor < 100 || ultimoValor % 100 === 0)) grupos[grupos.length - 1][1] = 'e ' + grupos[grupos.length - 1][1];
+    return grupos.map((g) => g[1]).join(' ');
+  };
+  const centavosTotal = Math.round(Number(valor || 0) * 100);
+  const reais = Math.floor(centavosTotal / 100), centavos = centavosTotal % 100;
+  const parteReais = reais
+    ? `${inteiro(reais)}${reais % 1e6 === 0 && reais >= 1e6 ? ' de' : ''} ${reais === 1 ? 'real' : 'reais'}` : '';
+  const parteCentavos = centavos ? `${ate999(centavos)} ${centavos === 1 ? 'centavo' : 'centavos'}` : '';
+  if (parteReais && parteCentavos) return `${parteReais} e ${parteCentavos}`;
+  return parteReais || parteCentavos || 'zero real';
+}
+
+function dataHoraBR(iso) {
+  const d = new Date(iso || Date.now());
+  return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function mostrarRecibo(p) {
+  const area = $('#recibo-area');
+  if (!p) {
+    area.innerHTML = '<p class="recibo-vazio">Nenhum pagamento feito ainda. O recibo aparece aqui depois do primeiro pagamento.</p>';
+  } else {
+    const e = CONFIG.empresa;
+    const ctx = p.contexto || {};
+    const itens = p.itens?.length ? p.itens : [{ nome: p.descricao || 'Pagamento', valor: p.valor }];
+    const subtotal = itens.reduce((t, i) => t + Number(i.valor || 0), 0);
+    const referente = ctx.tipo === 'EXAMES' ? 'exames particulares' : (p.descricao || '').toLowerCase().includes('pronto socorro')
+      ? 'consulta de emergência (Pronto Socorro)' : 'consulta particular';
+    const detalhes = [
+      ['Forma de pagamento', NOMES_FORMA[p.forma] || p.forma],
+      p.parcelas > 1 && ['Parcelas', `${p.parcelas}x de ${formatarMoeda(p.valor / p.parcelas)}`],
+      p.autorizacao && ['Autorização / NSU', p.autorizacao],
+      p.idTransacao && ['ID da transação Pix', p.idTransacao],
+      p.forma === 'DINHEIRO' && ['Valor recebido', formatarMoeda(p.recebido)],
+      p.forma === 'DINHEIRO' && ['Troco', formatarMoeda(p.troco || 0)],
+      ctx.medico && [ctx.tipo === 'EXAMES' ? 'Médico solicitante' : 'Médico / setor', ctx.medico],
+      ctx.atendimento && ['Atendimento', ctx.atendimento],
+    ].filter(Boolean);
+
+    area.innerHTML = `
+      <div class="recibo">
+        <div class="recibo-topo">
+          <div class="recibo-empresa">
+            <strong>${esc(e.nome)}</strong>
+            <span>CNPJ ${esc(e.cnpj)}</span>
+            <span>${esc(e.endereco)}</span>
+            <span>Tel. ${esc(e.telefone)}</span>
+          </div>
+          <div class="recibo-numero">
+            <h2>RECIBO</h2>
+            <span>Nº ${esc(p.numeroRecibo || '—')}</span>
+            <span>${dataHoraBR(p.dataHora)}</span>
+            <span class="recibo-valor">${formatarMoeda(p.valor)}</span>
+          </div>
+        </div>
+
+        <p class="recibo-texto">
+          Recebemos de <strong>${esc(ctx.paciente || 'paciente')}</strong>${ctx.cpf ? `, CPF ${esc(ctx.cpf)},` : ''}
+          a importância de <strong>${formatarMoeda(p.valor)}</strong> (${valorPorExtenso(p.valor)}),
+          referente a ${referente}, conforme os itens abaixo.
+        </p>
+
+        <table>
+          <thead><tr><th>Descrição</th><th>Valor</th></tr></thead>
+          <tbody>${itens.map((i) => `<tr><td>${esc(i.nome)}</td><td>${formatarMoeda(i.valor)}</td></tr>`).join('')}</tbody>
+          <tfoot>
+            ${p.desconto ? `<tr><td>Subtotal</td><td>${formatarMoeda(subtotal)}</td></tr>
+                            <tr><td>Desconto</td><td>− ${formatarMoeda(p.desconto)}</td></tr>` : ''}
+            <tr class="total"><td>Total pago</td><td>${formatarMoeda(p.valor)}</td></tr>
+          </tfoot>
+        </table>
+
+        <div class="recibo-pagamento">
+          ${detalhes.map(([k, v]) => `<div><span>${esc(k)}:</span> <strong>${esc(v)}</strong></div>`).join('')}
+        </div>
+
+        <div class="recibo-assinatura">
+          <div>${esc($('#usuario-nome').textContent || 'Atendente')}<br>Atendente</div>
+          <div>Assinatura / carimbo<br>Hospital</div>
+        </div>
+
+        <p class="recibo-rodape">Este recibo comprova o pagamento e não substitui a nota fiscal.</p>
+      </div>`;
+  }
+  $('#btn-imprimir-recibo').hidden = !p;
+  $('#modal-recibo').hidden = false;
+  $('#btn-fechar-recibo').focus();
+}
+
+function fecharRecibo() { $('#modal-recibo').hidden = true; }
+$('#btn-fechar-recibo').addEventListener('click', fecharRecibo);
+$('#modal-recibo').addEventListener('click', (e) => { if (e.target.id === 'modal-recibo') fecharRecibo(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-recibo').hidden) fecharRecibo(); });
+$('#btn-imprimir-recibo').addEventListener('click', () => {
+  // TODO: se usar impressora térmica ou outro modelo, troque aqui
+  window.print();
+});
 
 const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
 function descreverPagamento(p) {
@@ -690,13 +844,20 @@ async function registrarConclusaoConsulta(atendimento) {
   console.log('Concluir consulta', atendimento);
 }
 
+// Botões "Recibo" (lista de atendimentos e Financeiro)
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-recibo-atend], [data-recibo-fin]');
+  if (!b) return;
+  const p = b.dataset.reciboAtend
+    ? estado.anteriores.find((x) => String(x.numero) === b.dataset.reciboAtend)?.pagamento
+    : estado.recebimentosTela?.[b.dataset.reciboFin]?.pagamento;
+  mostrarRecibo(p || null);
+});
+
 // Botão "Exames" do topo: requisição avulsa, sem vínculo
 $('#btn-exames-avulso').addEventListener('click', () => { estado.vinculoExames = null; });
 
-$('#btn-recibo').addEventListener('click', () => {
-  // TODO: gerar/imprimir recibo do último pagamento (estado.ultimoPagamento)
-  console.log('Recibo de consulta');
-});
+$('#btn-recibo').addEventListener('click', () => mostrarRecibo(estado.ultimoPagamento));
 
 $('#btn-etiqueta').addEventListener('click', () => {
   // TODO: imprimir etiqueta avulsa
@@ -1122,6 +1283,8 @@ $('#btn-salvar-exames').addEventListener('click', async () => {
     contexto: {
       tipo: 'EXAMES',
       paciente: estado.paciente.nome,
+      cpf: estado.paciente.cpf,
+      atendimento: estado.vinculoExames?.numero || '',
       medico: ($('#ex-medico').value && $('#ex-medico').selectedOptions[0].text) || estado.vinculoExames?.medico || '',
     },
   });
@@ -1208,7 +1371,7 @@ $('#form-consulta').addEventListener('submit', async (e) => {
     itens: [{ nome: `Consulta · ${medico} · ${formatarData(dados.data)} às ${dados.horario}`, valor }],
     valor,
     valorEditavel: true,
-    contexto: { tipo: 'CONSULTA', paciente: dados.nome, medico },
+    contexto: { tipo: 'CONSULTA', paciente: dados.nome, cpf: dados.cpf, medico },
   });
   if (!pagamento) {
     $('#status-consulta').textContent = 'Pagamento cancelado. A consulta não foi agendada.';
@@ -1288,7 +1451,7 @@ $('#btn-sair').addEventListener('click', () => {
 // Clique nos botões "Abrir / Ver / Editar" das tabelas
 document.addEventListener('click', (e) => {
   const botao = e.target.closest('.btn-acao');
-  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend) return;
+  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend || botao.dataset.reciboAtend || botao.dataset.reciboFin) return;
   // TODO: abrir detalhes do registro botao.dataset.id
   console.log('Ação no registro', botao.dataset.id);
 });

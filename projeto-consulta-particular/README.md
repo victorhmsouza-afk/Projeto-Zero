@@ -100,3 +100,15 @@ No Pronto Socorro o valor vem do setor: `preencherSetores([{ id, nome, valorCons
 - O **Financeiro** mostra os totais por forma de pagamento, o quadro **Recebido por médico** (consultas, exames e total)
   e a lista de recebimentos. Basta chamar `renderFinanceiro(lista)` com
   `[{ data, paciente, tipo, medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]`.
+
+## Recibo de pagamento
+
+- Abre sozinho logo depois de cada pagamento confirmado (`CONFIG.reciboAutomatico`).
+- Também abre pelo botão **Recibo de consulta** no topo do Atendimento (último pagamento), pelo botão **Recibo**
+  em cada atendimento pago e pelo botão **Recibo** no Financeiro.
+- Mostra os dados do hospital (`CONFIG.empresa`, preencha com os dados reais), número, data e hora, paciente e CPF,
+  valor **por extenso**, itens, desconto, forma de pagamento (parcelas, NSU, ID Pix, troco) e linha de assinatura.
+- **Imprimir recibo** usa `window.print()` e imprime só o recibo.
+- O número do recibo é provisório (data e hora). Se o seu sistema gerar o número, devolva `{ numeroRecibo }` em `registrarPagamento()`.
+- Para o botão Recibo aparecer na lista e no Financeiro, cada atendimento ou recebimento precisa trazer o campo `pagamento`.
+- Não existe cancelamento nem estorno de pagamento.
