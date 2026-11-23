@@ -112,3 +112,9 @@ No Pronto Socorro o valor vem do setor: `preencherSetores([{ id, nome, valorCons
 - O número do recibo é provisório (data e hora). Se o seu sistema gerar o número, devolva `{ numeroRecibo }` em `registrarPagamento()`.
 - Para o botão Recibo aparecer na lista e no Financeiro, cada atendimento ou recebimento precisa trazer o campo `pagamento`.
 - Não existe cancelamento nem estorno de pagamento.
+
+## Versão de demonstração
+
+`demonstracao.html` é o sistema com **dados fictícios** (pacientes, médicos, setores e valores), igual ao link de teste.
+Abra com dois cliques para testar o fluxo sem precisar da sua lógica. Ela começa do zero e nada é salvo de verdade.
+O sistema de verdade continua sendo o `index.html` (com `css/style.css` e `js/app.js`).

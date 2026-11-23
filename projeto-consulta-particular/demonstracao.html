@@ -1,0 +1,2629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- VERSÃO DE DEMONSTRAÇÃO: sistema + dados fictícios. Gerada a partir de index.html, css/style.css e js/app.js. -->
+</head>
+<body>
+<title>Consulta Particular</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* =========================================================
+   Consulta Particular — estilos
+   Layout de "hub": barra superior, menu lateral claro e
+   cartões brancos com borda fina.
+   ========================================================= */
+:root {
+  --verde: #2f7d6a;
+  --verde-escuro: #236152;
+  --verde-claro: #e4f1ec;
+  --verde-desativado: #8fbfb1;
+  --texto: #1f2a27;
+  --texto-2: #4b5753;
+  --muted: #7b8682;
+  --linha: #e3e7e5;
+  --fundo: #f6f7f7;
+  --fundo-menu: #f3f5f4;
+  --branco: #fff;
+  --perigo: #b3261e;
+  --topbar-altura: 52px;
+  --sidebar-largura: 224px;
+  font-family: 'Segoe UI', Inter, Arial, sans-serif;
+  color: var(--texto);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); font-size: 14px; }
+.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.i-sm { width: 14px; height: 14px; }
+.verde { color: var(--verde); }
+button { font: inherit; color: inherit; }
+
+/* ---------- Barra superior ---------- */
+.topbar {
+  height: var(--topbar-altura); background: var(--branco); border-bottom: 1px solid var(--linha);
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.marca { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15px; color: var(--texto); text-decoration: none; }
+.logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #3a8f7a, #23604f); color: #fff; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
+.topbar-direita { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.usuario { display: flex; align-items: center; gap: 8px; background: none; border: 0; border-left: 1px solid var(--linha); padding: 4px 6px 4px 14px; margin-left: 6px; cursor: pointer; color: var(--texto-2); }
+.usuario-nome { font-size: 13px; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--verde-claro); color: var(--verde-escuro); display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+
+.btn-icone { width: 34px; height: 34px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; cursor: pointer; color: var(--texto-2); }
+.btn-icone:hover { background: var(--fundo); }
+.btn-icone.borda { width: 40px; height: 40px; border: 1px solid var(--linha); background: var(--branco); }
+.btn-menu { display: none; }
+
+/* ---------- Estrutura ---------- */
+.app { display: flex; min-height: calc(100vh - var(--topbar-altura)); }
+main { flex: 1; min-width: 0; padding: 16px 24px 24px; }
+
+/* ---------- Menu lateral ---------- */
+.sidebar {
+  width: var(--sidebar-largura); flex-shrink: 0; background: var(--fundo-menu); border-right: 1px solid var(--linha);
+  padding: 18px 8px 10px; display: flex; flex-direction: column;
+  position: sticky; top: var(--topbar-altura); height: calc(100vh - var(--topbar-altura)); overflow-y: auto;
+}
+.sidebar-label { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 0 10px 12px; font-weight: 600; }
+.menu, .sidebar-footer { display: flex; flex-direction: column; gap: 2px; }
+.menu a, .sidebar-footer a, .sidebar-footer button {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px;
+  color: var(--texto-2); text-decoration: none; font-size: 13.5px; background: none; border: 0; cursor: pointer; text-align: left; width: 100%;
+  white-space: nowrap; overflow: hidden;
+}
+.menu a:hover, .sidebar-footer a:hover, .sidebar-footer button:hover { background: #e9eeec; }
+.menu a.ativo, .sidebar-footer a.ativo { background: var(--verde-claro); color: var(--texto); font-weight: 500; }
+.menu a.ativo .i { color: var(--verde); }
+.sidebar-footer { margin-top: auto; border-top: 1px solid var(--linha); padding-top: 10px; }
+.sidebar-footer .recolher { font-size: 12px; color: var(--muted); }
+
+/* Menu recolhido (só ícones) */
+.sidebar.recolhida { width: 60px; }
+.sidebar.recolhida span, .sidebar.recolhida .sidebar-label { display: none; }
+.sidebar.recolhida .recolher .i { transform: rotate(180deg); }
+
+/* ---------- Telas ---------- */
+.tela { display: none; }
+.tela.ativa { display: block; }
+.cabecalho { margin: 4px 0 16px; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; letter-spacing: -.3px; }
+h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.sub { color: var(--muted); margin: 0; font-size: 13px; }
+
+/* ---------- Cartões ---------- */
+.card { background: var(--branco); border: 1px solid var(--linha); border-radius: 8px; padding: 14px 14px; min-width: 0; }
+.card-titulo { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
+.card-titulo small { font-size: 11px; color: var(--muted); font-weight: 400; }
+.card-titulo small:not(:empty)::before { content: '· '; }
+
+/* ---------- Tela de atendimento ---------- */
+.atendimento { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 12px; align-items: start; }
+.col-atendimento { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.busca-paciente { display: flex; gap: 8px; margin-top: 12px; }
+.campo-busca { flex: 1; display: flex; align-items: center; gap: 8px; border: 1px solid var(--linha); border-radius: 8px; padding: 0 12px; height: 40px; color: var(--muted); min-width: 0; }
+.campo-busca:focus-within { border-color: var(--verde); box-shadow: 0 0 0 3px var(--verde-claro); }
+.campo-busca input { border: 0; outline: 0; padding: 0; background: none; height: 100%; }
+.lista-resultados { list-style: none; margin: 10px 0 0; padding: 0; }
+.lista-resultados:empty { display: none; }
+.lista-resultados li { padding: 10px; border-radius: 7px; cursor: pointer; border-bottom: 1px solid var(--linha); }
+.lista-resultados li:hover { background: var(--fundo); }
+.lista-resultados small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.paciente-selecionado { margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--verde-claro); }
+.paciente-selecionado[hidden] { display: none; }
+
+.barra-abas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.abas { display: inline-flex; gap: 4px; background: #eceff0; border-radius: 9px; padding: 3px; }
+.aba { display: inline-flex; align-items: center; gap: 8px; background: var(--branco); border: 1px solid var(--linha); border-radius: 8px; padding: 9px 14px; font-size: 14px; }
+.abas .aba { background: none; border-color: transparent; color: var(--texto-2); cursor: pointer; padding: 7px 14px; }
+.abas .aba:hover { color: var(--texto); }
+.abas .aba.ativa { background: var(--branco); border-color: var(--linha); color: var(--texto); font-weight: 500; box-shadow: 0 1px 2px #0000000d; }
+.abas .aba.ativa .i { color: var(--verde); }
+.vinculo-acoes { display: flex; justify-content: flex-end; margin-top: 8px; }
+.btn-pequeno { padding: 5px 10px; font-size: 12px; }
+.barra-acoes { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.linha { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; min-height: 46px; }
+.linha .rotulo { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; margin: 0; font-weight: 400; }
+.linha .valor { font-weight: 400; font-size: 13px; }
+.select-wrap { width: 260px; }
+.select-wrap select { height: 32px; padding: 4px 10px; }
+.unidade { margin-left: auto; font-size: 12px; color: var(--muted); }
+.tracejado { border-style: dashed; min-height: 52px; }
+.tracejado strong { font-size: 14.5px; font-weight: 600; }
+.dica { color: var(--muted); font-size: 12px; }
+.tracejado .btn-primario { margin-left: auto; }
+
+.tabela-card { padding: 0; overflow: hidden; }
+.tabela-topo { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 14px; border-bottom: 1px solid var(--linha); }
+#tela-atendimento .tabela-card { min-height: calc(100vh - 380px); display: flex; flex-direction: column; }
+#tela-atendimento .tabela-card .vazio { margin: auto; }
+
+/* ---------- Tela de exames ---------- */
+.bloco { display: flex; flex-direction: column; gap: 12px; }
+.paciente-vazio { margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.paciente-vazio a { color: var(--verde); }
+.form-exame { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px; }
+.form-exame .segmentado { flex-basis: 100%; }
+.segmentado { display: inline-flex; background: var(--fundo); border: 1px solid var(--linha); border-radius: 8px; padding: 3px; gap: 3px; width: fit-content; }
+.segmentado label { margin: 0; font-weight: 400; cursor: pointer; position: relative; }
+.segmentado input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
+.segmentado span { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 6px; font-size: 13px; color: var(--texto-2); }
+.segmentado input:checked + span { background: var(--branco); color: var(--verde-escuro); font-weight: 600; box-shadow: 0 1px 3px #0001; }
+.segmentado input:focus-visible + span { outline: 2px solid var(--verde); }
+.campos-exame { display: flex; gap: 12px; flex: 1; min-width: 260px; }
+.campos-exame[hidden] { display: none; }
+.campos-exame > div { min-width: 170px; }
+.campos-exame .grow { flex: 1; }
+label small { font-weight: 400; color: var(--muted); }
+.form-exame > .btn-primario { height: 37px; }
+.form-exame .dica { flex-basis: 100%; margin: -2px 0 0; }
+.resumo-exames { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.resumo-exames div { background: var(--fundo); border-radius: 7px; padding: 10px 12px; }
+.resumo-exames span { display: block; font-size: 12px; color: var(--muted); }
+.resumo-exames strong { font-size: 22px; font-weight: 600; }
+.largo { width: 100%; justify-content: center; }
+.num-lab { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 6px; border-radius: 6px; background: var(--verde-claro); color: var(--verde-escuro); font-weight: 700; font-size: 12px; }
+.input-tabela { padding: 5px 8px; max-width: 200px; font-variant-numeric: tabular-nums; }
+.btn-remover { color: var(--perigo); }
+td .btn-icone { width: 30px; height: 30px; }
+
+/* ---------- Valores / preços ---------- */
+.campo-valor { min-width: 0 !important; width: 130px; flex-shrink: 0; }
+.input-valor { text-align: right; font-variant-numeric: tabular-nums; }
+.input-tabela.input-valor { width: 110px; }
+.sem-valor { border-color: #e2a39e; background: #fdf3f2; }
+.valores { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.valores > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
+.valores dt { color: var(--texto-2); }
+.valores dt small { color: var(--muted); }
+.valores dt label { margin: 0; font-weight: 400; font-size: 13px; }
+.valores dd { margin: 0; font-variant-numeric: tabular-nums; }
+.linha-desconto input { width: 110px; padding: 6px 8px; }
+.valores .total { border-top: 1px solid var(--linha); padding-top: 10px; margin-top: 2px; }
+.valores .total dt { font-weight: 600; color: var(--texto); }
+.valores .total dd { font-size: 20px; font-weight: 700; color: var(--verde-escuro); }
+.aviso { margin: 0 0 12px; padding: 9px 12px; border-radius: 7px; background: #fff6e5; color: #7a5200; font-size: 12.5px; }
+.bloco .aviso { margin: 0; }
+.aviso[hidden] { display: none; }
+.cabecalho-acoes { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.form-preco { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 12px 14px; border-bottom: 1px solid var(--linha); background: #fcfdfc; }
+.form-preco > div { min-width: 170px; }
+.form-preco .grow { flex: 1; }
+.form-preco .btn-primario { height: 37px; }
+.espaco { margin-top: 12px; }
+
+/* ---------- Tabelas ---------- */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; text-align: left; }
+th { font-size: 13px; font-weight: 500; color: var(--texto-2); background: #fafbfb; padding: 11px 14px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+th .i { vertical-align: -3px; margin-left: 4px; }
+td { padding: 11px 14px; border-bottom: 1px solid #eef1f0; font-size: 13px; white-space: nowrap; }
+tbody tr:hover td { background: #fafcfb; }
+.vazio { color: var(--muted); font-size: 13px; margin: 0; padding: 22px 14px; }
+.vazio.centro { text-align: center; }
+.vazio[hidden] { display: none; }
+.pill { background: var(--verde-claro); color: var(--verde-escuro); font-size: 11px; border-radius: 20px; padding: 4px 10px; }
+
+.tag { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+.tag-agendada, .tag-aberto     { background: #eef1f8; color: #3a4f86; }
+.tag-confirmada, .tag-em_atendimento { background: #fff4e0; color: #8a5a00; }
+.tag-atendida, .tag-alta       { background: var(--verde-claro); color: var(--verde-escuro); }
+.tag-cancelada                 { background: #fbeceb; color: var(--perigo); }
+
+/* ---------- Resumo ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+.stats span { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+.stats strong { font-size: 24px; font-weight: 600; }
+
+/* ---------- Formulários ---------- */
+label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--texto-2); }
+input, select, textarea {
+  width: 100%; padding: 9px 11px; border: 1px solid var(--linha); border-radius: 7px;
+  background: var(--branco); color: var(--texto); font: inherit; font-size: 13px; min-width: 0;
+}
+textarea { resize: vertical; min-height: 80px; }
+input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--verde); box-shadow: 0 0 0 3px var(--verde-claro); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--verde); outline-offset: 2px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 12px; }
+.filtros > div { min-width: 170px; }
+.filtros .grow { flex: 1; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; padding: 20px; }
+.form-grid h2 { padding-top: 12px; border-top: 1px solid var(--linha); }
+.form-grid h2:first-child { border-top: 0; padding-top: 0; }
+.full { grid-column: 1 / -1; }
+.acoes { display: flex; justify-content: flex-end; gap: 10px; }
+.status { color: var(--verde); font-size: 13px; margin: 0; }
+.status:empty { display: none; }
+
+/* ---------- Botões ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--branco); border: 1px solid var(--linha);
+  border-radius: 7px; padding: 8px 12px; font-size: 13.5px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { background: var(--fundo); }
+a.btn { text-decoration: none; color: inherit; }
+.btn-primario {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--verde); color: #fff; border: 0;
+  border-radius: 7px; padding: 9px 14px; font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+.btn-primario:hover { background: var(--verde-escuro); }
+.btn-primario:disabled { background: var(--verde-desativado); cursor: not-allowed; }
+.acoes-linha { display: flex; gap: 6px; }
+.btn-acao { background: none; border: 1px solid var(--linha); border-radius: 6px; padding: 4px 9px; font-size: 12px; cursor: pointer; color: var(--verde-escuro); }
+
+/* ---------- Pagamento ---------- */
+.modal-fundo[hidden] { display: none; }
+.modal-fundo { position: fixed; inset: 0; z-index: 40; background: #1f2a2766; display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.modal { background: var(--branco); border-radius: 12px; padding: 20px; width: min(520px, 100%); box-shadow: 0 20px 60px #0003; display: flex; flex-direction: column; gap: 16px; }
+.modal-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.modal-topo h2 { font-size: 18px; margin-bottom: 4px; }
+.pg-itens { list-style: none; margin: 0; padding: 0; border: 1px solid var(--linha); border-radius: 8px; max-height: 180px; overflow-y: auto; }
+.pg-itens:empty { display: none; }
+.pg-itens li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #eef1f0; }
+.pg-itens li:last-child { border-bottom: 0; }
+.pg-itens li span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pg-itens li.desconto { color: var(--verde-escuro); }
+.pg-total { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--verde-claro); border-radius: 8px; padding: 12px 14px; }
+.pg-total label { margin: 0; font-size: 14px; color: var(--texto); }
+.pg-total-valor { display: flex; align-items: center; gap: 6px; font-size: 22px; font-weight: 700; color: var(--verde-escuro); }
+.pg-total-valor input { width: 150px; font-size: 22px; font-weight: 700; color: var(--verde-escuro); padding: 4px 8px; background: var(--branco); }
+.pg-total-valor input[readonly] { border-color: transparent; background: none; padding-right: 0; box-shadow: none; }
+.pg-formas { border: 0; padding: 0; margin: 0; }
+.pg-formas legend { font-size: 12px; font-weight: 600; color: var(--texto-2); margin-bottom: 8px; padding: 0; }
+.pg-formas .segmentado { display: flex; width: 100%; }
+.pg-formas .segmentado label { flex: 1; }
+.pg-formas .segmentado span { width: 100%; justify-content: center; }
+.pg-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+.pg-campos[hidden] { display: none; }
+.rotulo-troco { display: block; font-size: 12px; font-weight: 600; color: var(--texto-2); margin-bottom: 6px; }
+.troco { font-size: 20px; font-variant-numeric: tabular-nums; }
+.pg-erro { margin: 0; color: var(--perigo); font-size: 13px; }
+.pg-erro:empty { display: none; }
+/* Etapas do atendimento */
+.etapas { list-style: none; margin: 0; padding: 12px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.etapas li { display: flex; align-items: flex-start; gap: 10px; position: relative; min-width: 0; }
+.etapas li:not(:last-child)::after { content: ""; position: absolute; left: 40px; right: 8px; top: 13px; height: 2px; background: var(--linha); }
+.etapas li.feito:not(:last-child)::after { background: var(--verde); }
+.etapa-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; font-size: 12px; font-weight: 700;
+  background: var(--fundo); color: var(--muted); border: 2px solid var(--linha); position: relative; z-index: 1; }
+.etapas li.feito .etapa-num { background: var(--verde); border-color: var(--verde); color: #fff; }
+.etapas li.atual .etapa-num { background: var(--branco); border-color: var(--verde); color: var(--verde-escuro); box-shadow: 0 0 0 3px var(--verde-claro); }
+.etapa-texto { display: flex; flex-direction: column; gap: 2px; background: var(--branco); padding-right: 8px; position: relative; z-index: 1; min-width: 0; margin-top: 3px; }
+.etapa-texto strong { font-size: 13px; font-weight: 600; color: var(--texto-2); }
+.etapas li.atual .etapa-texto strong, .etapas li.feito .etapa-texto strong { color: var(--texto); }
+.etapa-texto small { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.etapas li.atual .etapa-texto small { color: var(--verde-escuro); font-weight: 500; }
+
+/* Coluna Ações sempre visível na lista de atendimentos */
+#tela-atendimento .tabela-card th:last-child,
+#tela-atendimento .tabela-card td:last-child { position: sticky; right: 0; background: var(--branco); box-shadow: -8px 0 8px -8px #0000001f; }
+#tela-atendimento .tabela-card th:last-child { background: #fafbfb; }
+
+.nota-pagamento { display: flex; align-items: flex-end; padding-bottom: 10px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Cadastro rápido */
+.cadastro-rapido { margin-top: 12px; padding: 12px; border: 1px dashed var(--verde); border-radius: 8px; display: flex; flex-direction: column; gap: 10px; background: #fbfdfc; }
+.cadastro-rapido[hidden] { display: none; }
+.cadastro-titulo { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; font-size: 13.5px; color: var(--verde-escuro); }
+.cadastro-rapido .dica { margin: 0; }
+.duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tag-aguardando { background: #fff4e0; color: #8a5a00; }
+.btn-acao.destaque { background: var(--verde); border-color: var(--verde); color: #fff; }
+
+.tag-pago { background: var(--verde-claro); color: var(--verde-escuro); }
+.tag-pendente { background: #fbeceb; color: var(--perigo); }
+.valor-pago { display: flex; align-items: center; gap: 6px; }
+#linha-medico[hidden], #linha-valor-ps[hidden] { display: none; }
+
+/* ---------- Recibo ---------- */
+.modal-recibo { width: min(640px, 100%); }
+.recibo { color: #1b1b1b; font-size: 13px; line-height: 1.5; }
+.recibo-topo { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #1b1b1b; }
+.recibo-empresa strong { display: block; font-size: 15px; }
+.recibo-empresa span { display: block; color: #555; font-size: 12px; }
+.recibo-numero { text-align: right; }
+.recibo-numero h2 { font-size: 20px; letter-spacing: 3px; margin: 0; }
+.recibo-numero span { display: block; font-size: 12px; color: #555; font-variant-numeric: tabular-nums; }
+.recibo-numero .recibo-valor { display: inline-block; margin-top: 6px; padding: 4px 10px; border: 2px solid #1b1b1b; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.recibo-texto { margin: 14px 0; font-size: 14px; line-height: 1.7; }
+.recibo table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.recibo th { background: none; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 0; border-bottom: 1px solid #999; }
+.recibo td { padding: 6px 0; border-bottom: 1px dotted #bbb; font-size: 13px; white-space: normal; }
+.recibo td:last-child, .recibo th:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.recibo tfoot td { border-bottom: 0; }
+.recibo tfoot tr.total td { font-weight: 700; font-size: 14px; border-top: 1px solid #1b1b1b; padding-top: 8px; }
+.recibo-pagamento { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding: 10px 12px; background: #f4f6f5; border-radius: 6px; font-size: 12.5px; }
+.recibo-pagamento span { color: #555; }
+.recibo-assinatura { margin-top: 36px; display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+.recibo-assinatura div { flex: 1; text-align: center; font-size: 12px; color: #555; }
+.recibo-assinatura div::before { content: ""; display: block; border-top: 1px solid #1b1b1b; margin-bottom: 4px; }
+.recibo-rodape { margin: 16px 0 0; font-size: 11px; color: #666; text-align: center; }
+.recibo-vazio { padding: 20px 0; text-align: center; color: var(--muted); }
+
+@media print {
+  body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  #modal-recibo, #modal-recibo * { visibility: visible !important; }
+  #modal-recibo { position: absolute; inset: 0; background: none; padding: 0; display: block; }
+  .modal-recibo { box-shadow: none; width: 100%; padding: 0; }
+  .nao-imprimir { display: none !important; }
+}
+
+/* ---------- Confirmação ---------- */
+.confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
+.confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
+.confirmacao p { margin: 0 0 18px; font-size: 14px; line-height: 1.5; }
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1150px) {
+  .atendimento { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 780px) {
+  .btn-menu { display: grid; }
+  .sidebar { position: fixed; left: 0; top: var(--topbar-altura); z-index: 20; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 40px #0002; }
+  .sidebar.aberta { transform: none; }
+  .sidebar .recolher { display: none; }
+  main { padding: 12px; }
+  .usuario-nome { display: none; }
+  .barra-acoes { margin-left: 0; }
+  .select-wrap { width: 100%; }
+  .unidade { margin-left: 0; }
+  .tracejado .btn-primario { margin-left: 0; width: 100%; justify-content: center; }
+  .form-grid { grid-template-columns: 1fr; padding: 14px; }
+}
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr; }
+  .btn { flex: 1; justify-content: center; }
+  .campos-exame { flex-direction: column; min-width: 100%; }
+  .pg-campos { grid-template-columns: 1fr; }
+  .recibo-topo { flex-direction: column; }
+  .recibo-numero { text-align: left; }
+  .recibo-pagamento { grid-template-columns: 1fr; }
+  .etapas { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .etapas li::after { display: none; }
+  .pg-total { flex-direction: column; align-items: flex-start; }
+  .campo-valor { width: 100%; }
+  .form-preco > div { min-width: 100%; }
+  .form-preco .btn-primario { width: 100%; justify-content: center; }
+  .form-exame > .btn-primario { width: 100%; justify-content: center; }
+  .segmentado { width: 100%; }
+  .segmentado label { flex: 1; }
+  .segmentado span { width: 100%; justify-content: center; }
+  .barra-acoes { width: 100%; }
+}
+
+
+:root { color-scheme: light; }
+body { background: var(--fundo); color: var(--texto); }
+.topbar { top: env(safe-area-inset-top, 0px); }
+.sidebar { top: calc(var(--topbar-altura) + env(safe-area-inset-top, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--branco); }
+.demo-banner { background: #fff6e5; color: #6b4800; border: 1px solid #f0dcb0; border-radius: 8px; padding: 9px 12px; font-size: 12.5px; margin-bottom: 12px; line-height: 1.5; }
+.demo-toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--texto); color: #fff; padding: 11px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 10px 30px #0003; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+
+</style>
+
+
+  <!-- Ícones (estilo traço). Use: <svg class="i"><use href="#i-nome"/></svg> -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+      <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4a4 4 0 0 1 0 8M22 21c0-3-2-5-4-5.6"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></symbol>
+      <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8M3 3v5h5M12 7v5l3 2"/></symbol>
+      <symbol id="i-steth" viewBox="0 0 24 24"><path d="M6 3H5v6a5 5 0 0 0 10 0V3h-1M10 14v1a5 5 0 0 0 10 0v-3"/><circle cx="20" cy="10" r="2"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 3h9l9 9-9 9-9-9z"/><circle cx="7.5" cy="7.5" r="1.3"/></symbol>
+      <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5"/></symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+      <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+      <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 3 8 3 8H3s3-2 3-8M10 21h4"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+      <symbol id="i-calendar-plus" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.4-8 11-8 11z"/><path d="M4 12h4l2-3 2 5 2-2h6"/></symbol>
+      <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-8"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3M7 15h10"/></symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ===================== BARRA SUPERIOR ===================== -->
+  <header class="topbar">
+    <button type="button" class="btn-icone btn-menu" id="btn-menu" aria-label="Abrir menu"><svg class="i"><use href="#i-menu"/></svg></button>
+    <a class="marca" href="#atendimento"><span class="logo" aria-hidden="true">+</span>Health Hub</a>
+    <div class="topbar-direita">
+      <button type="button" class="btn-icone" id="btn-busca-global" aria-label="Buscar"><svg class="i"><use href="#i-search"/></svg></button>
+      <button type="button" class="btn-icone" id="btn-notificacoes" aria-label="Notificações"><svg class="i"><use href="#i-bell"/></svg></button>
+      <button type="button" class="usuario" id="btn-usuario">
+        <span class="avatar" id="usuario-iniciais">--</span>
+        <span class="usuario-nome" id="usuario-nome">Usuário</span>
+        <svg class="i i-sm"><use href="#i-chevron-down"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="app">
+
+    <!-- ===================== MENU LATERAL ===================== -->
+    <aside class="sidebar" id="sidebar">
+      <p class="sidebar-label">Navegação</p>
+      <nav class="menu" aria-label="Menu principal">
+        <a href="#atendimento" data-tela="atendimento"><svg class="i"><use href="#i-heart"/></svg><span>Atendimento</span></a>
+        <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
+        <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
+        <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
+        <a href="#exames" data-tela="exames"><svg class="i"><use href="#i-flask"/></svg><span>Exames</span></a>
+        <a href="#precos" data-tela="precos"><svg class="i"><use href="#i-tag"/></svg><span>Tabela de preços</span></a>
+        <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
+        <a href="#medicos" data-tela="medicos"><svg class="i"><use href="#i-steth"/></svg><span>Médicos</span></a>
+        <a href="#financeiro" data-tela="financeiro"><svg class="i"><use href="#i-dollar"/></svg><span>Financeiro</span></a>
+        <a href="#relatorios" data-tela="relatorios"><svg class="i"><use href="#i-chart"/></svg><span>Relatórios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="#configuracoes" data-tela="configuracoes"><svg class="i"><use href="#i-shield"/></svg><span>Administrador</span></a>
+        <button type="button" id="btn-sair"><svg class="i"><use href="#i-logout"/></svg><span>Sair</span></button>
+        <button type="button" id="btn-recolher" class="recolher"><svg class="i i-sm"><use href="#i-chevron-left"/></svg><span>Recolher</span></button>
+      </div>
+    </aside>
+
+    <main>
+
+      <!-- ===================== ATENDIMENTO ===================== -->
+      <section class="tela" id="tela-atendimento">
+        <div class="atendimento">
+
+          <!-- Coluna do paciente -->
+          <div class="col-paciente">
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-user"/></svg>Paciente</h2>
+              <form class="busca-paciente" id="form-busca-atend">
+                <label class="campo-busca">
+                  <svg class="i"><use href="#i-search"/></svg>
+                  <input type="search" id="atend-busca" placeholder="Buscar paciente por nome, CPF" aria-label="Buscar paciente por nome ou CPF">
+                </label>
+                <button type="button" class="btn-icone borda" id="btn-historico-busca" title="Buscas recentes"><svg class="i"><use href="#i-history"/></svg></button>
+                <button type="button" class="btn-icone borda" id="btn-novo-paciente" title="Cadastrar paciente"><svg class="i"><use href="#i-user-plus"/></svg></button>
+              </form>
+              <ul class="lista-resultados" id="atend-resultados"></ul>
+              <div class="paciente-selecionado" id="atend-paciente" hidden></div>
+
+              <!-- Cadastro rápido: no Pronto Socorro basta o nome -->
+              <form class="cadastro-rapido" id="form-paciente-rapido" autocomplete="off" hidden>
+                <p class="cadastro-titulo"><svg class="i"><use href="#i-user-plus"/></svg>Cadastro rápido</p>
+                <div><label for="rap-nome">Nome completo *</label><input id="rap-nome" maxlength="100" required></div>
+                <div class="duas-colunas">
+                  <div><label for="rap-cpf">CPF</label><input id="rap-cpf" maxlength="14" placeholder="000.000.000-00"></div>
+                  <div><label for="rap-nascimento">Nascimento</label><input type="date" id="rap-nascimento"></div>
+                </div>
+                <div><label for="rap-telefone">Telefone</label><input type="tel" id="rap-telefone" maxlength="15" placeholder="(92) 99999-9999"></div>
+                <p class="dica">No Pronto Socorro basta o nome. Os outros dados podem ser completados depois.</p>
+                <div class="acoes">
+                  <button type="button" class="btn" id="btn-cancelar-rapido">Cancelar</button>
+                  <button type="submit" class="btn-primario">Cadastrar e selecionar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Coluna do atendimento -->
+          <div class="col-atendimento">
+            <div class="barra-abas">
+              <div class="abas" role="tablist" aria-label="Tipo de atendimento">
+                <button type="button" class="aba ativa" role="tab" aria-selected="true" data-modalidade="CONSULTA"><svg class="i"><use href="#i-steth"/></svg>Consulta</button>
+                <button type="button" class="aba" role="tab" aria-selected="false" data-modalidade="PRONTO_SOCORRO"><svg class="i"><use href="#i-heart"/></svg>Pronto Socorro</button>
+              </div>
+              <div class="barra-acoes">
+                <a class="btn" href="#exames" id="btn-exames-avulso"><svg class="i"><use href="#i-flask"/></svg>Exames</a>
+                <button type="button" class="btn" id="btn-recibo"><svg class="i"><use href="#i-receipt"/></svg>Recibo de consulta</button>
+                <button type="button" class="btn" id="btn-etiqueta"><svg class="i"><use href="#i-tag"/></svg>Etiqueta avulsa</button>
+              </div>
+            </div>
+
+            <ol class="card etapas" id="atend-etapas" aria-label="Etapas do atendimento"></ol>
+
+            <div class="card linha">
+              <label class="rotulo" for="atend-setor"><svg class="i"><use href="#i-building"/></svg>Setor:</label>
+              <div class="select-wrap">
+                <select id="atend-setor"><option value="">Selecione o setor</option></select>
+              </div>
+              <span class="unidade" id="atend-unidade">Sua unidade</span>
+              <button type="button" class="btn-icone" id="btn-atualizar-setor" title="Atualizar"><svg class="i"><use href="#i-refresh"/></svg></button>
+            </div>
+
+            <div class="card linha" id="linha-valor-ps" hidden>
+              <span class="rotulo"><svg class="i"><use href="#i-dollar"/></svg>Consulta de emergência:</span>
+              <strong class="valor" id="atend-valor-ps">Escolha o setor</strong>
+              <span class="unidade">Cobrada antes de liberar o paciente para a consulta</span>
+            </div>
+
+            <div class="card linha" id="linha-medico">
+              <label class="rotulo" for="atend-medico"><svg class="i"><use href="#i-steth"/></svg>Médico:</label>
+              <div class="select-wrap">
+                <select id="atend-medico"><option value="">Selecione o médico</option></select>
+              </div>
+              <span class="unidade">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
+            </div>
+
+            <div class="card linha">
+              <span class="rotulo">Tipo:</span><strong class="valor" id="atend-tipo">Consulta particular</strong>
+            </div>
+
+            <div class="card linha tracejado">
+              <svg class="i verde"><use href="#i-steth" id="atend-abrir-icone"/></svg>
+              <strong id="atend-abrir-titulo">Abrir consulta particular</strong>
+              <span class="dica" id="atend-abrir-dica">O pagamento é feito antes de abrir a consulta</span>
+              <button type="button" class="btn-primario" id="btn-abrir-atendimento" disabled>
+                <svg class="i"><use href="#i-dollar" id="atend-abrir-btn-icone"/></svg><span id="atend-abrir-btn-texto">Pagar e abrir consulta</span>
+              </button>
+            </div>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-history"/></svg>Atendimentos anteriores
+                  <small id="atend-setor-nome"></small></h2>
+                <button type="button" class="btn-icone" id="btn-atualizar-anteriores" title="Atualizar"><svg class="i"><use href="#i-refresh"/></svg></button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Atend. <svg class="i i-sm"><use href="#i-arrow-down"/></svg></th>
+                      <th>Senha</th><th>Status</th><th>Entrada</th><th>Alta</th>
+                      <th>Médico responsável</th><th>Valor</th><th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-anteriores"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-anteriores">Selecione um paciente para visualizar os atendimentos anteriores.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===================== EXAMES ===================== -->
+      <section class="tela" id="tela-exames">
+        <div class="atendimento">
+
+          <!-- Coluna da requisição -->
+          <div class="col-paciente">
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-user"/></svg>Paciente</h2>
+              <div id="ex-paciente"></div>
+            </div>
+
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-heart"/></svg>Origem</h2>
+              <div id="ex-vinculo"></div>
+            </div>
+
+            <div class="card bloco">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-clipboard"/></svg>Requisição</h2>
+              <div><label for="ex-medico">Médico solicitante</label><select id="ex-medico"><option value="">Selecione</option></select></div>
+              <div><label for="ex-data">Data da requisição</label><input type="date" id="ex-data"></div>
+              <div><label for="ex-obs">Observações</label><textarea id="ex-obs" maxlength="1000" placeholder="Indicação clínica, urgência…"></textarea></div>
+            </div>
+
+            <div class="card bloco">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-dollar"/></svg>Valores</h2>
+              <dl class="valores">
+                <div><dt>Imagem e outros <small id="ex-total-imagem">(0)</small></dt><dd id="ex-subtotal-imagem">R$ 0,00</dd></div>
+                <div><dt>Laboratoriais <small id="ex-total-lab">(0)</small></dt><dd id="ex-subtotal-lab">R$ 0,00</dd></div>
+                <div class="linha-desconto"><dt><label for="ex-desconto">Desconto (R$)</label></dt><dd><input id="ex-desconto" class="input-valor" inputmode="decimal" placeholder="0,00"></dd></div>
+                <div class="total"><dt>Total a pagar</dt><dd id="ex-total">R$ 0,00</dd></div>
+              </dl>
+              <p class="aviso" id="ex-aviso-sem-valor" hidden></p>
+              <button type="button" class="btn-primario largo" id="btn-salvar-exames" disabled><svg class="i"><use href="#i-dollar"/></svg>Pagar e salvar requisição</button>
+              <button type="button" class="btn largo" id="btn-limpar-exames">Limpar tudo</button>
+              <p class="status" id="status-exames" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <!-- Coluna dos exames -->
+          <div class="col-atendimento">
+            <div class="barra-abas">
+              <span class="aba ativa"><svg class="i"><use href="#i-flask"/></svg>Requisição de Exames</span>
+              <div class="barra-acoes">
+                <a class="btn" href="#precos"><svg class="i"><use href="#i-tag"/></svg>Tabela de preços</a>
+              </div>
+            </div>
+
+            <form class="card form-exame" id="form-exame" autocomplete="off">
+              <div class="segmentado" role="radiogroup" aria-label="Tipo de exame">
+                <label><input type="radio" name="tipoExame" value="imagem" checked><span><svg class="i"><use href="#i-scan"/></svg>Imagem e outros</span></label>
+                <label><input type="radio" name="tipoExame" value="laboratorial"><span><svg class="i"><use href="#i-flask"/></svg>Laboratorial</span></label>
+              </div>
+
+              <!-- Imagem e outros: nome por nome -->
+              <div class="campos-exame" id="campos-imagem">
+                <div>
+                  <label for="ex-categoria">Tipo</label>
+                  <select id="ex-categoria" class="sel-categoria"></select>
+                </div>
+                <div class="grow">
+                  <label for="ex-nome">Nome do exame *</label>
+                  <input id="ex-nome" list="sugestoes-exames" maxlength="150" placeholder="Ex.: USG de abdome total">
+                  <datalist id="sugestoes-exames"></datalist>
+                </div>
+                <div class="campo-valor">
+                  <label for="ex-valor">Valor (R$) *</label>
+                  <input id="ex-valor" class="input-valor" inputmode="decimal" placeholder="0,00">
+                </div>
+              </div>
+
+              <!-- Laboratorial: numeração -->
+              <div class="campos-exame" id="campos-lab" hidden>
+                <div>
+                  <label for="ex-codigo">Nº laboratorial *</label>
+                  <input id="ex-codigo" maxlength="200" placeholder="Ex.: 40304361">
+                </div>
+                <div class="grow">
+                  <label for="ex-nome-lab">Nome do exame <small>(opcional)</small></label>
+                  <input id="ex-nome-lab" maxlength="150" placeholder="Preenchido pela tabela de preços">
+                </div>
+                <div class="campo-valor">
+                  <label for="ex-valor-lab">Valor (R$) *</label>
+                  <input id="ex-valor-lab" class="input-valor" inputmode="decimal" placeholder="0,00">
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
+              <p class="dica full" id="dica-exame"></p>
+            </form>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-scan"/></svg>Exames de imagem e outros</h2>
+                <span class="pill" id="pill-imagem">0 exames</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>Tipo</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+                  <tbody id="tabela-ex-imagem"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ex-imagem">Nenhum exame adicionado.</p>
+            </div>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-flask"/></svg>Exames laboratoriais</h2>
+                <span class="pill" id="pill-lab">0 exames</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Nº</th><th>Nº laboratorial</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+                  <tbody id="tabela-ex-lab"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ex-lab">Nenhum exame laboratorial adicionado.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===================== TABELA DE PREÇOS ===================== -->
+      <section class="tela" id="tela-precos">
+        <div class="cabecalho cabecalho-acoes">
+          <div><h1>Tabela de preços</h1><p class="sub">Valor particular de cada exame. É usado para preencher o valor na requisição.</p></div>
+          <button type="button" class="btn" id="btn-restaurar-precos"><svg class="i"><use href="#i-refresh"/></svg>Restaurar exemplos</button>
+        </div>
+        <p class="aviso">Os valores e códigos que vêm preenchidos são <strong>exemplos</strong>. Ajuste para os valores reais. As alterações ficam salvas neste navegador.</p>
+
+        <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-scan"/></svg>Imagem e outros</h2>
+            <span class="pill" id="pill-pr-imagem">0 exames</span>
+          </div>
+          <form class="form-preco" id="form-preco-imagem" autocomplete="off">
+            <div><label for="pr-categoria">Tipo</label><select id="pr-categoria" class="sel-categoria"></select></div>
+            <div class="grow"><label for="pr-nome">Nome do exame *</label><input id="pr-nome" maxlength="150" required></div>
+            <div class="campo-valor"><label for="pr-valor">Valor (R$) *</label><input id="pr-valor" class="input-valor" inputmode="decimal" required placeholder="0,00"></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Incluir</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Tipo</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-pr-imagem"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-flask"/></svg>Laboratoriais</h2>
+            <span class="pill" id="pill-pr-lab">0 exames</span>
+          </div>
+          <form class="form-preco" id="form-preco-lab" autocomplete="off">
+            <div><label for="pr-codigo">Nº laboratorial *</label><input id="pr-codigo" maxlength="30" required></div>
+            <div class="grow"><label for="pr-nome-lab">Nome do exame *</label><input id="pr-nome-lab" maxlength="150" required></div>
+            <div class="campo-valor"><label for="pr-valor-lab">Valor (R$) *</label><input id="pr-valor-lab" class="input-valor" inputmode="decimal" required placeholder="0,00"></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Incluir</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nº laboratorial</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-pr-lab"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="status" id="status-precos" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- ===================== PAINEL ===================== -->
+      <section class="tela" id="tela-painel">
+        <div class="cabecalho"><h1>Painel</h1><p class="sub">Resumo das consultas particulares do dia.</p></div>
+        <div class="stats">
+          <article class="card"><span>Agendadas hoje</span><strong id="stat-agendadas">0</strong></article>
+          <article class="card"><span>Atendidas</span><strong id="stat-atendidas">0</strong></article>
+          <article class="card"><span>Aguardando</span><strong id="stat-aguardando">0</strong></article>
+          <article class="card"><span>Recebido hoje</span><strong id="stat-recebido">R$ 0,00</strong></article>
+        </div>
+        <div class="card tabela-card">
+          <div class="tabela-topo"><h2 class="card-titulo">Próximos atendimentos</h2><span class="pill" id="painel-contagem">0 consultas</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Horário</th><th>Paciente</th><th>Médico / especialidade</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-proximos"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-proximos">Nenhuma consulta para exibir.</p>
+        </div>
+      </section>
+
+      <!-- ===================== AGENDA ===================== -->
+      <section class="tela" id="tela-agenda">
+        <div class="cabecalho"><h1>Agenda</h1><p class="sub">Filtre por data, médico ou status.</p></div>
+        <form class="card filtros" id="form-filtro-agenda">
+          <div><label for="filtro-data">Data</label><input type="date" id="filtro-data"></div>
+          <div><label for="filtro-medico">Médico</label><select id="filtro-medico"><option value="">Todos</option></select></div>
+          <div><label for="filtro-status">Status</label>
+            <select id="filtro-status">
+              <option value="">Todos</option>
+              <option value="AGENDADA">Agendada</option>
+              <option value="CONFIRMADA">Confirmada</option>
+              <option value="ATENDIDA">Atendida</option>
+              <option value="CANCELADA">Cancelada</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primario">Buscar</button>
+        </form>
+        <div class="card tabela-card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Horário</th><th>Paciente</th><th>Médico</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-agenda"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-agenda">Use os filtros para buscar consultas.</p>
+        </div>
+      </section>
+
+      <!-- ===================== AGENDAR CONSULTA ===================== -->
+      <section class="tela" id="tela-nova-consulta">
+        <div class="cabecalho"><h1>Agendar consulta</h1><p class="sub">Campos com * são obrigatórios.</p></div>
+        <form class="card form-grid" id="form-consulta">
+          <h2 class="full">Paciente</h2>
+          <div><label for="pac-cpf">CPF *</label><input id="pac-cpf" name="cpf" required maxlength="14" placeholder="000.000.000-00"></div>
+          <div><label for="pac-nome">Nome completo *</label><input id="pac-nome" name="nome" required maxlength="100"></div>
+          <div><label for="pac-nascimento">Data de nascimento *</label><input type="date" id="pac-nascimento" name="nascimento" required></div>
+          <div><label for="pac-telefone">Telefone *</label><input type="tel" id="pac-telefone" name="telefone" required maxlength="15" placeholder="(92) 99999-9999"></div>
+          <div class="full"><label for="pac-email">E-mail</label><input type="email" id="pac-email" name="email" maxlength="150"></div>
+
+          <h2 class="full">Consulta</h2>
+          <div><label for="cons-especialidade">Especialidade *</label><select id="cons-especialidade" name="especialidade" required><option value="">Selecione</option></select></div>
+          <div><label for="cons-medico">Médico *</label><select id="cons-medico" name="medico" required><option value="">Selecione</option></select></div>
+          <div><label for="cons-data">Data *</label><input type="date" id="cons-data" name="data" required></div>
+          <div><label for="cons-horario">Horário *</label><select id="cons-horario" name="horario" required><option value="">Selecione</option></select></div>
+
+          <h2 class="full">Pagamento</h2>
+          <div><label for="pag-valor">Valor (R$) *</label><input id="pag-valor" name="valor" required inputmode="decimal" placeholder="0,00"></div>
+          <div class="nota-pagamento"><span class="dica">O valor vem do médico escolhido. A forma de pagamento (Pix, cartão ou dinheiro) é escolhida na janela de pagamento, ao agendar.</span></div>
+          <div class="full"><label for="cons-obs">Observações</label><textarea id="cons-obs" name="observacoes" maxlength="1000"></textarea></div>
+
+          <div class="full acoes">
+            <button type="reset" class="btn">Limpar</button>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-dollar"/></svg>Pagar e agendar consulta</button>
+          </div>
+          <p class="full status" id="status-consulta" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <!-- ===================== PACIENTES ===================== -->
+      <section class="tela" id="tela-pacientes">
+        <div class="cabecalho"><h1>Pacientes</h1><p class="sub">Busque pelo nome ou CPF.</p></div>
+        <form class="card filtros" id="form-busca-paciente">
+          <div class="grow"><label for="busca-paciente">Nome ou CPF</label><input type="search" id="busca-paciente" placeholder="Digite para buscar…"></div>
+          <button type="submit" class="btn-primario">Buscar</button>
+        </form>
+        <div class="card tabela-card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Paciente</th><th>CPF</th><th>Telefone</th><th>Última consulta</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-pacientes"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-pacientes">Nenhum paciente encontrado.</p>
+        </div>
+      </section>
+
+      <!-- ===================== MÉDICOS ===================== -->
+      <section class="tela" id="tela-medicos">
+        <div class="cabecalho"><h1>Médicos</h1><p class="sub">Profissionais que atendem particular e seus valores.</p></div>
+        <div class="card tabela-card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Valor da consulta</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-medicos"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-medicos">Nenhum médico cadastrado.</p>
+        </div>
+      </section>
+
+      <!-- ===================== FINANCEIRO ===================== -->
+      <section class="tela" id="tela-financeiro">
+        <div class="cabecalho"><h1>Financeiro</h1><p class="sub">Recebimentos por período.</p></div>
+        <div class="stats">
+          <article class="card"><span>Total no período</span><strong id="fin-total">R$ 0,00</strong></article>
+          <article class="card"><span>Pix</span><strong id="fin-pix">R$ 0,00</strong></article>
+          <article class="card"><span>Cartão</span><strong id="fin-cartao">R$ 0,00</strong></article>
+          <article class="card"><span>Dinheiro</span><strong id="fin-dinheiro">R$ 0,00</strong></article>
+        </div>
+        <form class="card filtros" id="form-filtro-financeiro">
+          <div><label for="fin-inicio">De</label><input type="date" id="fin-inicio"></div>
+          <div><label for="fin-fim">Até</label><input type="date" id="fin-fim"></div>
+          <button type="submit" class="btn-primario">Filtrar</button>
+        </form>
+        <div class="card tabela-card">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-steth"/></svg>Recebido por médico</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médico</th><th>Consultas</th><th>Exames</th><th>Total recebido</th></tr></thead>
+              <tbody id="tabela-fin-medicos"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-fin-medicos">Nenhum recebimento no período.</p>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-receipt"/></svg>Recebimentos</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Médico</th><th>Forma</th><th>Valor</th><th>Recibo</th></tr></thead>
+              <tbody id="tabela-financeiro"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-financeiro">Nenhum recebimento no período.</p>
+        </div>
+      </section>
+
+      <!-- ===================== RELATÓRIOS ===================== -->
+      <section class="tela" id="tela-relatorios">
+        <div class="cabecalho"><h1>Relatórios</h1><p class="sub">Espaço reservado para os seus relatórios.</p></div>
+        <div class="card"><p class="vazio">Em construção.</p></div>
+      </section>
+
+      <!-- ===================== ADMINISTRADOR ===================== -->
+      <section class="tela" id="tela-configuracoes">
+        <div class="cabecalho"><h1>Administrador</h1><p class="sub">Espaço reservado para as suas configurações.</p></div>
+        <div class="card"><p class="vazio">Em construção.</p></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================== RECIBO (janela) ===================== -->
+  <div class="modal-fundo" id="modal-recibo" hidden>
+    <div class="modal modal-recibo" role="dialog" aria-modal="true" aria-label="Recibo de pagamento">
+      <div id="recibo-area"></div>
+      <div class="acoes nao-imprimir">
+        <button type="button" class="btn" id="btn-fechar-recibo">Fechar</button>
+        <button type="button" class="btn-primario" id="btn-imprimir-recibo"><svg class="i"><use href="#i-receipt"/></svg>Imprimir recibo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAGAMENTO (janela) ===================== -->
+  <div class="modal-fundo" id="modal-pagamento" hidden>
+    <form class="modal" id="form-pagamento" role="dialog" aria-modal="true" aria-labelledby="pg-titulo" autocomplete="off" novalidate>
+      <div class="modal-topo">
+        <div>
+          <h2 id="pg-titulo">Pagamento</h2>
+          <p class="sub" id="pg-descricao"></p>
+        </div>
+        <button type="button" class="btn-icone" data-pg-cancelar aria-label="Fechar">✕</button>
+      </div>
+
+      <ul class="pg-itens" id="pg-itens"></ul>
+
+      <div class="pg-total">
+        <label for="pg-valor">Total a pagar</label>
+        <div class="pg-total-valor">
+          <span>R$</span><input id="pg-valor" class="input-valor" inputmode="decimal" placeholder="0,00">
+        </div>
+      </div>
+
+      <fieldset class="pg-formas">
+        <legend>Forma de pagamento *</legend>
+        <div class="segmentado">
+          <label><input type="radio" name="pgForma" value="PIX"><span>Pix</span></label>
+          <label><input type="radio" name="pgForma" value="CREDITO"><span>Crédito</span></label>
+          <label><input type="radio" name="pgForma" value="DEBITO"><span>Débito</span></label>
+          <label><input type="radio" name="pgForma" value="DINHEIRO"><span>Dinheiro</span></label>
+        </div>
+      </fieldset>
+
+      <div class="pg-campos" id="pg-campos-credito" hidden>
+        <div><label for="pg-parcelas">Parcelas</label><select id="pg-parcelas"></select></div>
+        <div><label for="pg-nsu-credito">Nº autorização / NSU</label><input id="pg-nsu-credito" maxlength="30"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-debito" hidden>
+        <div><label for="pg-nsu-debito">Nº autorização / NSU</label><input id="pg-nsu-debito" maxlength="30"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-pix" hidden>
+        <div><label for="pg-id-pix">ID da transação Pix</label><input id="pg-id-pix" maxlength="40"></div>
+      </div>
+      <div class="pg-campos" id="pg-campos-dinheiro" hidden>
+        <div><label for="pg-recebido">Valor recebido (R$) *</label><input id="pg-recebido" class="input-valor" inputmode="decimal" placeholder="0,00"></div>
+        <div><span class="rotulo-troco">Troco</span><strong class="troco" id="pg-troco">R$ 0,00</strong></div>
+      </div>
+
+      <p class="pg-erro" id="pg-erro" role="alert"></p>
+
+      <div class="acoes">
+        <button type="button" class="btn" data-pg-cancelar>Cancelar</button>
+        <button type="submit" class="btn-primario"><svg class="i"><use href="#i-dollar"/></svg>Confirmar pagamento</button>
+      </div>
+    </form>
+  </div>
+
+  
+
+<script>
+/* =========================================================
+   Consulta Particular — app.js
+   Aqui existe só a parte visual: troca de telas, menu e
+   funções que desenham as tabelas. Toda a lógica (API,
+   banco, regras) é sua: procure por  TODO  e preencha.
+   ========================================================= */
+
+// ---------- Configuração ----------
+const CONFIG = {
+  // TODO: endereço da sua API quando ela existir
+  apiUrl: '',
+  // Dados que aparecem no cabeçalho do recibo (TODO: preencher com os dados reais)
+  empresa: {
+    nome: 'Nome do hospital',
+    cnpj: '00.000.000/0000-00',
+    endereco: 'Endereço da unidade',
+    telefone: '(00) 0000-0000',
+  },
+  reciboAutomatico: true, // abre o recibo logo depois de cada pagamento
+};
+
+// Estado da tela de atendimento
+const estado = {
+  paciente: null, // paciente selecionado
+  setor: '',      // setor selecionado
+  exames: { imagem: [], laboratorial: [] }, // requisição de exames em montagem
+  modalidade: 'CONSULTA', // aba aberta no Atendimento: 'CONSULTA' ou 'PRONTO_SOCORRO'
+  anteriores: [],         // atendimentos mostrados na tabela
+  vinculoExames: null,    // atendimento de origem da requisição de exames (ex.: Pronto Socorro)
+  medicosConsulta: [],    // médicos da aba Consulta: [{ id, nome, valorConsulta }]
+  ultimoPagamento: null,  // último pagamento confirmado (para o recibo)
+};
+
+// Textos de cada aba do Atendimento
+const MODALIDADES = {
+  CONSULTA: {
+    nome: 'Consulta',
+    tipo: 'Consulta particular',
+    titulo: 'Abrir consulta particular',
+    dica: 'O pagamento é feito antes de abrir a consulta',
+    botao: 'Pagar e liberar para consulta',
+    botaoIcone: '#i-dollar',
+    icone: '#i-steth',
+  },
+  PRONTO_SOCORRO: {
+    nome: 'Pronto Socorro',
+    tipo: 'Pronto Socorro · consulta de emergência particular',
+    titulo: 'Abrir atendimento de Pronto Socorro',
+    dica: 'O pagamento é feito antes de liberar o paciente para a consulta',
+    botao: 'Pagar e liberar para consulta',
+    botaoIcone: '#i-dollar',
+    icone: '#i-heart',
+  },
+};
+
+// ---------- Utilitários ----------
+const $ = (seletor) => document.querySelector(seletor);
+
+function formatarMoeda(valor) {
+  return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatarData(dataIso) {
+  if (!dataIso) return '';
+  const [ano, mes, dia] = dataIso.slice(0, 10).split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+function formatarDataHora(dataIso) {
+  if (!dataIso) return '';
+  return `${formatarData(dataIso)} ${dataIso.slice(11, 16)}`;
+}
+
+function tagStatus(status) {
+  const nomes = {
+    AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
+    ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta', PAGO: 'Pago', PENDENTE: 'Pendente',
+    AGUARDANDO: 'Liberado para consulta',
+  };
+  const s = String(status || '').toUpperCase();
+  return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
+}
+
+// Escapa texto antes de colocar dentro de innerHTML
+function esc(texto) {
+  const div = document.createElement('div');
+  div.textContent = texto ?? '';
+  return div.innerHTML;
+}
+
+function iniciais(nome) {
+  return String(nome || '').trim().split(/\s+/).filter(Boolean)
+    .map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '--';
+}
+
+function preencherSelect(seletor, itens, textoPadrao = 'Selecione') {
+  $(seletor).innerHTML = `<option value="">${esc(textoPadrao)}</option>` +
+    itens.map((i) => `<option value="${esc(i.valor)}">${esc(i.texto)}</option>`).join('');
+}
+
+// Confirmação dentro da página (substitui o confirm() do navegador)
+function confirmar(mensagem, textoBotao = 'Confirmar') {
+  return new Promise((resolver) => {
+    const fundo = document.createElement('div');
+    fundo.className = 'confirmacao-fundo';
+    fundo.innerHTML = `
+      <div class="confirmacao" role="alertdialog" aria-modal="true" aria-labelledby="confirmacao-texto">
+        <p id="confirmacao-texto">${esc(mensagem)}</p>
+        <div class="acoes">
+          <button type="button" class="btn" data-resposta="nao">Cancelar</button>
+          <button type="button" class="btn-primario" data-resposta="sim">${esc(textoBotao)}</button>
+        </div>
+      </div>`;
+    const fechar = (resposta) => {
+      fundo.remove();
+      document.removeEventListener('keydown', teclas);
+      resolver(resposta);
+    };
+    const teclas = (e) => { if (e.key === 'Escape') fechar(false); };
+    fundo.addEventListener('click', (e) => {
+      if (e.target === fundo) fechar(false);
+      const b = e.target.closest('[data-resposta]');
+      if (b) fechar(b.dataset.resposta === 'sim');
+    });
+    document.addEventListener('keydown', teclas);
+    document.body.appendChild(fundo);
+    fundo.querySelector('[data-resposta="sim"]').focus();
+  });
+}
+
+// ---------- Navegação entre telas ----------
+const carregadores = {
+  atendimento: carregarAtendimento,
+  painel: carregarPainel,
+  agenda: carregarAgenda,
+  'nova-consulta': carregarFormularioConsulta,
+  exames: carregarExames,
+  precos: carregarPrecos,
+  pacientes: carregarPacientes,
+  medicos: carregarMedicos,
+  financeiro: carregarFinanceiro,
+  relatorios: () => {},
+  configuracoes: () => {},
+};
+
+function abrirTela(nome) {
+  if (!carregadores[nome]) nome = 'atendimento';
+  document.querySelectorAll('.tela').forEach((t) => t.classList.toggle('ativa', t.id === `tela-${nome}`));
+  document.querySelectorAll('[data-tela]').forEach((a) => a.classList.toggle('ativo', a.dataset.tela === nome));
+  $('#sidebar').classList.remove('aberta');
+  carregadores[nome]();
+}
+
+window.addEventListener('hashchange', () => abrirTela(location.hash.slice(1)));
+$('#btn-menu').addEventListener('click', () => $('#sidebar').classList.toggle('aberta'));
+$('#btn-recolher').addEventListener('click', () => $('#sidebar').classList.toggle('recolhida'));
+
+// ---------- Renderização (já pronto) ----------
+
+function renderResultadosBusca(pacientes) {
+  $('#atend-resultados').innerHTML = pacientes.map((p, i) => `
+    <li data-indice="${i}">
+      <strong>${esc(p.nome)}</strong>
+      <small>CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small>
+    </li>`).join('');
+  // guarda a lista para o clique saber qual paciente foi escolhido
+  $('#atend-resultados').dataset.lista = JSON.stringify(pacientes);
+}
+
+function selecionarPaciente(paciente) {
+  estado.paciente = paciente;
+  estado.vinculoExames = null;
+  $('#atend-resultados').innerHTML = '';
+  const caixa = $('#atend-paciente');
+  if (!paciente) {
+    caixa.hidden = true;
+  } else {
+    caixa.hidden = false;
+    caixa.innerHTML = `
+      <strong>${esc(paciente.nome)}</strong>
+      <small style="display:block;color:var(--muted);margin-top:4px">
+        ${[paciente.cpf && `CPF ${esc(paciente.cpf)}`, paciente.nascimento && `Nasc. ${formatarData(paciente.nascimento)}`]
+          .filter(Boolean).join(' · ') || 'Cadastro rápido (só o nome)'}
+      </small>`;
+  }
+  atualizarBotaoAbrir();
+  carregarAtendimentosAnteriores();
+}
+
+function atualizarBotaoAbrir() {
+  const precisaMedico = estado.modalidade === 'CONSULTA';
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && (!precisaMedico || $('#atend-medico').value));
+}
+
+function renderAnteriores(atendimentos) {
+  estado.anteriores = atendimentos;
+  $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
+    <tr>
+      <td>${esc(a.numero)}</td>
+      <td>${esc(a.senha)}</td>
+      <td>${tagStatus(a.status)}</td>
+      <td>${formatarDataHora(a.entrada)}</td>
+      <td>${formatarDataHora(a.alta)}</td>
+      <td>${esc(a.medico)}</td>
+      <td>${a.valor
+        ? `<span class="valor-pago">${formatarMoeda(a.valor)} ${tagStatus(a.pago ? 'PAGO' : 'PENDENTE')}</span>`
+        : '<span style="color:var(--muted)">—</span>'}</td>
+      <td><div class="acoes-linha">${acoesAtendimento(a)}</div></td>
+    </tr>`).join('');
+  renderEtapas();
+  $('#vazio-anteriores').hidden = atendimentos.length > 0;
+  $('#vazio-anteriores').textContent = estado.paciente
+    ? `Nenhum atendimento de ${MODALIDADES[estado.modalidade].nome} para este paciente.`
+    : 'Selecione um paciente para visualizar os atendimentos anteriores.';
+}
+
+// Botões de cada atendimento, conforme o fluxo:
+//   Consulta:       paga → "Concluir consulta" → depois "Pedir exames"
+//   Pronto Socorro: "Pedir exames" a qualquer momento
+function consultaConcluida(a) {
+  return ['ATENDIDA', 'ALTA'].includes(String(a.status).toUpperCase());
+}
+
+function acoesAtendimento(a) {
+  const tipo = a.tipo || estado.modalidade;
+  const n = esc(a.numero);
+  const qtd = a.exames ? ` (${a.exames})` : '';
+  const botaoExames = (destaque) =>
+    `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="Exames pedidos pelo médico neste atendimento">Pedir exames${qtd}</button>`;
+  // Consulta e Pronto Socorro seguem o mesmo fluxo: pago → consulta → exames
+  const recibo = a.pagamento ? `<button class="btn-acao" data-recibo-atend="${n}">Recibo</button>` : '';
+  return recibo + acaoFluxo(a, n, botaoExames);
+}
+
+function acaoFluxo(a, n, botaoExames) {
+  if (!consultaConcluida(a)) {
+    return a.pago
+      ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
+      : `<span class="dica">Aguardando pagamento</span>`;
+  }
+  return botaoExames(!a.exames);
+}
+
+// Etapas mostradas no topo do Atendimento
+const ETAPAS = {
+  CONSULTA: [
+    { titulo: 'Paciente', dica: 'Buscar ou cadastrar' },
+    { titulo: 'Pagamento', dica: 'Paga antes da consulta' },
+    { titulo: 'Consulta', dica: 'Médico atende' },
+    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
+  ],
+  PRONTO_SOCORRO: [
+    { titulo: 'Paciente', dica: 'Basta o nome' },
+    { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
+    { titulo: 'Consulta', dica: 'Médico de plantão atende' },
+    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
+  ],
+};
+
+function atendimentoDeHoje() {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return estado.anteriores.find((a) => String(a.entrada || '').slice(0, 10) === hoje && (a.tipo || estado.modalidade) === estado.modalidade);
+}
+
+function renderEtapas() {
+  const a = estado.paciente ? atendimentoDeHoje() : null;
+  const feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  const atual = feitas.indexOf(false);
+  $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
+    <li class="${feitas[i] ? 'feito' : i === atual ? 'atual' : ''}">
+      <span class="etapa-num">${feitas[i] ? '✓' : i + 1}</span>
+      <span class="etapa-texto"><strong>${e.titulo}</strong><small>${e.dica}</small></span>
+    </li>`).join('');
+}
+
+function renderProximos(consultas) {
+  $('#tabela-proximos').innerHTML = consultas.map((c) => `
+    <tr>
+      <td>${esc(c.horario)}</td>
+      <td>${esc(c.paciente)}</td>
+      <td>${esc(c.medico)} <small style="color:var(--muted)">${esc(c.especialidade)}</small></td>
+      <td>${formatarMoeda(c.valor)}</td>
+      <td>${tagStatus(c.status)}</td>
+      <td><button class="btn-acao" data-id="${esc(c.id)}">Abrir</button></td>
+    </tr>`).join('');
+  $('#vazio-proximos').hidden = consultas.length > 0;
+  $('#painel-contagem').textContent = `${consultas.length} consultas`;
+}
+
+function renderAgenda(consultas) {
+  $('#tabela-agenda').innerHTML = consultas.map((c) => `
+    <tr>
+      <td>${formatarData(c.data)}</td>
+      <td>${esc(c.horario)}</td>
+      <td>${esc(c.paciente)}</td>
+      <td>${esc(c.medico)}</td>
+      <td>${formatarMoeda(c.valor)}</td>
+      <td>${tagStatus(c.status)}</td>
+      <td><button class="btn-acao" data-id="${esc(c.id)}">Abrir</button></td>
+    </tr>`).join('');
+  $('#vazio-agenda').hidden = consultas.length > 0;
+}
+
+function renderPacientes(pacientes) {
+  $('#tabela-pacientes').innerHTML = pacientes.map((p) => `
+    <tr>
+      <td>${esc(p.nome)}</td>
+      <td>${esc(p.cpf)}</td>
+      <td>${esc(p.telefone)}</td>
+      <td>${formatarData(p.ultimaConsulta)}</td>
+      <td><button class="btn-acao" data-id="${esc(p.id)}">Ver</button></td>
+    </tr>`).join('');
+  $('#vazio-pacientes').hidden = pacientes.length > 0;
+}
+
+function renderMedicos(medicos) {
+  $('#tabela-medicos').innerHTML = medicos.map((m) => `
+    <tr>
+      <td>${esc(m.nome)}</td>
+      <td>${esc(m.crm)}</td>
+      <td>${esc(m.especialidade)}</td>
+      <td>${formatarMoeda(m.valorConsulta)}</td>
+      <td><button class="btn-acao" data-id="${esc(m.id)}">Editar</button></td>
+    </tr>`).join('');
+  $('#vazio-medicos').hidden = medicos.length > 0;
+}
+
+// recebimentos: [{ data, paciente, tipo: 'CONSULTA' | 'EXAMES', medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]
+function renderFinanceiro(recebimentos) {
+  const nomeTipo = { CONSULTA: 'Consulta', EXAMES: 'Exames' };
+  $('#tabela-financeiro').innerHTML = recebimentos.map((r) => `
+    <tr>
+      <td>${formatarData(r.data)}</td>
+      <td>${esc(r.paciente)}</td>
+      <td>${esc(nomeTipo[r.tipo] || r.tipo || '')}</td>
+      <td>${esc(r.medico)}</td>
+      <td>${esc(NOMES_FORMA[r.formaPagamento] || r.formaPagamento)}</td>
+      <td>${formatarMoeda(r.valor)}</td>
+      <td>${r.pagamento ? `<button class="btn-acao" data-recibo-fin="${recebimentos.indexOf(r)}">Recibo</button>` : ''}</td>
+    </tr>`).join('');
+  estado.recebimentosTela = recebimentos;
+  $('#vazio-financeiro').hidden = recebimentos.length > 0;
+
+  // Totais por forma de pagamento
+  const soma = (filtro) => recebimentos.filter(filtro).reduce((t, r) => t + Number(r.valor || 0), 0);
+  $('#fin-total').textContent = formatarMoeda(soma(() => true));
+  $('#fin-pix').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'PIX'));
+  $('#fin-cartao').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'CREDITO' || r.formaPagamento === 'DEBITO'));
+  $('#fin-dinheiro').textContent = formatarMoeda(soma((r) => r.formaPagamento === 'DINHEIRO'));
+
+  // Recebido por médico
+  const porMedico = {};
+  recebimentos.forEach((r) => {
+    const m = (porMedico[r.medico || 'Sem médico'] ||= { consultas: 0, exames: 0, total: 0 });
+    if (r.tipo === 'EXAMES') m.exames += Number(r.valor || 0); else m.consultas += Number(r.valor || 0);
+    m.total += Number(r.valor || 0);
+  });
+  const linhas = Object.entries(porMedico).sort((a, b) => b[1].total - a[1].total);
+  $('#tabela-fin-medicos').innerHTML = linhas.map(([medico, v]) => `
+    <tr>
+      <td>${esc(medico)}</td>
+      <td>${formatarMoeda(v.consultas)}</td>
+      <td>${formatarMoeda(v.exames)}</td>
+      <td><strong>${formatarMoeda(v.total)}</strong></td>
+    </tr>`).join('');
+  $('#vazio-fin-medicos').hidden = linhas.length > 0;
+}
+
+// =========================================================
+//   SUA LÓGICA AQUI
+// =========================================================
+
+// ---------- Usuário logado ----------
+function carregarUsuario() {
+  // TODO: buscar o usuário logado
+  const nome = 'Usuário';
+  $('#usuario-nome').textContent = nome;
+  $('#usuario-iniciais').textContent = iniciais(nome);
+}
+
+// ---------- Tela: Atendimento ----------
+function carregarAtendimento() {
+  // TODO: buscar o nome da unidade
+  // $('#atend-unidade').textContent = 'Nome da unidade';
+  carregarAtendimentosAnteriores();
+}
+
+// Setores da aba aberta (Consulta ou Pronto Socorro)
+function carregarSetores() {
+  // TODO: buscar os setores de estado.modalidade e chamar preencherSetores(lista).
+  //   No Pronto Socorro, cada setor traz o valor da consulta de emergência:
+  //   preencherSetores([{ id: 10, nome: 'Pronto Socorro Adulto', valorConsulta: 250 }]);
+  preencherSetores([]);
+}
+
+function preencherSetores(lista) {
+  estado.setores = lista;
+  preencherSelect('#atend-setor', lista.map((s) => ({ valor: s.id, texto: s.nome })), 'Selecione o setor');
+  atualizarValorPS();
+}
+
+function setorSelecionado() {
+  return (estado.setores || []).find((s) => String(s.id) === String(estado.setor));
+}
+
+function atualizarValorPS() {
+  const s = setorSelecionado();
+  $('#atend-valor-ps').textContent = s ? (s.valorConsulta ? formatarMoeda(s.valorConsulta) : 'Informe na hora do pagamento') : 'Escolha o setor';
+}
+
+// Troca entre as abas Consulta e Pronto Socorro
+function trocarModalidade(modalidade) {
+  estado.modalidade = modalidade;
+  const m = MODALIDADES[modalidade];
+  document.querySelectorAll('[data-modalidade]').forEach((aba) => {
+    const ativa = aba.dataset.modalidade === modalidade;
+    aba.classList.toggle('ativa', ativa);
+    aba.setAttribute('aria-selected', ativa);
+  });
+  $('#atend-tipo').textContent = m.tipo;
+  $('#atend-abrir-titulo').textContent = m.titulo;
+  $('#atend-abrir-dica').textContent = m.dica;
+  $('#atend-abrir-icone').setAttribute('href', m.icone);
+  $('#atend-abrir-btn-texto').textContent = m.botao;
+  $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
+  $('#linha-medico').hidden = modalidade !== 'CONSULTA';
+  $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
+  estado.setor = '';
+  carregarSetores();
+  atualizarTituloAnteriores();
+  atualizarBotaoAbrir();
+  carregarAtendimentosAnteriores();
+}
+
+document.querySelectorAll('[data-modalidade]').forEach((aba) =>
+  aba.addEventListener('click', () => trocarModalidade(aba.dataset.modalidade)));
+
+function atualizarTituloAnteriores() {
+  const setor = estado.setor ? $('#atend-setor').selectedOptions[0]?.text : '';
+  $('#atend-setor-nome').textContent = [MODALIDADES[estado.modalidade].nome, setor].filter(Boolean).join(' · ');
+}
+
+$('#form-busca-atend').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const termo = $('#atend-busca').value.trim();
+  if (!termo) return;
+  // TODO: buscar pacientes por nome/CPF e chamar renderResultadosBusca(lista)
+  //   cada item: { id, nome, cpf, nascimento: 'AAAA-MM-DD' }
+  console.log('Buscar paciente', termo);
+});
+
+$('#atend-resultados').addEventListener('click', (e) => {
+  const item = e.target.closest('li');
+  if (!item) return;
+  const lista = JSON.parse($('#atend-resultados').dataset.lista || '[]');
+  selecionarPaciente(lista[item.dataset.indice]);
+});
+
+$('#btn-historico-busca').addEventListener('click', () => {
+  // TODO: mostrar as últimas buscas / últimos pacientes atendidos
+  console.log('Histórico de buscas');
+});
+
+// Cadastro rápido (no Pronto Socorro basta o nome)
+$('#btn-novo-paciente').addEventListener('click', () => {
+  const f = $('#form-paciente-rapido');
+  f.hidden = !f.hidden;
+  if (!f.hidden) {
+    const termo = $('#atend-busca').value.trim();
+    if (termo && !/\d/.test(termo)) $('#rap-nome').value = termo; // aproveita o nome digitado na busca
+    $('#rap-nome').focus();
+  }
+});
+
+$('#btn-cancelar-rapido').addEventListener('click', () => {
+  $('#form-paciente-rapido').reset();
+  $('#form-paciente-rapido').hidden = true;
+});
+
+$('#form-paciente-rapido').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const paciente = {
+    nome: $('#rap-nome').value.trim(),
+    cpf: $('#rap-cpf').value.trim(),
+    nascimento: $('#rap-nascimento').value,
+    telefone: $('#rap-telefone').value.trim(),
+  };
+  if (!paciente.nome) return;
+  const salvo = await cadastrarPaciente(paciente);
+  e.target.reset();
+  e.target.hidden = true;
+  selecionarPaciente(salvo);
+});
+
+async function cadastrarPaciente(paciente) {
+  // TODO: salvar o paciente novo e devolver com o id gerado
+  console.log('Cadastrar paciente', paciente);
+  return { id: `novo-${Date.now()}`, ...paciente };
+}
+
+$('#atend-setor').addEventListener('change', (e) => {
+  estado.setor = e.target.value;
+  atualizarValorPS();
+  atualizarTituloAnteriores();
+  atualizarBotaoAbrir();
+  carregarAtendimentosAnteriores();
+});
+
+$('#btn-atualizar-setor').addEventListener('click', () => { estado.setor = ''; carregarSetores(); atualizarTituloAnteriores(); atualizarBotaoAbrir(); });
+
+function carregarAtendimentosAnteriores() {
+  if (!estado.paciente) { renderAnteriores([]); return; }
+  // TODO: buscar atendimentos anteriores do paciente na aba aberta (estado.modalidade)
+  //   cada item: { numero, tipo: 'CONSULTA' | 'PRONTO_SOCORRO', senha, status,
+  //                entrada: 'AAAA-MM-DDTHH:MM', alta, medico, valor }
+  renderAnteriores([]);
+}
+
+$('#btn-atualizar-anteriores').addEventListener('click', () => carregarAtendimentosAnteriores());
+
+// ---------- Médicos da aba Consulta ----------
+function carregarMedicosConsulta() {
+  // TODO: buscar médicos que atendem consulta particular e chamar:
+  // preencherMedicosConsulta([{ id: 1, nome: 'Dr. Fulano', valorConsulta: 250 }]);
+  preencherMedicosConsulta([]);
+}
+
+function preencherMedicosConsulta(lista) {
+  estado.medicosConsulta = lista;
+  preencherSelect('#atend-medico', lista.map((m) => ({ valor: m.id, texto: m.nome })), 'Selecione o médico');
+  $('#atend-valor-consulta').textContent = '—';
+}
+
+function medicoConsultaSelecionado() {
+  return estado.medicosConsulta.find((m) => String(m.id) === $('#atend-medico').value);
+}
+
+$('#atend-medico').addEventListener('change', () => {
+  const m = medicoConsultaSelecionado();
+  $('#atend-valor-consulta').textContent = m ? formatarMoeda(m.valorConsulta) : '—';
+  atualizarBotaoAbrir();
+});
+
+// ---------- Abrir atendimento ----------
+// Consulta: abre a janela de pagamento primeiro; só abre a consulta se o pagamento for confirmado.
+// Pronto Socorro: também paga antes; o valor vem do setor (consulta de emergência).
+$('#btn-abrir-atendimento').addEventListener('click', async () => {
+  const setor = $('#atend-setor').selectedOptions[0]?.text || '';
+  const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
+
+  if (estado.modalidade === 'CONSULTA') {
+    const m = medicoConsultaSelecionado();
+    const pagamento = await abrirPagamento({
+      descricao: `Consulta particular · ${estado.paciente.nome}`,
+      itens: [{ nome: `Consulta · ${m?.nome || 'médico'} · ${setor}`, valor: m?.valorConsulta || 0 }],
+      valor: m?.valorConsulta || 0,
+      valorEditavel: true,
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: m?.nome || '' },
+    });
+    if (!pagamento) return; // cancelou: a consulta NÃO é aberta
+    dados.medico = m;
+    dados.valor = pagamento.valor;
+    dados.pagamento = pagamento;
+  } else {
+    const s = setorSelecionado();
+    const valor = s?.valorConsulta || 0;
+    const pagamento = await abrirPagamento({
+      descricao: `Pronto Socorro · ${estado.paciente.nome}`,
+      itens: [{ nome: `Consulta de emergência · ${setor}`, valor }],
+      valor,
+      valorEditavel: true,
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, cpf: estado.paciente.cpf, medico: setor },
+    });
+    if (!pagamento) return; // cancelou: o paciente NÃO é liberado
+    dados.valor = pagamento.valor;
+    dados.pagamento = pagamento;
+  }
+
+  // Pago: o paciente fica liberado para a consulta (status AGUARDANDO)
+  await registrarAtendimento(dados);
+  carregarAtendimentosAnteriores();
+});
+
+async function registrarAtendimento(dados) {
+  // TODO: salvar o atendimento (consulta ou pronto socorro).
+  //   dados = { paciente, setor, modalidade, medico?, valor, pagamento }
+  //   dados.pagamento sempre existe (já foi confirmado). Grave com status AGUARDANDO (liberado para consulta).
+  console.log('Abrir atendimento', dados);
+}
+
+// =========================================================
+//   JANELA DE PAGAMENTO
+//   abrirPagamento({ descricao, itens, valor, valorEditavel, desconto })
+//   devolve o pagamento confirmado, ou null se cancelar.
+// =========================================================
+let resolverPagamento = null;
+
+let contextoPagamento = null;
+let itensPagamento = null;
+
+function abrirPagamento({ descricao = '', itens = [], valor = 0, valorEditavel = false, desconto = 0, contexto = null } = {}) {
+  const f = $('#form-pagamento');
+  contextoPagamento = contexto; // { tipo: 'CONSULTA' | 'EXAMES', paciente, cpf, medico }
+  itensPagamento = { descricao, itens, desconto };
+  f.reset();
+  $('#pg-descricao').textContent = descricao;
+  $('#pg-itens').innerHTML = itens.map((i) => `<li><span>${esc(i.nome)}</span><span>${formatarMoeda(i.valor)}</span></li>`).join('')
+    + (desconto ? `<li class="desconto"><span>Desconto</span><span>− ${formatarMoeda(desconto)}</span></li>` : '');
+  $('#pg-valor').value = valorCampo(valor);
+  $('#pg-valor').readOnly = !valorEditavel;
+  $('#pg-erro').textContent = '';
+  atualizarFormaPagamento();
+  $('#modal-pagamento').hidden = false;
+  (valorEditavel && !valor ? $('#pg-valor') : f.querySelector('input[name="pgForma"]')).focus();
+  return new Promise((resolver) => { resolverPagamento = resolver; });
+}
+
+function fecharPagamento(resultado) {
+  $('#modal-pagamento').hidden = true;
+  if (resolverPagamento) resolverPagamento(resultado);
+  resolverPagamento = null;
+}
+
+function formaPagamentoAtual() {
+  return document.querySelector('input[name="pgForma"]:checked')?.value || '';
+}
+
+function atualizarFormaPagamento() {
+  const forma = formaPagamentoAtual();
+  ['credito', 'debito', 'pix', 'dinheiro'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
+  const total = lerMoeda($('#pg-valor').value);
+  const sel = $('#pg-parcelas'), atual = sel.value || '1';
+  sel.innerHTML = [1, 2, 3, 4, 5, 6].map((n) =>
+    `<option value="${n}">${n}x de ${formatarMoeda(total / n)}${n === 1 ? ' (à vista)' : ''}</option>`).join('');
+  sel.value = atual;
+  const troco = lerMoeda($('#pg-recebido').value) - total;
+  $('#pg-troco').textContent = formatarMoeda(troco > 0 ? troco : 0);
+  $('#pg-erro').textContent = '';
+}
+
+$('#form-pagamento').addEventListener('input', atualizarFormaPagamento);
+$('#form-pagamento').addEventListener('change', atualizarFormaPagamento);
+document.querySelectorAll('[data-pg-cancelar]').forEach((b) => b.addEventListener('click', () => fecharPagamento(null)));
+$('#modal-pagamento').addEventListener('click', (e) => { if (e.target.id === 'modal-pagamento') fecharPagamento(null); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-pagamento').hidden) fecharPagamento(null); });
+
+$('#form-pagamento').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const valor = lerMoeda($('#pg-valor').value);
+  const forma = formaPagamentoAtual();
+  const erro = (t) => { $('#pg-erro').textContent = t; };
+  if (!valor) return erro('Informe o valor a pagar.');
+  if (!forma) return erro('Escolha a forma de pagamento.');
+
+  const pagamento = { forma, valor, dataHora: new Date().toISOString() };
+  if (forma === 'CREDITO') Object.assign(pagamento, { parcelas: Number($('#pg-parcelas').value), autorizacao: $('#pg-nsu-credito').value.trim() });
+  if (forma === 'DEBITO') pagamento.autorizacao = $('#pg-nsu-debito').value.trim();
+  if (forma === 'PIX') pagamento.idTransacao = $('#pg-id-pix').value.trim();
+  if (forma === 'DINHEIRO') {
+    const recebido = lerMoeda($('#pg-recebido').value);
+    if (recebido < valor) return erro(`Valor recebido menor que o total (${formatarMoeda(valor)}).`);
+    Object.assign(pagamento, { recebido, troco: Math.round((recebido - valor) * 100) / 100 });
+  }
+  if (contextoPagamento) pagamento.contexto = contextoPagamento;
+  Object.assign(pagamento, itensPagamento); // descricao, itens, desconto (para o recibo)
+  estado.ultimoPagamento = pagamento;
+  const registro = await registrarPagamento(pagamento);
+  pagamento.numeroRecibo = registro?.numeroRecibo || gerarNumeroRecibo();
+  fecharPagamento(pagamento);
+  if (CONFIG.reciboAutomatico) mostrarRecibo(pagamento);
+});
+
+// Número provisório do recibo. O ideal é o seu sistema devolver o número em registrarPagamento().
+function gerarNumeroRecibo() {
+  const d = new Date();
+  const data = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  return `${data}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
+// Todo pagamento confirmado passa por aqui (consulta ou exames).
+// pagamento.contexto = { tipo: 'CONSULTA' | 'EXAMES', paciente, medico }
+async function registrarPagamento(pagamento) {
+  // TODO: gravar o recebimento no seu sistema (é ele que alimenta o Financeiro).
+  //   Se o sistema gerar o número do recibo, devolva { numeroRecibo: '...' }.
+  console.log('Pagamento confirmado', pagamento);
+  return null;
+}
+
+// =========================================================
+//   RECIBO
+// =========================================================
+
+// Valor por extenso em reais: 1250.5 → "mil duzentos e cinquenta reais e cinquenta centavos"
+function valorPorExtenso(valor) {
+  const U = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze',
+    'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const D = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const C = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  const ate999 = (n) => {
+    if (n === 100) return 'cem';
+    const partes = [];
+    const c = Math.floor(n / 100), r = n % 100;
+    if (c) partes.push(C[c]);
+    if (r) partes.push(r < 20 ? U[r] : D[Math.floor(r / 10)] + (r % 10 ? ' e ' + U[r % 10] : ''));
+    return partes.join(' e ');
+  };
+  const inteiro = (n) => {
+    if (n === 0) return 'zero';
+    const mi = Math.floor(n / 1e6), mil = Math.floor((n % 1e6) / 1000), resto = n % 1000;
+    const grupos = []; // [valor do grupo, texto]
+    if (mi) grupos.push([mi, mi === 1 ? 'um milhão' : `${ate999(mi)} milhões`]);
+    if (mil) grupos.push([mil, mil === 1 ? 'mil' : `${ate999(mil)} mil`]);
+    if (resto) grupos.push([resto, ate999(resto)]);
+    // "e" antes do último grupo quando ele é redondo: "mil e cem", "dois milhões e quinhentos mil"
+    const [ultimoValor] = grupos[grupos.length - 1];
+    if (grupos.length > 1 && (ultimoValor < 100 || ultimoValor % 100 === 0)) grupos[grupos.length - 1][1] = 'e ' + grupos[grupos.length - 1][1];
+    return grupos.map((g) => g[1]).join(' ');
+  };
+  const centavosTotal = Math.round(Number(valor || 0) * 100);
+  const reais = Math.floor(centavosTotal / 100), centavos = centavosTotal % 100;
+  const parteReais = reais
+    ? `${inteiro(reais)}${reais % 1e6 === 0 && reais >= 1e6 ? ' de' : ''} ${reais === 1 ? 'real' : 'reais'}` : '';
+  const parteCentavos = centavos ? `${ate999(centavos)} ${centavos === 1 ? 'centavo' : 'centavos'}` : '';
+  if (parteReais && parteCentavos) return `${parteReais} e ${parteCentavos}`;
+  return parteReais || parteCentavos || 'zero real';
+}
+
+function dataHoraBR(iso) {
+  const d = new Date(iso || Date.now());
+  return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function mostrarRecibo(p) {
+  const area = $('#recibo-area');
+  if (!p) {
+    area.innerHTML = '<p class="recibo-vazio">Nenhum pagamento feito ainda. O recibo aparece aqui depois do primeiro pagamento.</p>';
+  } else {
+    const e = CONFIG.empresa;
+    const ctx = p.contexto || {};
+    const itens = p.itens?.length ? p.itens : [{ nome: p.descricao || 'Pagamento', valor: p.valor }];
+    const subtotal = itens.reduce((t, i) => t + Number(i.valor || 0), 0);
+    const referente = ctx.tipo === 'EXAMES' ? 'exames particulares' : (p.descricao || '').toLowerCase().includes('pronto socorro')
+      ? 'consulta de emergência (Pronto Socorro)' : 'consulta particular';
+    const detalhes = [
+      ['Forma de pagamento', NOMES_FORMA[p.forma] || p.forma],
+      p.parcelas > 1 && ['Parcelas', `${p.parcelas}x de ${formatarMoeda(p.valor / p.parcelas)}`],
+      p.autorizacao && ['Autorização / NSU', p.autorizacao],
+      p.idTransacao && ['ID da transação Pix', p.idTransacao],
+      p.forma === 'DINHEIRO' && ['Valor recebido', formatarMoeda(p.recebido)],
+      p.forma === 'DINHEIRO' && ['Troco', formatarMoeda(p.troco || 0)],
+      ctx.medico && [ctx.tipo === 'EXAMES' ? 'Médico solicitante' : 'Médico / setor', ctx.medico],
+      ctx.atendimento && ['Atendimento', ctx.atendimento],
+    ].filter(Boolean);
+
+    area.innerHTML = `
+      <div class="recibo">
+        <div class="recibo-topo">
+          <div class="recibo-empresa">
+            <strong>${esc(e.nome)}</strong>
+            <span>CNPJ ${esc(e.cnpj)}</span>
+            <span>${esc(e.endereco)}</span>
+            <span>Tel. ${esc(e.telefone)}</span>
+          </div>
+          <div class="recibo-numero">
+            <h2>RECIBO</h2>
+            <span>Nº ${esc(p.numeroRecibo || '—')}</span>
+            <span>${dataHoraBR(p.dataHora)}</span>
+            <span class="recibo-valor">${formatarMoeda(p.valor)}</span>
+          </div>
+        </div>
+
+        <p class="recibo-texto">
+          Recebemos de <strong>${esc(ctx.paciente || 'paciente')}</strong>${ctx.cpf ? `, CPF ${esc(ctx.cpf)},` : ''}
+          a importância de <strong>${formatarMoeda(p.valor)}</strong> (${valorPorExtenso(p.valor)}),
+          referente a ${referente}, conforme os itens abaixo.
+        </p>
+
+        <table>
+          <thead><tr><th>Descrição</th><th>Valor</th></tr></thead>
+          <tbody>${itens.map((i) => `<tr><td>${esc(i.nome)}</td><td>${formatarMoeda(i.valor)}</td></tr>`).join('')}</tbody>
+          <tfoot>
+            ${p.desconto ? `<tr><td>Subtotal</td><td>${formatarMoeda(subtotal)}</td></tr>
+                            <tr><td>Desconto</td><td>− ${formatarMoeda(p.desconto)}</td></tr>` : ''}
+            <tr class="total"><td>Total pago</td><td>${formatarMoeda(p.valor)}</td></tr>
+          </tfoot>
+        </table>
+
+        <div class="recibo-pagamento">
+          ${detalhes.map(([k, v]) => `<div><span>${esc(k)}:</span> <strong>${esc(v)}</strong></div>`).join('')}
+        </div>
+
+        <div class="recibo-assinatura">
+          <div>${esc($('#usuario-nome').textContent || 'Atendente')}<br>Atendente</div>
+          <div>Assinatura / carimbo<br>Hospital</div>
+        </div>
+
+        <p class="recibo-rodape">Este recibo comprova o pagamento e não substitui a nota fiscal.</p>
+      </div>`;
+  }
+  $('#btn-imprimir-recibo').hidden = !p;
+  $('#modal-recibo').hidden = false;
+  $('#btn-fechar-recibo').focus();
+}
+
+function fecharRecibo() { $('#modal-recibo').hidden = true; }
+$('#btn-fechar-recibo').addEventListener('click', fecharRecibo);
+$('#modal-recibo').addEventListener('click', (e) => { if (e.target.id === 'modal-recibo') fecharRecibo(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-recibo').hidden) fecharRecibo(); });
+$('#btn-imprimir-recibo').addEventListener('click', () => {
+  // TODO: se usar impressora térmica ou outro modelo, troque aqui
+  window.print();
+});
+
+const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
+function descreverPagamento(p) {
+  if (!p) return '';
+  let t = `${formatarMoeda(p.valor)} no ${NOMES_FORMA[p.forma] || p.forma}`;
+  if (p.parcelas > 1) t += ` em ${p.parcelas}x`;
+  if (p.troco) t += ` (troco ${formatarMoeda(p.troco)})`;
+  return t;
+}
+
+// Botão "Exames" de um atendimento de Pronto Socorro: abre a requisição vinculada a ele
+document.addEventListener('click', (e) => {
+  const botao = e.target.closest('[data-exames-atend]');
+  if (!botao) return;
+  const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.examesAtend);
+  estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico };
+  location.hash = '#exames';
+});
+
+// Botão "Concluir consulta": o médico atendeu; a partir daí pode pedir exames
+document.addEventListener('click', async (e) => {
+  const botao = e.target.closest('[data-concluir-atend]');
+  if (!botao) return;
+  const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.concluirAtend);
+  if (!a || !(await confirmar(`Marcar a consulta ${a.numero} como realizada?`, 'Concluir consulta'))) return;
+  await registrarConclusaoConsulta(a);
+  carregarAtendimentosAnteriores();
+});
+
+async function registrarConclusaoConsulta(atendimento) {
+  // TODO: marcar a consulta como realizada (status ATENDIDA) no seu sistema
+  console.log('Concluir consulta', atendimento);
+}
+
+// Botões "Recibo" (lista de atendimentos e Financeiro)
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-recibo-atend], [data-recibo-fin]');
+  if (!b) return;
+  const p = b.dataset.reciboAtend
+    ? estado.anteriores.find((x) => String(x.numero) === b.dataset.reciboAtend)?.pagamento
+    : estado.recebimentosTela?.[b.dataset.reciboFin]?.pagamento;
+  mostrarRecibo(p || null);
+});
+
+// Botão "Exames" do topo: requisição avulsa, sem vínculo
+$('#btn-exames-avulso').addEventListener('click', () => { estado.vinculoExames = null; });
+
+$('#btn-recibo').addEventListener('click', () => mostrarRecibo(estado.ultimoPagamento));
+
+$('#btn-etiqueta').addEventListener('click', () => {
+  // TODO: imprimir etiqueta avulsa
+  console.log('Etiqueta avulsa');
+});
+
+// ---------- Valores em reais ----------
+// Converte "1.234,56", "180", "180,5" ou "R$ 90,00" em número
+function lerMoeda(texto) {
+  let s = String(texto ?? '').replace(/[^\d,.-]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+}
+
+// Número para "1.234,56" (sem o R$), para colocar dentro de campos
+function valorCampo(n) {
+  return n ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+}
+
+// Ao sair de um campo de valor, deixa no formato 0,00
+document.addEventListener('focusout', (e) => {
+  if (e.target.classList?.contains('input-valor') && e.target.value.trim()) {
+    e.target.value = valorCampo(lerMoeda(e.target.value));
+  }
+});
+
+// ---------- Tabela de preços ----------
+// Valores e códigos de EXEMPLO: ajuste para a tabela real.
+// TODO: quando tiver API, buscar a tabela de lá em vez do navegador.
+
+const CATEGORIAS_EXAME = ['Ultrassonografia', 'Tomografia', 'Ressonância magnética', 'Raio-X', 'Mamografia',
+  'Densitometria', 'Eletrocardiograma', 'Ecocardiograma', 'Endoscopia', 'Outro'];
+
+const PRECOS_EXEMPLO = {
+  imagem: [
+    { categoria: 'Ultrassonografia', nome: 'USG de abdome total', valor: 180 },
+    { categoria: 'Ultrassonografia', nome: 'USG de abdome superior', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG pélvica', valor: 140 },
+    { categoria: 'Ultrassonografia', nome: 'USG transvaginal', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG de tireoide', valor: 140 },
+    { categoria: 'Ultrassonografia', nome: 'USG de mamas', valor: 160 },
+    { categoria: 'Ultrassonografia', nome: 'USG de rins e vias urinárias', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG de próstata', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG obstétrica', valor: 160 },
+    { categoria: 'Tomografia', nome: 'TC de crânio', valor: 350 },
+    { categoria: 'Tomografia', nome: 'TC de tórax', valor: 420 },
+    { categoria: 'Tomografia', nome: 'TC de abdome total', valor: 650 },
+    { categoria: 'Tomografia', nome: 'TC de seios da face', valor: 330 },
+    { categoria: 'Tomografia', nome: 'TC de coluna lombar', valor: 450 },
+    { categoria: 'Ressonância magnética', nome: 'RM de crânio', valor: 800 },
+    { categoria: 'Ressonância magnética', nome: 'RM de coluna lombar', valor: 850 },
+    { categoria: 'Ressonância magnética', nome: 'RM de joelho', valor: 750 },
+    { categoria: 'Ressonância magnética', nome: 'RM de ombro', valor: 750 },
+    { categoria: 'Raio-X', nome: 'RX de tórax PA e perfil', valor: 90 },
+    { categoria: 'Raio-X', nome: 'RX de coluna lombar', valor: 100 },
+    { categoria: 'Raio-X', nome: 'RX de joelho', valor: 80 },
+    { categoria: 'Raio-X', nome: 'RX de seios da face', valor: 80 },
+    { categoria: 'Mamografia', nome: 'Mamografia bilateral', valor: 150 },
+    { categoria: 'Densitometria', nome: 'Densitometria óssea', valor: 160 },
+    { categoria: 'Eletrocardiograma', nome: 'Eletrocardiograma (ECG)', valor: 60 },
+    { categoria: 'Ecocardiograma', nome: 'Ecocardiograma transtorácico', valor: 250 },
+    { categoria: 'Endoscopia', nome: 'Endoscopia digestiva alta', valor: 350 },
+    { categoria: 'Endoscopia', nome: 'Colonoscopia', valor: 700 },
+  ],
+  laboratorial: [
+    { codigo: '40304361', nome: 'Hemograma completo', valor: 25 },
+    { codigo: '40302040', nome: 'Glicose', valor: 10 },
+    { codigo: '40301630', nome: 'Creatinina', valor: 12 },
+  ],
+};
+
+const CHAVE_PRECOS = 'consultaParticular.tabelaPrecos';
+let precos = carregarTabelaPrecos();
+
+function copiarExemplos() {
+  return JSON.parse(JSON.stringify(PRECOS_EXEMPLO));
+}
+
+function carregarTabelaPrecos() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_PRECOS));
+    if (salvo && Array.isArray(salvo.imagem) && Array.isArray(salvo.laboratorial)) return salvo;
+  } catch (e) { /* navegador sem armazenamento: usa os exemplos */ }
+  return copiarExemplos();
+}
+
+function salvarTabelaPrecos() {
+  try { localStorage.setItem(CHAVE_PRECOS, JSON.stringify(precos)); } catch (e) { /* ignora */ }
+}
+
+const normalizar = (t) => String(t || '').trim().toLowerCase();
+const precoImagem = (nome) => precos.imagem.find((p) => normalizar(p.nome) === normalizar(nome));
+const precoLab = (codigo) => precos.laboratorial.find((p) => normalizar(p.codigo) === normalizar(codigo));
+
+// Preenche todos os <select> de tipo de exame
+document.querySelectorAll('.sel-categoria').forEach((sel) => {
+  sel.innerHTML = CATEGORIAS_EXAME.map((c) => `<option>${esc(c)}</option>`).join('');
+});
+
+function carregarPrecos() {
+  renderPrecos();
+}
+
+function botaoRemover(atributos) {
+  return `<button type="button" class="btn-icone btn-remover" ${atributos} title="Remover"><svg class="i"><use href="#i-trash"/></svg></button>`;
+}
+
+function renderPrecos() {
+  $('#tabela-pr-imagem').innerHTML = precos.imagem.map((p, i) => `
+    <tr>
+      <td>${esc(p.categoria)}</td>
+      <td>${esc(p.nome)}</td>
+      <td><input class="input-tabela input-valor" data-preco="imagem" data-indice="${i}" value="${valorCampo(p.valor)}" inputmode="decimal" aria-label="Valor de ${esc(p.nome)}"></td>
+      <td>${botaoRemover(`data-remover-preco="imagem" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+  $('#tabela-pr-lab').innerHTML = precos.laboratorial.map((p, i) => `
+    <tr>
+      <td>${esc(p.codigo)}</td>
+      <td>${esc(p.nome)}</td>
+      <td><input class="input-tabela input-valor" data-preco="laboratorial" data-indice="${i}" value="${valorCampo(p.valor)}" inputmode="decimal" aria-label="Valor de ${esc(p.nome)}"></td>
+      <td>${botaoRemover(`data-remover-preco="laboratorial" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+  $('#pill-pr-imagem').textContent = `${precos.imagem.length} exames`;
+  $('#pill-pr-lab').textContent = `${precos.laboratorial.length} exames`;
+}
+
+// Alterar valor direto na tabela de preços
+document.querySelector('#tela-precos').addEventListener('change', (e) => {
+  const lista = e.target.dataset.preco;
+  if (!lista) return;
+  precos[lista][e.target.dataset.indice].valor = lerMoeda(e.target.value);
+  salvarTabelaPrecos();
+  $('#status-precos').textContent = 'Valor atualizado.';
+});
+
+document.querySelector('#tela-precos').addEventListener('click', async (e) => {
+  const botao = e.target.closest('[data-remover-preco]');
+  if (!botao) return;
+  const item = precos[botao.dataset.removerPreco][botao.dataset.indice];
+  if (!(await confirmar(`Remover "${item.nome}" da tabela de preços?`, 'Remover'))) return;
+  precos[botao.dataset.removerPreco].splice(Number(botao.dataset.indice), 1);
+  salvarTabelaPrecos();
+  renderPrecos();
+});
+
+$('#form-preco-imagem').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nome = $('#pr-nome').value.trim();
+  const valor = lerMoeda($('#pr-valor').value);
+  if (!valor) { $('#status-precos').textContent = 'Informe um valor maior que zero.'; return; }
+  const existente = precoImagem(nome);
+  if (existente) Object.assign(existente, { categoria: $('#pr-categoria').value, valor });
+  else precos.imagem.push({ categoria: $('#pr-categoria').value, nome, valor });
+  salvarTabelaPrecos();
+  renderPrecos();
+  e.target.reset();
+  $('#status-precos').textContent = existente ? `Valor de "${nome}" atualizado.` : `"${nome}" incluído.`;
+});
+
+$('#form-preco-lab').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const codigo = $('#pr-codigo').value.trim();
+  const nome = $('#pr-nome-lab').value.trim();
+  const valor = lerMoeda($('#pr-valor-lab').value);
+  if (!valor) { $('#status-precos').textContent = 'Informe um valor maior que zero.'; return; }
+  const existente = precoLab(codigo);
+  if (existente) Object.assign(existente, { nome, valor });
+  else precos.laboratorial.push({ codigo, nome, valor });
+  salvarTabelaPrecos();
+  renderPrecos();
+  e.target.reset();
+  $('#status-precos').textContent = existente ? `Valor do nº ${codigo} atualizado.` : `Nº ${codigo} incluído.`;
+});
+
+$('#btn-restaurar-precos').addEventListener('click', async () => {
+  if (!(await confirmar('Voltar a tabela de preços para os valores de exemplo? Suas alterações serão perdidas.', 'Restaurar'))) return;
+  precos = copiarExemplos();
+  salvarTabelaPrecos();
+  renderPrecos();
+  $('#status-precos').textContent = 'Tabela restaurada.';
+});
+
+// ---------- Tela: Exames ----------
+// A montagem da lista (adicionar, numerar, precificar, remover) já funciona.
+// Falta só o salvamento e a lista de médicos (TODO).
+
+function carregarExames() {
+  // TODO: preencher a lista de médicos solicitantes
+  // preencherSelect('#ex-medico', [{ valor: '1', texto: 'Dr. Fulano' }]);
+  if (!$('#ex-data').value) $('#ex-data').value = new Date().toISOString().slice(0, 10);
+  renderPacienteExames();
+  renderVinculoExames();
+  atualizarSugestoesExames();
+  trocarTipoExame(false);
+  renderExames();
+}
+
+function renderPacienteExames() {
+  const p = estado.paciente;
+  $('#ex-paciente').innerHTML = p
+    ? `<div class="paciente-selecionado"><strong>${esc(p.nome)}</strong>
+         <small style="display:block;color:var(--muted);margin-top:4px">CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small></div>`
+    : `<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Selecione na tela Atendimento</a>.</p>`;
+}
+
+function renderVinculoExames() {
+  const v = estado.vinculoExames;
+  $('#ex-vinculo').innerHTML = v
+    ? `<div class="paciente-selecionado"><strong>${esc(MODALIDADES[v.modalidade]?.nome || v.modalidade)} · Atend. ${esc(v.numero)}</strong>
+         <small style="display:block;color:var(--muted);margin-top:4px">Entrada ${formatarDataHora(v.entrada)}${v.medico && v.medico !== '—' ? ' · ' + esc(v.medico) : ''}</small></div>
+       <div class="vinculo-acoes"><button type="button" class="btn btn-pequeno" id="btn-desvincular">Tornar avulsa</button></div>`
+    : `<p class="paciente-vazio">Requisição avulsa.<br>Para vincular a uma consulta ou atendimento de Pronto Socorro, use o botão <strong>Pedir exames</strong> na lista de atendimentos.</p>`;
+  $('#btn-desvincular')?.addEventListener('click', () => { estado.vinculoExames = null; renderVinculoExames(); });
+}
+
+function tipoExameAtual() {
+  return document.querySelector('input[name="tipoExame"]:checked').value;
+}
+
+function atualizarSugestoesExames() {
+  const categoria = $('#ex-categoria').value;
+  $('#sugestoes-exames').innerHTML = precos.imagem
+    .filter((p) => p.categoria === categoria)
+    .map((p) => `<option value="${esc(p.nome)}" label="${formatarMoeda(p.valor)}">`).join('');
+}
+
+function trocarTipoExame(focar = true) {
+  const lab = tipoExameAtual() === 'laboratorial';
+  $('#campos-imagem').hidden = lab;
+  $('#campos-lab').hidden = !lab;
+  $('#dica-exame').textContent = lab
+    ? 'Digite o nº laboratorial: nome e valor vêm da tabela de preços. Para vários de uma vez, separe por vírgula ou espaço.'
+    : 'Escolha ou digite o nome do exame: o valor vem da tabela de preços e pode ser alterado.';
+  if (focar) (lab ? $('#ex-codigo') : $('#ex-nome')).focus();
+}
+
+document.querySelectorAll('input[name="tipoExame"]').forEach((r) => r.addEventListener('change', () => trocarTipoExame()));
+$('#ex-categoria').addEventListener('change', () => { atualizarSugestoesExames(); $('#ex-nome').focus(); });
+
+// Ao escolher o exame, puxa o valor da tabela de preços
+$('#ex-nome').addEventListener('input', (e) => {
+  e.target.setCustomValidity('');
+  const p = precoImagem(e.target.value);
+  if (p) {
+    $('#ex-valor').value = valorCampo(p.valor);
+    $('#ex-categoria').value = p.categoria;
+  }
+});
+
+$('#ex-codigo').addEventListener('input', (e) => {
+  e.target.setCustomValidity('');
+  const p = precoLab(e.target.value);
+  if (p) {
+    $('#ex-nome-lab').value = p.nome;
+    $('#ex-valor-lab').value = valorCampo(p.valor);
+  }
+});
+
+$('#form-exame').addEventListener('submit', (e) => {
+  e.preventDefault();
+  $('#status-exames').textContent = '';
+
+  if (tipoExameAtual() === 'imagem') {
+    const campo = $('#ex-nome');
+    const nome = campo.value.trim();
+    if (!nome) { campo.setCustomValidity('Digite o nome do exame.'); campo.reportValidity(); return; }
+    const valor = lerMoeda($('#ex-valor').value) || precoImagem(nome)?.valor || 0;
+    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome, valor });
+    campo.value = '';
+    $('#ex-valor').value = '';
+    campo.focus();
+  } else {
+    const campo = $('#ex-codigo');
+    const codigos = campo.value.split(/[\s,;]+/).filter(Boolean);
+    if (!codigos.length) { campo.setCustomValidity('Digite o nº laboratorial.'); campo.reportValidity(); return; }
+    const umSo = codigos.length === 1;
+    const repetidos = [];
+    codigos.forEach((codigo) => {
+      if (estado.exames.laboratorial.some((x) => x.codigo === codigo)) { repetidos.push(codigo); return; }
+      const p = precoLab(codigo);
+      estado.exames.laboratorial.push({
+        codigo,
+        nome: (umSo && $('#ex-nome-lab').value.trim()) || p?.nome || '',
+        valor: (umSo && lerMoeda($('#ex-valor-lab').value)) || p?.valor || 0,
+      });
+    });
+    if (repetidos.length) $('#status-exames').textContent = `Já estava na lista: ${repetidos.join(', ')}`;
+    campo.value = '';
+    $('#ex-nome-lab').value = '';
+    $('#ex-valor-lab').value = '';
+    campo.focus();
+  }
+  renderExames();
+});
+
+function campoValorTabela(lista, i, valor) {
+  return `<input class="input-tabela input-valor${valor ? '' : ' sem-valor'}" data-valor-exame="${lista}" data-indice="${i}"
+    value="${valorCampo(valor)}" inputmode="decimal" placeholder="0,00" aria-label="Valor do item ${i + 1}">`;
+}
+
+function renderExames() {
+  const { imagem, laboratorial } = estado.exames;
+
+  $('#tabela-ex-imagem').innerHTML = imagem.map((x, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${esc(x.categoria)}</td>
+      <td>${esc(x.nome)}</td>
+      <td>${campoValorTabela('imagem', i, x.valor)}</td>
+      <td>${botaoRemover(`data-remover="imagem" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+
+  $('#tabela-ex-lab').innerHTML = laboratorial.map((x, i) => `
+    <tr>
+      <td><span class="num-lab">${String(i + 1).padStart(2, '0')}</span></td>
+      <td><input class="input-tabela" data-editar-lab="${i}" value="${esc(x.codigo)}" aria-label="Nº laboratorial do item ${i + 1}"></td>
+      <td>${esc(x.nome) || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${campoValorTabela('laboratorial', i, x.valor)}</td>
+      <td>${botaoRemover(`data-remover="laboratorial" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+
+  $('#vazio-ex-imagem').hidden = imagem.length > 0;
+  $('#vazio-ex-lab').hidden = laboratorial.length > 0;
+  $('#pill-imagem').textContent = `${imagem.length} exame${imagem.length === 1 ? '' : 's'}`;
+  $('#pill-lab').textContent = `${laboratorial.length} exame${laboratorial.length === 1 ? '' : 's'}`;
+  $('#ex-total-imagem').textContent = `(${imagem.length})`;
+  $('#ex-total-lab').textContent = `(${laboratorial.length})`;
+  $('#btn-salvar-exames').disabled = imagem.length + laboratorial.length === 0;
+  atualizarTotaisExames();
+}
+
+function calcularTotaisExames() {
+  const soma = (lista) => lista.reduce((t, x) => t + (x.valor || 0), 0);
+  const subtotalImagem = soma(estado.exames.imagem);
+  const subtotalLaboratorial = soma(estado.exames.laboratorial);
+  const bruto = subtotalImagem + subtotalLaboratorial;
+  const desconto = Math.min(lerMoeda($('#ex-desconto').value), bruto);
+  const semValor = [...estado.exames.imagem, ...estado.exames.laboratorial].filter((x) => !x.valor).length;
+  return { subtotalImagem, subtotalLaboratorial, desconto, total: Math.round((bruto - desconto) * 100) / 100, semValor };
+}
+
+function atualizarTotaisExames() {
+  const t = calcularTotaisExames();
+  $('#ex-subtotal-imagem').textContent = formatarMoeda(t.subtotalImagem);
+  $('#ex-subtotal-lab').textContent = formatarMoeda(t.subtotalLaboratorial);
+  $('#ex-total').textContent = formatarMoeda(t.total);
+  const aviso = $('#ex-aviso-sem-valor');
+  aviso.hidden = t.semValor === 0;
+  aviso.textContent = t.semValor === 1 ? '1 exame está sem valor.' : `${t.semValor} exames estão sem valor.`;
+}
+
+$('#ex-desconto').addEventListener('input', atualizarTotaisExames);
+
+// Remover exame
+document.querySelector('#tela-exames').addEventListener('click', (e) => {
+  const botao = e.target.closest('[data-remover]');
+  if (!botao) return;
+  estado.exames[botao.dataset.remover].splice(Number(botao.dataset.indice), 1);
+  renderExames();
+});
+
+// Corrigir nº laboratorial ou valor direto na tabela
+document.querySelector('#tela-exames').addEventListener('input', (e) => {
+  const d = e.target.dataset;
+  if (d.editarLab !== undefined) estado.exames.laboratorial[d.editarLab].codigo = e.target.value.trim();
+  if (d.valorExame) {
+    estado.exames[d.valorExame][d.indice].valor = lerMoeda(e.target.value);
+    e.target.classList.toggle('sem-valor', !lerMoeda(e.target.value));
+    atualizarTotaisExames();
+  }
+});
+
+$('#btn-limpar-exames').addEventListener('click', async () => {
+  const total = estado.exames.imagem.length + estado.exames.laboratorial.length;
+  if (total && !(await confirmar('Remover todos os exames da requisição?', 'Limpar tudo'))) return;
+  estado.exames = { imagem: [], laboratorial: [] };
+  $('#ex-obs').value = '';
+  $('#ex-desconto').value = '';
+  $('#status-exames').textContent = '';
+  renderExames();
+});
+
+$('#btn-salvar-exames').addEventListener('click', async () => {
+  if (!estado.paciente) {
+    $('#status-exames').textContent = 'Selecione um paciente na tela Atendimento antes de salvar.';
+    return;
+  }
+  const t = calcularTotaisExames();
+  if (t.semValor) {
+    $('#status-exames').textContent = 'Informe o valor de todos os exames antes de salvar.';
+    return;
+  }
+  const requisicao = {
+    paciente: estado.paciente,
+    origem: estado.vinculoExames, // null = avulsa; ou { modalidade: 'PRONTO_SOCORRO', numero, entrada, medico }
+    medico: $('#ex-medico').value,
+    data: $('#ex-data').value,
+    observacoes: $('#ex-obs').value.trim(),
+    imagem: estado.exames.imagem,             // [{ categoria, nome, valor }]
+    laboratorial: estado.exames.laboratorial.map((x, i) => ({ numero: i + 1, ...x })), // [{ numero, codigo, nome, valor }]
+    subtotalImagem: t.subtotalImagem,
+    subtotalLaboratorial: t.subtotalLaboratorial,
+    desconto: t.desconto,
+    total: t.total,
+  };
+  if (!t.total) {
+    $('#status-exames').textContent = 'O total está zerado. Confira os valores e o desconto.';
+    return;
+  }
+
+  // Pagamento obrigatório antes de salvar
+  const origem = estado.vinculoExames ? ` · ${MODALIDADES[estado.vinculoExames.modalidade]?.nome} atend. ${estado.vinculoExames.numero}` : '';
+  const pagamento = await abrirPagamento({
+    descricao: `Exames particulares · ${estado.paciente.nome}${origem}`,
+    itens: [
+      ...estado.exames.imagem.map((x) => ({ nome: x.nome, valor: x.valor })),
+      ...estado.exames.laboratorial.map((x, i) => ({ nome: `${String(i + 1).padStart(2, '0')} · ${x.nome || 'Nº ' + x.codigo}`, valor: x.valor })),
+    ],
+    valor: t.total,
+    desconto: t.desconto,
+    valorEditavel: false,
+    contexto: {
+      tipo: 'EXAMES',
+      paciente: estado.paciente.nome,
+      cpf: estado.paciente.cpf,
+      atendimento: estado.vinculoExames?.numero || '',
+      medico: ($('#ex-medico').value && $('#ex-medico').selectedOptions[0].text) || estado.vinculoExames?.medico || '',
+    },
+  });
+  if (!pagamento) {
+    $('#status-exames').textContent = 'Pagamento cancelado. A requisição não foi salva.';
+    return;
+  }
+  requisicao.pagamento = pagamento;
+  await salvarRequisicaoExames(requisicao);
+  $('#status-exames').textContent = `Pagamento confirmado: ${descreverPagamento(pagamento)}.`;
+});
+
+async function salvarRequisicaoExames(requisicao) {
+  // TODO: salvar a requisição (e depois limpar a lista, se quiser).
+  //   requisicao.pagamento sempre existe aqui (já foi confirmado).
+  console.log('Salvar requisição de exames', requisicao);
+}
+
+// ---------- Tela: Painel ----------
+function carregarPainel() {
+  // TODO: buscar consultas do dia e os números do resumo
+  // $('#stat-agendadas').textContent = ...
+  // $('#stat-recebido').textContent = formatarMoeda(...)
+  renderProximos([]);
+}
+
+// ---------- Tela: Agenda ----------
+function carregarAgenda() {
+  // TODO: preencher a lista de médicos do filtro
+  // preencherSelect('#filtro-medico', [...], 'Todos');
+}
+
+$('#form-filtro-agenda').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const filtros = {
+    data: $('#filtro-data').value,
+    medico: $('#filtro-medico').value,
+    status: $('#filtro-status').value,
+  };
+  // TODO: buscar consultas com esses filtros e chamar renderAgenda(lista)
+  console.log('Filtrar agenda', filtros);
+  renderAgenda([]);
+});
+
+// ---------- Tela: Agendar consulta ----------
+function carregarFormularioConsulta() {
+  // TODO: preencher especialidades
+  // preencherSelect('#cons-especialidade', [...]);
+}
+
+$('#cons-especialidade').addEventListener('change', (e) => {
+  // TODO: carregar médicos da especialidade escolhida
+  // preencherSelect('#cons-medico', [...]);
+  console.log('Especialidade', e.target.value);
+});
+
+$('#cons-medico').addEventListener('change', () => {
+  // TODO: carregar horários livres e o valor da consulta do médico
+  // preencherSelect('#cons-horario', [...]);
+  // $('#pag-valor').value = ...
+});
+
+$('#cons-data').addEventListener('change', () => {
+  // TODO: recarregar horários livres para a nova data
+});
+
+$('#pac-cpf').addEventListener('blur', (e) => {
+  // TODO: buscar paciente pelo CPF e preencher os campos se já existir
+  console.log('Buscar CPF', e.target.value);
+});
+
+// Agendar consulta: o pagamento é feito na hora de agendar
+$('#form-consulta').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dados = Object.fromEntries(new FormData(e.target));
+  const valor = lerMoeda(dados.valor);
+  const medico = $('#cons-medico').selectedOptions[0]?.text || '';
+  if (!valor) {
+    $('#status-consulta').textContent = 'Informe o valor da consulta.';
+    return;
+  }
+  const pagamento = await abrirPagamento({
+    descricao: `Consulta particular · ${dados.nome}`,
+    itens: [{ nome: `Consulta · ${medico} · ${formatarData(dados.data)} às ${dados.horario}`, valor }],
+    valor,
+    valorEditavel: true,
+    contexto: { tipo: 'CONSULTA', paciente: dados.nome, cpf: dados.cpf, medico },
+  });
+  if (!pagamento) {
+    $('#status-consulta').textContent = 'Pagamento cancelado. A consulta não foi agendada.';
+    return;
+  }
+  dados.valor = pagamento.valor;
+  dados.pagamento = pagamento;
+  await agendarConsulta(dados);
+  e.target.reset();
+  $('#status-consulta').textContent = `Consulta agendada e paga: ${descreverPagamento(pagamento)}.`;
+});
+
+async function agendarConsulta(dados) {
+  // TODO: salvar a consulta agendada. dados.pagamento sempre existe aqui (já foi confirmado).
+  //   dados = { cpf, nome, nascimento, telefone, email, especialidade, medico, data, horario, valor, observacoes, pagamento }
+  console.log('Agendar consulta', dados);
+}
+
+$('#form-consulta').addEventListener('reset', () => {
+  $('#status-consulta').textContent = '';
+});
+
+// ---------- Tela: Pacientes ----------
+function carregarPacientes() {
+  // TODO: carregar lista inicial (opcional)
+  renderPacientes([]);
+}
+
+$('#form-busca-paciente').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const termo = $('#busca-paciente').value.trim();
+  // TODO: buscar pacientes por nome/CPF e chamar renderPacientes(lista)
+  console.log('Buscar paciente', termo);
+});
+
+// ---------- Tela: Médicos ----------
+function carregarMedicos() {
+  // TODO: buscar médicos e chamar renderMedicos(lista)
+  renderMedicos([]);
+}
+
+// ---------- Tela: Financeiro ----------
+function carregarFinanceiro() {
+  // TODO: carregar recebimentos do período padrão
+  renderFinanceiro([]);
+}
+
+$('#form-filtro-financeiro').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const periodo = { inicio: $('#fin-inicio').value, fim: $('#fin-fim').value };
+  // TODO: buscar recebimentos e totais; chamar renderFinanceiro(lista)
+  // $('#fin-total').textContent = formatarMoeda(...)
+  console.log('Filtrar financeiro', periodo);
+});
+
+// ---------- Barra superior ----------
+$('#btn-busca-global').addEventListener('click', () => {
+  // TODO: busca geral
+  console.log('Busca geral');
+});
+
+$('#btn-notificacoes').addEventListener('click', () => {
+  // TODO: notificações
+  console.log('Notificações');
+});
+
+$('#btn-usuario').addEventListener('click', () => {
+  // TODO: menu do usuário (perfil, trocar unidade, etc.)
+  console.log('Menu do usuário');
+});
+
+$('#btn-sair').addEventListener('click', () => {
+  // TODO: encerrar sessão
+  console.log('Sair');
+});
+
+// Clique nos botões "Abrir / Ver / Editar" das tabelas
+document.addEventListener('click', (e) => {
+  const botao = e.target.closest('.btn-acao');
+  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend || botao.dataset.reciboAtend || botao.dataset.reciboFin) return;
+  // TODO: abrir detalhes do registro botao.dataset.id
+  console.log('Ação no registro', botao.dataset.id);
+});
+
+// ---------- Início ----------
+renderEtapas();
+carregarUsuario();
+carregarSetores();
+carregarMedicosConsulta();
+abrirTela(location.hash.slice(1) || 'atendimento');
+
+</script>
+<script>
+/* ===== MODO DEMONSTRAÇÃO (só no link de teste; não faz parte do projeto) ===== */
+(() => {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const PACIENTES = [
+    { id: 1, nome: 'Ana Paula Ribeiro', cpf: '123.456.789-01', nascimento: '1985-03-14', telefone: '(92) 99111-2233', ultimaConsulta: '2026-10-02' },
+    { id: 2, nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', nascimento: '1972-11-30', telefone: '(92) 98222-3344', ultimaConsulta: '2026-09-18' },
+    { id: 3, nome: 'Maria das Graças Souza', cpf: '345.678.901-23', nascimento: '1958-07-08', telefone: '(92) 99333-4455', ultimaConsulta: '2026-11-10' },
+    { id: 4, nome: 'João Pedro Alves', cpf: '456.789.012-34', nascimento: '2001-01-25', telefone: '(92) 98444-5566', ultimaConsulta: '' },
+  ];
+  const MEDICOS = [
+    { id: 1, nome: 'Dra. Fernanda Costa', crm: 'CRM 0001', especialidade: 'Cardiologia', valorConsulta: 350 },
+    { id: 2, nome: 'Dr. Ricardo Mendes', crm: 'CRM 0002', especialidade: 'Ortopedia', valorConsulta: 300 },
+    { id: 3, nome: 'Dra. Juliana Rocha', crm: 'CRM 0003', especialidade: 'Ginecologia', valorConsulta: 320 },
+    { id: 4, nome: 'Dr. Paulo Nogueira', crm: 'CRM 0004', especialidade: 'Clínica geral', valorConsulta: 200 },
+  ];
+  const ANTERIORES = {};  // começa vazio: tudo é feito no teste;
+  const SETORES = {
+    CONSULTA: [{ id: 1, nome: 'Consultório 1' }, { id: 2, nome: 'Consultório 2' }, { id: 3, nome: 'Sala de Exames' }],
+    PRONTO_SOCORRO: [{ id: 10, nome: 'Pronto Socorro Adulto', valorConsulta: 250 }, { id: 11, nome: 'Pronto Socorro Infantil', valorConsulta: 220 }],
+  };
+  const CONSULTAS = [];  // começa vazio: tudo é feito no teste;
+  const RECEBIMENTOS = [];  // começa vazio: tudo é feito no teste;
+  let proximoAtend = 10600;
+
+  const aviso = (texto) => {
+    let t = document.querySelector('.demo-toast');
+    if (!t) { t = document.createElement('div'); t.className = 'demo-toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.textContent = texto; t.hidden = false;
+    clearTimeout(aviso.timer); aviso.timer = setTimeout(() => { t.hidden = true; }, 3200);
+  };
+  const buscar = (termo) => {
+    const t = termo.toLowerCase().replace(/\D/g, '') || termo.toLowerCase();
+    return PACIENTES.filter((p) => p.nome.toLowerCase().includes(termo.toLowerCase()) || p.cpf.replace(/\D/g, '').includes(t));
+  };
+  const medicosSelect = () => MEDICOS.map((m) => ({ valor: m.id, texto: m.nome }));
+
+  // Dados do hospital no recibo (fictícios)
+  CONFIG.empresa = { nome: 'Health Hub · Unidade Demonstração', cnpj: '00.000.000/0001-00 (fictício)',
+    endereco: 'Endereço fictício da unidade', telefone: '(00) 0000-0000' };
+
+  // Usuário e setores
+  $('#usuario-nome').textContent = 'Usuário Demonstração';
+  $('#usuario-iniciais').textContent = 'UD';
+  carregarSetores = () => preencherSetores(SETORES[estado.modalidade]);
+  carregarSetores();
+  $('#atend-unidade').textContent = 'Unidade Demonstração';
+  preencherSelect('#ex-medico', medicosSelect());
+  preencherSelect('#filtro-medico', medicosSelect(), 'Todos');
+  preencherSelect('#cons-especialidade', [...new Set(MEDICOS.map((m) => m.especialidade))].map((e) => ({ valor: e, texto: e })));
+
+  // Atendimento
+  $('#form-busca-atend').addEventListener('submit', () => {
+    const r = buscar($('#atend-busca').value.trim());
+    renderResultadosBusca(r);
+    if (!r.length) aviso('Nenhum paciente encontrado. Tente "Ana", "Maria" ou "123".');
+  });
+  $('#btn-historico-busca').addEventListener('click', () => renderResultadosBusca(PACIENTES));
+  carregarAtendimentosAnteriores = () => renderAnteriores(estado.paciente
+    ? (ANTERIORES[estado.paciente.id] || []).filter((a) => a.tipo === estado.modalidade) : []);
+  preencherMedicosConsulta(MEDICOS);
+  registrarAtendimento = async (dados) => {
+    const lista = (ANTERIORES[dados.paciente.id] ||= []);
+    const agora = new Date(); const iso = `${hoje}T${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+    const ps = dados.modalidade === 'PRONTO_SOCORRO';
+    lista.unshift({ numero: ++proximoAtend, tipo: dados.modalidade, senha: (ps ? 'E' : 'P') + String(proximoAtend % 100).padStart(3, '0'),
+      status: 'AGUARDANDO', entrada: iso, alta: '', medico: dados.medico?.nome || (ps ? 'Plantão PS' : '—'), pagamento: dados.pagamento, valor: dados.valor || 0, pago: !!dados.pagamento });
+    aviso(`Pagamento confirmado (${descreverPagamento(dados.pagamento)}). ${dados.paciente.nome} está liberado(a) para a consulta${ps ? ' de emergência' : ''}.`);
+  };
+  let proximoRecibo = 1;
+  registrarPagamento = async (pg) => {
+    RECEBIMENTOS.unshift({ data: hoje, paciente: pg.contexto?.paciente || '', tipo: pg.contexto?.tipo || 'CONSULTA',
+      medico: pg.contexto?.medico || 'Sem médico', formaPagamento: pg.forma, valor: pg.valor, pagamento: pg });
+    return { numeroRecibo: `${new Date().getFullYear()}-${String(proximoRecibo++).padStart(5, '0')}` };
+  };
+  agendarConsulta = async (dados) => {
+    CONSULTAS.push({ id: CONSULTAS.length + 1, data: dados.data, horario: dados.horario, paciente: dados.nome,
+      medico: $('#cons-medico').selectedOptions[0]?.text || '', especialidade: dados.especialidade, valor: dados.valor, status: 'CONFIRMADA' });
+    aviso('Consulta agendada e paga. Veja em Financeiro > Recebido por médico.');
+  };
+  registrarConclusaoConsulta = async (a) => {
+    const agora = new Date();
+    a.status = 'ATENDIDA';
+    a.alta = `${hoje}T${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+    aviso(`Consulta ${a.numero} realizada. Se o médico pediu exames, clique em "Pedir exames".`);
+  };
+  cadastrarPaciente = async (pac) => {
+    const novo = { id: PACIENTES.length + 1, ultimaConsulta: '', ...pac };
+    PACIENTES.push(novo);
+    aviso(`${novo.nome} cadastrado(a).`);
+    return novo;
+  };
+  salvarRequisicaoExames = async (req) => {
+    if (req.origem) {
+      const a = Object.values(ANTERIORES).flat().find((x) => x.numero === req.origem.numero);
+      if (a) a.exames = (a.exames || 0) + req.imagem.length + req.laboratorial.length;
+    }
+    aviso(`Requisição salva com pagamento de ${descreverPagamento(req.pagamento)} (demonstração).`);
+  };
+  $('#btn-recibo').addEventListener('click', () => aviso(estado.ultimoPagamento
+    ? `Recibo do último pagamento: ${descreverPagamento(estado.ultimoPagamento)}. A impressão é com você.`
+    : 'Nenhum pagamento feito ainda.'));
+  $('#btn-etiqueta').addEventListener('click', () => aviso('Etiqueta: aqui entra a sua lógica de impressão.'));
+
+  // Painel, agenda, pacientes, médicos, financeiro
+  carregadores.painel = () => {
+    $('#stat-agendadas').textContent = CONSULTAS.length;
+    $('#stat-atendidas').textContent = CONSULTAS.filter((c) => c.status === 'ATENDIDA').length;
+    $('#stat-aguardando').textContent = CONSULTAS.filter((c) => c.status !== 'ATENDIDA').length;
+    $('#stat-recebido').textContent = formatarMoeda(RECEBIMENTOS.filter((r) => r.data === hoje).reduce((t, r) => t + r.valor, 0));
+    renderProximos(CONSULTAS);
+  };
+  $('#form-filtro-agenda').addEventListener('submit', () => {
+    const d = $('#filtro-data').value, m = $('#filtro-medico').value, s = $('#filtro-status').value;
+    const nomeMed = MEDICOS.find((x) => String(x.id) === m)?.nome;
+    renderAgenda(CONSULTAS.filter((c) => (!d || c.data === d) && (!m || c.medico === nomeMed) && (!s || c.status === s)));
+  });
+  carregadores.agenda = () => { $('#filtro-data').value ||= hoje; renderAgenda(CONSULTAS); };
+  carregadores.pacientes = () => renderPacientes(PACIENTES);
+  $('#form-busca-paciente').addEventListener('submit', () => renderPacientes(buscar($('#busca-paciente').value.trim())));
+  carregadores.medicos = () => renderMedicos(MEDICOS);
+  const fin = () => {
+    const i = $('#fin-inicio').value, f = $('#fin-fim').value;
+    renderFinanceiro(RECEBIMENTOS.filter((r) => (!i || r.data >= i) && (!f || r.data <= f)));
+  };
+  carregadores.financeiro = fin;
+  $('#form-filtro-financeiro').addEventListener('submit', fin);
+
+  // Agendar consulta
+  $('#cons-especialidade').addEventListener('change', (e) => {
+    preencherSelect('#cons-medico', MEDICOS.filter((m) => m.especialidade === e.target.value).map((m) => ({ valor: m.id, texto: m.nome })));
+  });
+  $('#cons-medico').addEventListener('change', (e) => {
+    const m = MEDICOS.find((x) => String(x.id) === e.target.value);
+    preencherSelect('#cons-horario', ['08:00', '08:30', '09:00', '14:00', '14:30', '15:00'].map((h) => ({ valor: h, texto: h })));
+    $('#pag-valor').value = m ? valorCampo(m.valorConsulta) : '';
+  });
+  $('#pac-cpf').addEventListener('blur', (e) => {
+    const p = buscar(e.target.value.trim())[0];
+    if (p && e.target.value.replace(/\D/g, '').length >= 11) {
+      $('#pac-nome').value = p.nome; $('#pac-nascimento').value = p.nascimento; $('#pac-telefone').value = p.telefone;
+    }
+  });
+
+  // Banner
+  const banner = document.createElement('div');
+  banner.className = 'demo-banner';
+  banner.innerHTML = '<strong>Modo demonstração · começando do zero</strong> · Nenhum atendimento, consulta ou pagamento ainda. Pacientes de teste: busque "123" ou cadastre um nome novo. Médicos e setores são fictícios e nada é salvo de verdade: recarregar a página volta tudo ao zero.';
+  document.querySelector('main').prepend(banner);
+
+  abrirTela(location.hash.slice(1) || 'atendimento');
+})();
+
+</script>
+
+</body>
+</html>
