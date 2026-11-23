@@ -69,6 +69,7 @@
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
         <a href="#exames" data-tela="exames"><svg class="i"><use href="#i-flask"/></svg><span>Exames</span></a>
+        <a href="#precos" data-tela="precos"><svg class="i"><use href="#i-tag"/></svg><span>Tabela de preços</span></a>
         <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
         <a href="#medicos" data-tela="medicos"><svg class="i"><use href="#i-steth"/></svg><span>Médicos</span></a>
         <a href="#financeiro" data-tela="financeiro"><svg class="i"><use href="#i-dollar"/></svg><span>Financeiro</span></a>
@@ -181,10 +182,14 @@
             </div>
 
             <div class="card bloco">
-              <div class="resumo-exames">
-                <div><span>Imagem e outros</span><strong id="ex-total-imagem">0</strong></div>
-                <div><span>Laboratoriais</span><strong id="ex-total-lab">0</strong></div>
-              </div>
+              <h2 class="card-titulo"><svg class="i"><use href="#i-dollar"/></svg>Valores</h2>
+              <dl class="valores">
+                <div><dt>Imagem e outros <small id="ex-total-imagem">(0)</small></dt><dd id="ex-subtotal-imagem">R$ 0,00</dd></div>
+                <div><dt>Laboratoriais <small id="ex-total-lab">(0)</small></dt><dd id="ex-subtotal-lab">R$ 0,00</dd></div>
+                <div class="linha-desconto"><dt><label for="ex-desconto">Desconto (R$)</label></dt><dd><input id="ex-desconto" class="input-valor" inputmode="decimal" placeholder="0,00"></dd></div>
+                <div class="total"><dt>Total a pagar</dt><dd id="ex-total">R$ 0,00</dd></div>
+              </dl>
+              <p class="aviso" id="ex-aviso-sem-valor" hidden></p>
               <button type="button" class="btn-primario largo" id="btn-salvar-exames" disabled><svg class="i"><use href="#i-save"/></svg>Salvar requisição</button>
               <button type="button" class="btn largo" id="btn-limpar-exames">Limpar tudo</button>
               <p class="status" id="status-exames" role="status" aria-live="polite"></p>
@@ -195,6 +200,9 @@
           <div class="col-atendimento">
             <div class="barra-abas">
               <span class="aba ativa"><svg class="i"><use href="#i-flask"/></svg>Requisição de Exames</span>
+              <div class="barra-acoes">
+                <a class="btn" href="#precos"><svg class="i"><use href="#i-tag"/></svg>Tabela de preços</a>
+              </div>
             </div>
 
             <form class="card form-exame" id="form-exame" autocomplete="off">
@@ -207,23 +215,16 @@
               <div class="campos-exame" id="campos-imagem">
                 <div>
                   <label for="ex-categoria">Tipo</label>
-                  <select id="ex-categoria">
-                    <option>Ultrassonografia</option>
-                    <option>Tomografia</option>
-                    <option>Ressonância magnética</option>
-                    <option>Raio-X</option>
-                    <option>Mamografia</option>
-                    <option>Densitometria</option>
-                    <option>Eletrocardiograma</option>
-                    <option>Ecocardiograma</option>
-                    <option>Endoscopia</option>
-                    <option>Outro</option>
-                  </select>
+                  <select id="ex-categoria" class="sel-categoria"></select>
                 </div>
                 <div class="grow">
                   <label for="ex-nome">Nome do exame *</label>
                   <input id="ex-nome" list="sugestoes-exames" maxlength="150" placeholder="Ex.: USG de abdome total">
                   <datalist id="sugestoes-exames"></datalist>
+                </div>
+                <div class="campo-valor">
+                  <label for="ex-valor">Valor (R$) *</label>
+                  <input id="ex-valor" class="input-valor" inputmode="decimal" placeholder="0,00">
                 </div>
               </div>
 
@@ -231,16 +232,20 @@
               <div class="campos-exame" id="campos-lab" hidden>
                 <div>
                   <label for="ex-codigo">Nº laboratorial *</label>
-                  <input id="ex-codigo" maxlength="200" placeholder="Ex.: 40301630">
+                  <input id="ex-codigo" maxlength="200" placeholder="Ex.: 40304361">
                 </div>
                 <div class="grow">
                   <label for="ex-nome-lab">Nome do exame <small>(opcional)</small></label>
-                  <input id="ex-nome-lab" maxlength="150" placeholder="Ex.: Hemograma completo">
+                  <input id="ex-nome-lab" maxlength="150" placeholder="Preenchido pela tabela de preços">
+                </div>
+                <div class="campo-valor">
+                  <label for="ex-valor-lab">Valor (R$) *</label>
+                  <input id="ex-valor-lab" class="input-valor" inputmode="decimal" placeholder="0,00">
                 </div>
               </div>
 
               <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
-              <p class="dica full" id="dica-exame">Digite o nome do exame e tecle Enter para adicionar.</p>
+              <p class="dica full" id="dica-exame"></p>
             </form>
 
             <div class="card tabela-card">
@@ -250,7 +255,7 @@
               </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>#</th><th>Tipo</th><th>Exame</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>#</th><th>Tipo</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
                   <tbody id="tabela-ex-imagem"></tbody>
                 </table>
               </div>
@@ -264,7 +269,7 @@
               </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Nº</th><th>Nº laboratorial</th><th>Exame</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>Nº</th><th>Nº laboratorial</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
                   <tbody id="tabela-ex-lab"></tbody>
                 </table>
               </div>
@@ -273,6 +278,54 @@
           </div>
 
         </div>
+      </section>
+
+      <!-- ===================== TABELA DE PREÇOS ===================== -->
+      <section class="tela" id="tela-precos">
+        <div class="cabecalho cabecalho-acoes">
+          <div><h1>Tabela de preços</h1><p class="sub">Valor particular de cada exame. É usado para preencher o valor na requisição.</p></div>
+          <button type="button" class="btn" id="btn-restaurar-precos"><svg class="i"><use href="#i-refresh"/></svg>Restaurar exemplos</button>
+        </div>
+        <p class="aviso">Os valores e códigos que vêm preenchidos são <strong>exemplos</strong>. Ajuste para os valores reais. As alterações ficam salvas neste navegador.</p>
+
+        <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-scan"/></svg>Imagem e outros</h2>
+            <span class="pill" id="pill-pr-imagem">0 exames</span>
+          </div>
+          <form class="form-preco" id="form-preco-imagem" autocomplete="off">
+            <div><label for="pr-categoria">Tipo</label><select id="pr-categoria" class="sel-categoria"></select></div>
+            <div class="grow"><label for="pr-nome">Nome do exame *</label><input id="pr-nome" maxlength="150" required></div>
+            <div class="campo-valor"><label for="pr-valor">Valor (R$) *</label><input id="pr-valor" class="input-valor" inputmode="decimal" required placeholder="0,00"></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Incluir</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Tipo</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-pr-imagem"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-flask"/></svg>Laboratoriais</h2>
+            <span class="pill" id="pill-pr-lab">0 exames</span>
+          </div>
+          <form class="form-preco" id="form-preco-lab" autocomplete="off">
+            <div><label for="pr-codigo">Nº laboratorial *</label><input id="pr-codigo" maxlength="30" required></div>
+            <div class="grow"><label for="pr-nome-lab">Nome do exame *</label><input id="pr-nome-lab" maxlength="150" required></div>
+            <div class="campo-valor"><label for="pr-valor-lab">Valor (R$) *</label><input id="pr-valor-lab" class="input-valor" inputmode="decimal" required placeholder="0,00"></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Incluir</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nº laboratorial</th><th>Exame</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-pr-lab"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="status" id="status-precos" role="status" aria-live="polite"></p>
       </section>
 
       <!-- ===================== PAINEL ===================== -->

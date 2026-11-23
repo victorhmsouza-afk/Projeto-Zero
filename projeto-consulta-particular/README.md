@@ -11,7 +11,7 @@ Dê dois cliques em `index.html`.
 
 ```
 projeto-consulta-particular/
-├── index.html     → telas: Atendimento, Exames, Painel, Agenda, Agendar consulta, Pacientes, Médicos, Financeiro, Relatórios, Administrador
+├── index.html     → telas: Atendimento, Exames, Tabela de preços, Painel, Agenda, Agendar consulta, Pacientes, Médicos, Financeiro, Relatórios, Administrador
 ├── css/style.css  → visual (layout de hub: barra superior, menu lateral recolhível, responsivo)
 └── js/app.js      → navegação entre telas + funções vazias para a sua lógica
 ```
@@ -38,4 +38,13 @@ e os formulários já têm o `submit` capturado. Para exibir dados nas tabelas, 
 - **Imagem e outros:** escolha o tipo (Ultrassonografia, Tomografia…) e digite o nome do exame, um por um.
 - **Laboratorial:** digite o nº laboratorial de cada exame; cada item ganha uma numeração (01, 02, 03…).
   Dá para colar vários números de uma vez separados por vírgula ou espaço, e corrigir o número direto na tabela.
+- **Preços:** todo exame tem valor. Ele vem da **Tabela de preços** (pelo nome do exame ou pelo nº laboratorial)
+  e pode ser alterado na própria requisição. Aparecem subtotal de imagem, subtotal laboratorial, desconto e total.
+  Exame sem valor fica marcado em vermelho e não deixa salvar.
 - O botão **Salvar requisição** monta o objeto com tudo e chama o `TODO` para você ligar ao seu salvamento.
+
+## Tabela de preços
+
+Os valores e códigos que vêm preenchidos são **exemplos**. Ajuste na tela *Tabela de preços*.
+As alterações ficam salvas no navegador (`localStorage`). Quando tiver API, troque `carregarTabelaPrecos()`
+e `salvarTabelaPrecos()` em `js/app.js`.

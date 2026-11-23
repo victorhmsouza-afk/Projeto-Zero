@@ -154,6 +154,31 @@ label small { font-weight: 400; color: var(--muted); }
 .btn-remover { color: var(--perigo); }
 td .btn-icone { width: 30px; height: 30px; }
 
+/* ---------- Valores / preços ---------- */
+.campo-valor { min-width: 0 !important; width: 130px; flex-shrink: 0; }
+.input-valor { text-align: right; font-variant-numeric: tabular-nums; }
+.input-tabela.input-valor { width: 110px; }
+.sem-valor { border-color: #e2a39e; background: #fdf3f2; }
+.valores { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.valores > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
+.valores dt { color: var(--texto-2); }
+.valores dt small { color: var(--muted); }
+.valores dt label { margin: 0; font-weight: 400; font-size: 13px; }
+.valores dd { margin: 0; font-variant-numeric: tabular-nums; }
+.linha-desconto input { width: 110px; padding: 6px 8px; }
+.valores .total { border-top: 1px solid var(--linha); padding-top: 10px; margin-top: 2px; }
+.valores .total dt { font-weight: 600; color: var(--texto); }
+.valores .total dd { font-size: 20px; font-weight: 700; color: var(--verde-escuro); }
+.aviso { margin: 0 0 12px; padding: 9px 12px; border-radius: 7px; background: #fff6e5; color: #7a5200; font-size: 12.5px; }
+.bloco .aviso { margin: 0; }
+.aviso[hidden] { display: none; }
+.cabecalho-acoes { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.form-preco { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 12px 14px; border-bottom: 1px solid var(--linha); background: #fcfdfc; }
+.form-preco > div { min-width: 170px; }
+.form-preco .grow { flex: 1; }
+.form-preco .btn-primario { height: 37px; }
+.espaco { margin-top: 12px; }
+
 /* ---------- Tabelas ---------- */
 .table-wrap { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; text-align: left; }
@@ -235,6 +260,9 @@ a.btn { text-decoration: none; color: inherit; }
   .stats { grid-template-columns: 1fr; }
   .btn { flex: 1; justify-content: center; }
   .campos-exame { flex-direction: column; min-width: 100%; }
+  .campo-valor { width: 100%; }
+  .form-preco > div { min-width: 100%; }
+  .form-preco .btn-primario { width: 100%; justify-content: center; }
   .form-exame > .btn-primario { width: 100%; justify-content: center; }
   .segmentado { width: 100%; }
   .segmentado label { flex: 1; }

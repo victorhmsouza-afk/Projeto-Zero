@@ -69,6 +69,7 @@ const carregadores = {
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
   exames: carregarExames,
+  precos: carregarPrecos,
   pacientes: carregarPacientes,
   medicos: carregarMedicos,
   financeiro: carregarFinanceiro,
@@ -284,22 +285,186 @@ $('#btn-etiqueta').addEventListener('click', () => {
   console.log('Etiqueta avulsa');
 });
 
-// ---------- Tela: Exames ----------
-// A montagem da lista (adicionar, numerar, remover) já funciona.
-// Falta só o salvamento e a lista de médicos (TODO).
+// ---------- Valores em reais ----------
+// Converte "1.234,56", "180", "180,5" ou "R$ 90,00" em número
+function lerMoeda(texto) {
+  let s = String(texto ?? '').replace(/[^\d,.-]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+}
 
-const SUGESTOES_EXAMES = {
-  Ultrassonografia: ['USG de abdome total', 'USG de abdome superior', 'USG pélvica', 'USG transvaginal',
-    'USG de tireoide', 'USG de mamas', 'USG de rins e vias urinárias', 'USG de próstata', 'USG obstétrica'],
-  Tomografia: ['TC de crânio', 'TC de tórax', 'TC de abdome total', 'TC de seios da face', 'TC de coluna lombar'],
-  'Ressonância magnética': ['RM de crânio', 'RM de coluna lombar', 'RM de joelho', 'RM de ombro'],
-  'Raio-X': ['RX de tórax PA e perfil', 'RX de coluna lombar', 'RX de joelho', 'RX de seios da face'],
-  Mamografia: ['Mamografia bilateral'],
-  Densitometria: ['Densitometria óssea'],
-  Eletrocardiograma: ['Eletrocardiograma (ECG)'],
-  Ecocardiograma: ['Ecocardiograma transtorácico'],
-  Endoscopia: ['Endoscopia digestiva alta', 'Colonoscopia'],
+// Número para "1.234,56" (sem o R$), para colocar dentro de campos
+function valorCampo(n) {
+  return n ? Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+}
+
+// Ao sair de um campo de valor, deixa no formato 0,00
+document.addEventListener('focusout', (e) => {
+  if (e.target.classList?.contains('input-valor') && e.target.value.trim()) {
+    e.target.value = valorCampo(lerMoeda(e.target.value));
+  }
+});
+
+// ---------- Tabela de preços ----------
+// Valores e códigos de EXEMPLO: ajuste para a tabela real.
+// TODO: quando tiver API, buscar a tabela de lá em vez do navegador.
+
+const CATEGORIAS_EXAME = ['Ultrassonografia', 'Tomografia', 'Ressonância magnética', 'Raio-X', 'Mamografia',
+  'Densitometria', 'Eletrocardiograma', 'Ecocardiograma', 'Endoscopia', 'Outro'];
+
+const PRECOS_EXEMPLO = {
+  imagem: [
+    { categoria: 'Ultrassonografia', nome: 'USG de abdome total', valor: 180 },
+    { categoria: 'Ultrassonografia', nome: 'USG de abdome superior', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG pélvica', valor: 140 },
+    { categoria: 'Ultrassonografia', nome: 'USG transvaginal', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG de tireoide', valor: 140 },
+    { categoria: 'Ultrassonografia', nome: 'USG de mamas', valor: 160 },
+    { categoria: 'Ultrassonografia', nome: 'USG de rins e vias urinárias', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG de próstata', valor: 150 },
+    { categoria: 'Ultrassonografia', nome: 'USG obstétrica', valor: 160 },
+    { categoria: 'Tomografia', nome: 'TC de crânio', valor: 350 },
+    { categoria: 'Tomografia', nome: 'TC de tórax', valor: 420 },
+    { categoria: 'Tomografia', nome: 'TC de abdome total', valor: 650 },
+    { categoria: 'Tomografia', nome: 'TC de seios da face', valor: 330 },
+    { categoria: 'Tomografia', nome: 'TC de coluna lombar', valor: 450 },
+    { categoria: 'Ressonância magnética', nome: 'RM de crânio', valor: 800 },
+    { categoria: 'Ressonância magnética', nome: 'RM de coluna lombar', valor: 850 },
+    { categoria: 'Ressonância magnética', nome: 'RM de joelho', valor: 750 },
+    { categoria: 'Ressonância magnética', nome: 'RM de ombro', valor: 750 },
+    { categoria: 'Raio-X', nome: 'RX de tórax PA e perfil', valor: 90 },
+    { categoria: 'Raio-X', nome: 'RX de coluna lombar', valor: 100 },
+    { categoria: 'Raio-X', nome: 'RX de joelho', valor: 80 },
+    { categoria: 'Raio-X', nome: 'RX de seios da face', valor: 80 },
+    { categoria: 'Mamografia', nome: 'Mamografia bilateral', valor: 150 },
+    { categoria: 'Densitometria', nome: 'Densitometria óssea', valor: 160 },
+    { categoria: 'Eletrocardiograma', nome: 'Eletrocardiograma (ECG)', valor: 60 },
+    { categoria: 'Ecocardiograma', nome: 'Ecocardiograma transtorácico', valor: 250 },
+    { categoria: 'Endoscopia', nome: 'Endoscopia digestiva alta', valor: 350 },
+    { categoria: 'Endoscopia', nome: 'Colonoscopia', valor: 700 },
+  ],
+  laboratorial: [
+    { codigo: '40304361', nome: 'Hemograma completo', valor: 25 },
+    { codigo: '40302040', nome: 'Glicose', valor: 10 },
+    { codigo: '40301630', nome: 'Creatinina', valor: 12 },
+  ],
 };
+
+const CHAVE_PRECOS = 'consultaParticular.tabelaPrecos';
+let precos = carregarTabelaPrecos();
+
+function copiarExemplos() {
+  return JSON.parse(JSON.stringify(PRECOS_EXEMPLO));
+}
+
+function carregarTabelaPrecos() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_PRECOS));
+    if (salvo && Array.isArray(salvo.imagem) && Array.isArray(salvo.laboratorial)) return salvo;
+  } catch (e) { /* navegador sem armazenamento: usa os exemplos */ }
+  return copiarExemplos();
+}
+
+function salvarTabelaPrecos() {
+  try { localStorage.setItem(CHAVE_PRECOS, JSON.stringify(precos)); } catch (e) { /* ignora */ }
+}
+
+const normalizar = (t) => String(t || '').trim().toLowerCase();
+const precoImagem = (nome) => precos.imagem.find((p) => normalizar(p.nome) === normalizar(nome));
+const precoLab = (codigo) => precos.laboratorial.find((p) => normalizar(p.codigo) === normalizar(codigo));
+
+// Preenche todos os <select> de tipo de exame
+document.querySelectorAll('.sel-categoria').forEach((sel) => {
+  sel.innerHTML = CATEGORIAS_EXAME.map((c) => `<option>${esc(c)}</option>`).join('');
+});
+
+function carregarPrecos() {
+  renderPrecos();
+}
+
+function botaoRemover(atributos) {
+  return `<button type="button" class="btn-icone btn-remover" ${atributos} title="Remover"><svg class="i"><use href="#i-trash"/></svg></button>`;
+}
+
+function renderPrecos() {
+  $('#tabela-pr-imagem').innerHTML = precos.imagem.map((p, i) => `
+    <tr>
+      <td>${esc(p.categoria)}</td>
+      <td>${esc(p.nome)}</td>
+      <td><input class="input-tabela input-valor" data-preco="imagem" data-indice="${i}" value="${valorCampo(p.valor)}" inputmode="decimal" aria-label="Valor de ${esc(p.nome)}"></td>
+      <td>${botaoRemover(`data-remover-preco="imagem" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+  $('#tabela-pr-lab').innerHTML = precos.laboratorial.map((p, i) => `
+    <tr>
+      <td>${esc(p.codigo)}</td>
+      <td>${esc(p.nome)}</td>
+      <td><input class="input-tabela input-valor" data-preco="laboratorial" data-indice="${i}" value="${valorCampo(p.valor)}" inputmode="decimal" aria-label="Valor de ${esc(p.nome)}"></td>
+      <td>${botaoRemover(`data-remover-preco="laboratorial" data-indice="${i}"`)}</td>
+    </tr>`).join('');
+  $('#pill-pr-imagem').textContent = `${precos.imagem.length} exames`;
+  $('#pill-pr-lab').textContent = `${precos.laboratorial.length} exames`;
+}
+
+// Alterar valor direto na tabela de preços
+document.querySelector('#tela-precos').addEventListener('change', (e) => {
+  const lista = e.target.dataset.preco;
+  if (!lista) return;
+  precos[lista][e.target.dataset.indice].valor = lerMoeda(e.target.value);
+  salvarTabelaPrecos();
+  $('#status-precos').textContent = 'Valor atualizado.';
+});
+
+document.querySelector('#tela-precos').addEventListener('click', (e) => {
+  const botao = e.target.closest('[data-remover-preco]');
+  if (!botao) return;
+  const item = precos[botao.dataset.removerPreco][botao.dataset.indice];
+  if (!confirm(`Remover "${item.nome}" da tabela de preços?`)) return;
+  precos[botao.dataset.removerPreco].splice(Number(botao.dataset.indice), 1);
+  salvarTabelaPrecos();
+  renderPrecos();
+});
+
+$('#form-preco-imagem').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nome = $('#pr-nome').value.trim();
+  const valor = lerMoeda($('#pr-valor').value);
+  if (!valor) { $('#status-precos').textContent = 'Informe um valor maior que zero.'; return; }
+  const existente = precoImagem(nome);
+  if (existente) Object.assign(existente, { categoria: $('#pr-categoria').value, valor });
+  else precos.imagem.push({ categoria: $('#pr-categoria').value, nome, valor });
+  salvarTabelaPrecos();
+  renderPrecos();
+  e.target.reset();
+  $('#status-precos').textContent = existente ? `Valor de "${nome}" atualizado.` : `"${nome}" incluído.`;
+});
+
+$('#form-preco-lab').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const codigo = $('#pr-codigo').value.trim();
+  const nome = $('#pr-nome-lab').value.trim();
+  const valor = lerMoeda($('#pr-valor-lab').value);
+  if (!valor) { $('#status-precos').textContent = 'Informe um valor maior que zero.'; return; }
+  const existente = precoLab(codigo);
+  if (existente) Object.assign(existente, { nome, valor });
+  else precos.laboratorial.push({ codigo, nome, valor });
+  salvarTabelaPrecos();
+  renderPrecos();
+  e.target.reset();
+  $('#status-precos').textContent = existente ? `Valor do nº ${codigo} atualizado.` : `Nº ${codigo} incluído.`;
+});
+
+$('#btn-restaurar-precos').addEventListener('click', () => {
+  if (!confirm('Voltar a tabela de preços para os valores de exemplo? Suas alterações serão perdidas.')) return;
+  precos = copiarExemplos();
+  salvarTabelaPrecos();
+  renderPrecos();
+  $('#status-precos').textContent = 'Tabela restaurada.';
+});
+
+// ---------- Tela: Exames ----------
+// A montagem da lista (adicionar, numerar, precificar, remover) já funciona.
+// Falta só o salvamento e a lista de médicos (TODO).
 
 function carregarExames() {
   // TODO: preencher a lista de médicos solicitantes
@@ -307,6 +472,7 @@ function carregarExames() {
   if (!$('#ex-data').value) $('#ex-data').value = new Date().toISOString().slice(0, 10);
   renderPacienteExames();
   atualizarSugestoesExames();
+  trocarTipoExame(false);
   renderExames();
 }
 
@@ -323,22 +489,43 @@ function tipoExameAtual() {
 }
 
 function atualizarSugestoesExames() {
-  const lista = SUGESTOES_EXAMES[$('#ex-categoria').value] || [];
-  $('#sugestoes-exames').innerHTML = lista.map((n) => `<option value="${esc(n)}">`).join('');
+  const categoria = $('#ex-categoria').value;
+  $('#sugestoes-exames').innerHTML = precos.imagem
+    .filter((p) => p.categoria === categoria)
+    .map((p) => `<option value="${esc(p.nome)}" label="${formatarMoeda(p.valor)}">`).join('');
 }
 
-function trocarTipoExame() {
+function trocarTipoExame(focar = true) {
   const lab = tipoExameAtual() === 'laboratorial';
   $('#campos-imagem').hidden = lab;
   $('#campos-lab').hidden = !lab;
   $('#dica-exame').textContent = lab
-    ? 'Digite o nº laboratorial e tecle Enter. Para vários de uma vez, separe por vírgula ou espaço.'
-    : 'Digite o nome do exame e tecle Enter para adicionar.';
-  (lab ? $('#ex-codigo') : $('#ex-nome')).focus();
+    ? 'Digite o nº laboratorial: nome e valor vêm da tabela de preços. Para vários de uma vez, separe por vírgula ou espaço.'
+    : 'Escolha ou digite o nome do exame: o valor vem da tabela de preços e pode ser alterado.';
+  if (focar) (lab ? $('#ex-codigo') : $('#ex-nome')).focus();
 }
 
-document.querySelectorAll('input[name="tipoExame"]').forEach((r) => r.addEventListener('change', trocarTipoExame));
+document.querySelectorAll('input[name="tipoExame"]').forEach((r) => r.addEventListener('change', () => trocarTipoExame()));
 $('#ex-categoria').addEventListener('change', () => { atualizarSugestoesExames(); $('#ex-nome').focus(); });
+
+// Ao escolher o exame, puxa o valor da tabela de preços
+$('#ex-nome').addEventListener('input', (e) => {
+  e.target.setCustomValidity('');
+  const p = precoImagem(e.target.value);
+  if (p) {
+    $('#ex-valor').value = valorCampo(p.valor);
+    $('#ex-categoria').value = p.categoria;
+  }
+});
+
+$('#ex-codigo').addEventListener('input', (e) => {
+  e.target.setCustomValidity('');
+  const p = precoLab(e.target.value);
+  if (p) {
+    $('#ex-nome-lab').value = p.nome;
+    $('#ex-valor-lab').value = valorCampo(p.valor);
+  }
+});
 
 $('#form-exame').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -348,28 +535,39 @@ $('#form-exame').addEventListener('submit', (e) => {
     const campo = $('#ex-nome');
     const nome = campo.value.trim();
     if (!nome) { campo.setCustomValidity('Digite o nome do exame.'); campo.reportValidity(); return; }
-    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome });
+    const valor = lerMoeda($('#ex-valor').value) || precoImagem(nome)?.valor || 0;
+    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome, valor });
     campo.value = '';
+    $('#ex-valor').value = '';
     campo.focus();
   } else {
     const campo = $('#ex-codigo');
     const codigos = campo.value.split(/[\s,;]+/).filter(Boolean);
     if (!codigos.length) { campo.setCustomValidity('Digite o nº laboratorial.'); campo.reportValidity(); return; }
-    const nome = codigos.length === 1 ? $('#ex-nome-lab').value.trim() : '';
+    const umSo = codigos.length === 1;
     const repetidos = [];
     codigos.forEach((codigo) => {
-      if (estado.exames.laboratorial.some((x) => x.codigo === codigo)) repetidos.push(codigo);
-      else estado.exames.laboratorial.push({ codigo, nome });
+      if (estado.exames.laboratorial.some((x) => x.codigo === codigo)) { repetidos.push(codigo); return; }
+      const p = precoLab(codigo);
+      estado.exames.laboratorial.push({
+        codigo,
+        nome: (umSo && $('#ex-nome-lab').value.trim()) || p?.nome || '',
+        valor: (umSo && lerMoeda($('#ex-valor-lab').value)) || p?.valor || 0,
+      });
     });
     if (repetidos.length) $('#status-exames').textContent = `Já estava na lista: ${repetidos.join(', ')}`;
     campo.value = '';
     $('#ex-nome-lab').value = '';
+    $('#ex-valor-lab').value = '';
     campo.focus();
   }
   renderExames();
 });
 
-['#ex-nome', '#ex-codigo'].forEach((s) => $(s).addEventListener('input', (e) => e.target.setCustomValidity('')));
+function campoValorTabela(lista, i, valor) {
+  return `<input class="input-tabela input-valor${valor ? '' : ' sem-valor'}" data-valor-exame="${lista}" data-indice="${i}"
+    value="${valorCampo(valor)}" inputmode="decimal" placeholder="0,00" aria-label="Valor do item ${i + 1}">`;
+}
 
 function renderExames() {
   const { imagem, laboratorial } = estado.exames;
@@ -379,7 +577,8 @@ function renderExames() {
       <td>${i + 1}</td>
       <td>${esc(x.categoria)}</td>
       <td>${esc(x.nome)}</td>
-      <td><button type="button" class="btn-icone btn-remover" data-remover="imagem" data-indice="${i}" title="Remover"><svg class="i"><use href="#i-trash"/></svg></button></td>
+      <td>${campoValorTabela('imagem', i, x.valor)}</td>
+      <td>${botaoRemover(`data-remover="imagem" data-indice="${i}"`)}</td>
     </tr>`).join('');
 
   $('#tabela-ex-lab').innerHTML = laboratorial.map((x, i) => `
@@ -387,30 +586,59 @@ function renderExames() {
       <td><span class="num-lab">${String(i + 1).padStart(2, '0')}</span></td>
       <td><input class="input-tabela" data-editar-lab="${i}" value="${esc(x.codigo)}" aria-label="Nº laboratorial do item ${i + 1}"></td>
       <td>${esc(x.nome) || '<span style="color:var(--muted)">—</span>'}</td>
-      <td><button type="button" class="btn-icone btn-remover" data-remover="laboratorial" data-indice="${i}" title="Remover"><svg class="i"><use href="#i-trash"/></svg></button></td>
+      <td>${campoValorTabela('laboratorial', i, x.valor)}</td>
+      <td>${botaoRemover(`data-remover="laboratorial" data-indice="${i}"`)}</td>
     </tr>`).join('');
 
   $('#vazio-ex-imagem').hidden = imagem.length > 0;
   $('#vazio-ex-lab').hidden = laboratorial.length > 0;
   $('#pill-imagem').textContent = `${imagem.length} exame${imagem.length === 1 ? '' : 's'}`;
   $('#pill-lab').textContent = `${laboratorial.length} exame${laboratorial.length === 1 ? '' : 's'}`;
-  $('#ex-total-imagem').textContent = imagem.length;
-  $('#ex-total-lab').textContent = laboratorial.length;
+  $('#ex-total-imagem').textContent = `(${imagem.length})`;
+  $('#ex-total-lab').textContent = `(${laboratorial.length})`;
   $('#btn-salvar-exames').disabled = imagem.length + laboratorial.length === 0;
+  atualizarTotaisExames();
 }
 
+function calcularTotaisExames() {
+  const soma = (lista) => lista.reduce((t, x) => t + (x.valor || 0), 0);
+  const subtotalImagem = soma(estado.exames.imagem);
+  const subtotalLaboratorial = soma(estado.exames.laboratorial);
+  const bruto = subtotalImagem + subtotalLaboratorial;
+  const desconto = Math.min(lerMoeda($('#ex-desconto').value), bruto);
+  const semValor = [...estado.exames.imagem, ...estado.exames.laboratorial].filter((x) => !x.valor).length;
+  return { subtotalImagem, subtotalLaboratorial, desconto, total: Math.round((bruto - desconto) * 100) / 100, semValor };
+}
+
+function atualizarTotaisExames() {
+  const t = calcularTotaisExames();
+  $('#ex-subtotal-imagem').textContent = formatarMoeda(t.subtotalImagem);
+  $('#ex-subtotal-lab').textContent = formatarMoeda(t.subtotalLaboratorial);
+  $('#ex-total').textContent = formatarMoeda(t.total);
+  const aviso = $('#ex-aviso-sem-valor');
+  aviso.hidden = t.semValor === 0;
+  aviso.textContent = t.semValor === 1 ? '1 exame está sem valor.' : `${t.semValor} exames estão sem valor.`;
+}
+
+$('#ex-desconto').addEventListener('input', atualizarTotaisExames);
+
 // Remover exame
-document.addEventListener('click', (e) => {
+document.querySelector('#tela-exames').addEventListener('click', (e) => {
   const botao = e.target.closest('[data-remover]');
   if (!botao) return;
   estado.exames[botao.dataset.remover].splice(Number(botao.dataset.indice), 1);
   renderExames();
 });
 
-// Corrigir o nº laboratorial direto na tabela
-$('#tabela-ex-lab').addEventListener('input', (e) => {
-  const i = e.target.dataset.editarLab;
-  if (i !== undefined) estado.exames.laboratorial[i].codigo = e.target.value.trim();
+// Corrigir nº laboratorial ou valor direto na tabela
+document.querySelector('#tela-exames').addEventListener('input', (e) => {
+  const d = e.target.dataset;
+  if (d.editarLab !== undefined) estado.exames.laboratorial[d.editarLab].codigo = e.target.value.trim();
+  if (d.valorExame) {
+    estado.exames[d.valorExame][d.indice].valor = lerMoeda(e.target.value);
+    e.target.classList.toggle('sem-valor', !lerMoeda(e.target.value));
+    atualizarTotaisExames();
+  }
 });
 
 $('#btn-limpar-exames').addEventListener('click', () => {
@@ -418,6 +646,7 @@ $('#btn-limpar-exames').addEventListener('click', () => {
   if (total && !confirm('Remover todos os exames da requisição?')) return;
   estado.exames = { imagem: [], laboratorial: [] };
   $('#ex-obs').value = '';
+  $('#ex-desconto').value = '';
   $('#status-exames').textContent = '';
   renderExames();
 });
@@ -427,13 +656,22 @@ $('#btn-salvar-exames').addEventListener('click', () => {
     $('#status-exames').textContent = 'Selecione um paciente na tela Atendimento antes de salvar.';
     return;
   }
+  const t = calcularTotaisExames();
+  if (t.semValor) {
+    $('#status-exames').textContent = 'Informe o valor de todos os exames antes de salvar.';
+    return;
+  }
   const requisicao = {
     paciente: estado.paciente,
     medico: $('#ex-medico').value,
     data: $('#ex-data').value,
     observacoes: $('#ex-obs').value.trim(),
-    imagem: estado.exames.imagem,             // [{ categoria, nome }]
-    laboratorial: estado.exames.laboratorial.map((x, i) => ({ numero: i + 1, ...x })), // [{ numero, codigo, nome }]
+    imagem: estado.exames.imagem,             // [{ categoria, nome, valor }]
+    laboratorial: estado.exames.laboratorial.map((x, i) => ({ numero: i + 1, ...x })), // [{ numero, codigo, nome, valor }]
+    subtotalImagem: t.subtotalImagem,
+    subtotalLaboratorial: t.subtotalLaboratorial,
+    desconto: t.desconto,
+    total: t.total,
   };
   // TODO: salvar a requisição (e depois limpar a lista, se quiser)
   console.log('Salvar requisição de exames', requisicao);
