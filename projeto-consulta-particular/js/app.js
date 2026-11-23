@@ -30,17 +30,17 @@ const MODALIDADES = {
     tipo: 'Consulta particular',
     titulo: 'Abrir consulta particular',
     dica: 'O pagamento é feito antes de abrir a consulta',
-    botao: 'Pagar e abrir consulta',
+    botao: 'Pagar e liberar para consulta',
     botaoIcone: '#i-dollar',
     icone: '#i-steth',
   },
   PRONTO_SOCORRO: {
     nome: 'Pronto Socorro',
-    tipo: 'Pronto Socorro · exames particulares',
+    tipo: 'Pronto Socorro · consulta de emergência particular',
     titulo: 'Abrir atendimento de Pronto Socorro',
-    dica: 'Basta o nome do paciente. Exames pedidos pelo médico são pagos antes de serem feitos',
-    botao: 'Abrir atendimento',
-    botaoIcone: '#i-clipboard',
+    dica: 'O pagamento é feito antes de liberar o paciente para a consulta',
+    botao: 'Pagar e liberar para consulta',
+    botaoIcone: '#i-dollar',
     icone: '#i-heart',
   },
 };
@@ -67,7 +67,7 @@ function tagStatus(status) {
   const nomes = {
     AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
     ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta', PAGO: 'Pago', PENDENTE: 'Pendente',
-    AGUARDANDO: 'Aguardando consulta',
+    AGUARDANDO: 'Liberado para consulta',
   };
   const s = String(status || '').toUpperCase();
   return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
@@ -219,13 +219,11 @@ function acoesAtendimento(a) {
   const qtd = a.exames ? ` (${a.exames})` : '';
   const botaoExames = (destaque) =>
     `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="Exames pedidos pelo médico neste atendimento">Pedir exames${qtd}</button>`;
-  if (tipo === 'CONSULTA') {
-    if (!consultaConcluida(a)) {
-      return a.pago
-        ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
-        : `<span class="dica">Aguardando pagamento</span>`;
-    }
-    return botaoExames(!a.exames);
+  // Consulta e Pronto Socorro seguem o mesmo fluxo: pago → consulta → exames
+  if (!consultaConcluida(a)) {
+    return a.pago
+      ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
+      : `<span class="dica">Aguardando pagamento</span>`;
   }
   return botaoExames(!a.exames);
 }
@@ -240,9 +238,9 @@ const ETAPAS = {
   ],
   PRONTO_SOCORRO: [
     { titulo: 'Paciente', dica: 'Basta o nome' },
-    { titulo: 'Pronto Socorro', dica: 'Atendimento aberto' },
-    { titulo: 'Exames', dica: 'Se o médico pedir' },
-    { titulo: 'Pagamento', dica: 'Exames pagos antes de fazer' },
+    { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
+    { titulo: 'Consulta', dica: 'Médico de plantão atende' },
+    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
   ],
 };
 
@@ -253,12 +251,7 @@ function atendimentoDeHoje() {
 
 function renderEtapas() {
   const a = estado.paciente ? atendimentoDeHoje() : null;
-  let feitas;
-  if (estado.modalidade === 'CONSULTA') {
-    feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
-  } else {
-    feitas = [!!estado.paciente, !!a, !!a?.exames, !!a?.exames];
-  }
+  const feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
   const atual = feitas.indexOf(false);
   $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
     <li class="${feitas[i] ? 'feito' : i === atual ? 'atual' : ''}">
@@ -379,9 +372,25 @@ function carregarAtendimento() {
 
 // Setores da aba aberta (Consulta ou Pronto Socorro)
 function carregarSetores() {
-  // TODO: buscar os setores de estado.modalidade
-  // preencherSelect('#atend-setor', [{ valor: '93', texto: 'Consultório 1' }], 'Selecione o setor');
-  preencherSelect('#atend-setor', [], 'Selecione o setor');
+  // TODO: buscar os setores de estado.modalidade e chamar preencherSetores(lista).
+  //   No Pronto Socorro, cada setor traz o valor da consulta de emergência:
+  //   preencherSetores([{ id: 10, nome: 'Pronto Socorro Adulto', valorConsulta: 250 }]);
+  preencherSetores([]);
+}
+
+function preencherSetores(lista) {
+  estado.setores = lista;
+  preencherSelect('#atend-setor', lista.map((s) => ({ valor: s.id, texto: s.nome })), 'Selecione o setor');
+  atualizarValorPS();
+}
+
+function setorSelecionado() {
+  return (estado.setores || []).find((s) => String(s.id) === String(estado.setor));
+}
+
+function atualizarValorPS() {
+  const s = setorSelecionado();
+  $('#atend-valor-ps').textContent = s ? (s.valorConsulta ? formatarMoeda(s.valorConsulta) : 'Informe na hora do pagamento') : 'Escolha o setor';
 }
 
 // Troca entre as abas Consulta e Pronto Socorro
@@ -400,6 +409,7 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-btn-texto').textContent = m.botao;
   $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
   $('#linha-medico').hidden = modalidade !== 'CONSULTA';
+  $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
   estado.setor = '';
   carregarSetores();
   atualizarTituloAnteriores();
@@ -475,6 +485,7 @@ async function cadastrarPaciente(paciente) {
 
 $('#atend-setor').addEventListener('change', (e) => {
   estado.setor = e.target.value;
+  atualizarValorPS();
   atualizarTituloAnteriores();
   atualizarBotaoAbrir();
   carregarAtendimentosAnteriores();
@@ -517,7 +528,7 @@ $('#atend-medico').addEventListener('change', () => {
 
 // ---------- Abrir atendimento ----------
 // Consulta: abre a janela de pagamento primeiro; só abre a consulta se o pagamento for confirmado.
-// Pronto Socorro: abre direto (os exames são pagos na tela de Exames).
+// Pronto Socorro: também paga antes; o valor vem do setor (consulta de emergência).
 $('#btn-abrir-atendimento').addEventListener('click', async () => {
   const setor = $('#atend-setor').selectedOptions[0]?.text || '';
   const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
@@ -535,16 +546,30 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
     dados.medico = m;
     dados.valor = pagamento.valor;
     dados.pagamento = pagamento;
+  } else {
+    const s = setorSelecionado();
+    const valor = s?.valorConsulta || 0;
+    const pagamento = await abrirPagamento({
+      descricao: `Pronto Socorro · ${estado.paciente.nome}`,
+      itens: [{ nome: `Consulta de emergência · ${setor}`, valor }],
+      valor,
+      valorEditavel: true,
+      contexto: { tipo: 'CONSULTA', paciente: estado.paciente.nome, medico: setor },
+    });
+    if (!pagamento) return; // cancelou: o paciente NÃO é liberado
+    dados.valor = pagamento.valor;
+    dados.pagamento = pagamento;
   }
 
+  // Pago: o paciente fica liberado para a consulta (status AGUARDANDO)
   await registrarAtendimento(dados);
   carregarAtendimentosAnteriores();
 });
 
 async function registrarAtendimento(dados) {
   // TODO: salvar o atendimento (consulta ou pronto socorro).
-  //   dados = { paciente, setor, modalidade, medico?, valor?, pagamento? }
-  //   Na consulta, dados.pagamento sempre existe (já foi confirmado).
+  //   dados = { paciente, setor, modalidade, medico?, valor, pagamento }
+  //   dados.pagamento sempre existe (já foi confirmado). Grave com status AGUARDANDO (liberado para consulta).
   console.log('Abrir atendimento', dados);
 }
 

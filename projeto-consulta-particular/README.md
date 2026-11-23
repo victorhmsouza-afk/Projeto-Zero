@@ -78,14 +78,16 @@ As etapas aparecem no topo da tela de Atendimento:
 | Consulta particular | Pronto Socorro |
 |---|---|
 | 1. Paciente (buscar ou cadastrar) | 1. Paciente (basta o nome: cadastro rápido) |
-| 2. **Pagamento** (antes da consulta) | 2. Pronto Socorro (atendimento aberto, sem cobrança) |
-| 3. Consulta (botão **Concluir consulta**) | 3. Exames (se o médico pedir) |
-| 4. Exames (se o médico pedir, **pagos antes**) | 4. **Pagamento** dos exames |
+| 2. **Pagamento** da consulta (valor do médico) | 2. **Pagamento** da consulta de emergência (valor do setor) |
+| 3. Consulta (botão **Concluir consulta**) | 3. Consulta com o médico de plantão (**Concluir consulta**) |
+| 4. Exames (se o médico pedir, **pagos antes**) | 4. Exames (se o médico pedir, **pagos antes**) |
 
-- Depois de pagar, a consulta fica **Aguardando consulta** (status `AGUARDANDO`). Grave esse status em `registrarAtendimento()`.
+Nas duas abas o paciente **só é liberado para a consulta depois de pagar**.
+No Pronto Socorro o valor vem do setor: `preencherSetores([{ id, nome, valorConsulta }])`.
+
+- Depois de pagar, o paciente fica **Liberado para consulta** (status `AGUARDANDO`). Grave esse status em `registrarAtendimento()`.
 - **Concluir consulta** chama `registrarConclusaoConsulta(atendimento)` (status `ATENDIDA`).
   Só depois disso aparece **Pedir exames**.
-- No Pronto Socorro, **Pedir exames** aparece desde o início.
 - O botão de cadastro ao lado da busca abre o **cadastro rápido** (`cadastrarPaciente()`): só o nome é obrigatório.
 - Cada atendimento pode ter o campo `exames` (quantidade já pedida), mostrado como "Pedir exames (2)".
 
