@@ -1,14 +1,20 @@
 /* =========================================================
    Consulta Particular — app.js
-   Aqui só existe a navegação entre telas e o "esqueleto"
-   das funções. Toda a lógica (API, banco, regras) é sua:
-   procure por  TODO  e preencha.
+   Aqui existe só a parte visual: troca de telas, menu e
+   funções que desenham as tabelas. Toda a lógica (API,
+   banco, regras) é sua: procure por  TODO  e preencha.
    ========================================================= */
 
 // ---------- Configuração ----------
 const CONFIG = {
   // TODO: endereço da sua API quando ela existir
   apiUrl: '',
+};
+
+// Estado da tela de atendimento
+const estado = {
+  paciente: null, // paciente selecionado
+  setor: '',      // setor selecionado
 };
 
 // ---------- Utilitários ----------
@@ -24,10 +30,18 @@ function formatarData(dataIso) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function formatarDataHora(dataIso) {
+  if (!dataIso) return '';
+  return `${formatarData(dataIso)} ${dataIso.slice(11, 16)}`;
+}
+
 function tagStatus(status) {
-  const nomes = { AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada' };
+  const nomes = {
+    AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
+    ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta',
+  };
   const s = String(status || '').toUpperCase();
-  return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || s}</span>`;
+  return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
 }
 
 // Escapa texto antes de colocar dentro de innerHTML
@@ -37,49 +51,99 @@ function esc(texto) {
   return div.innerHTML;
 }
 
+function iniciais(nome) {
+  return String(nome || '').trim().split(/\s+/).filter(Boolean)
+    .map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '--';
+}
+
+function preencherSelect(seletor, itens, textoPadrao = 'Selecione') {
+  $(seletor).innerHTML = `<option value="">${esc(textoPadrao)}</option>` +
+    itens.map((i) => `<option value="${esc(i.valor)}">${esc(i.texto)}</option>`).join('');
+}
+
 // ---------- Navegação entre telas ----------
-const TITULOS = {
-  painel: 'Painel',
-  agenda: 'Agenda',
-  'nova-consulta': 'Nova consulta',
-  pacientes: 'Pacientes',
-  medicos: 'Médicos',
-  financeiro: 'Financeiro',
-  configuracoes: 'Configurações',
+const carregadores = {
+  atendimento: carregarAtendimento,
+  painel: carregarPainel,
+  agenda: carregarAgenda,
+  'nova-consulta': carregarFormularioConsulta,
+  pacientes: carregarPacientes,
+  medicos: carregarMedicos,
+  financeiro: carregarFinanceiro,
+  relatorios: () => {},
+  configuracoes: () => {},
 };
 
 function abrirTela(nome) {
-  if (!TITULOS[nome]) nome = 'painel';
-
+  if (!carregadores[nome]) nome = 'atendimento';
   document.querySelectorAll('.tela').forEach((t) => t.classList.toggle('ativa', t.id === `tela-${nome}`));
   document.querySelectorAll('[data-tela]').forEach((a) => a.classList.toggle('ativo', a.dataset.tela === nome));
-  $('#titulo-tela').textContent = TITULOS[nome];
   $('#sidebar').classList.remove('aberta');
-
-  // Carrega os dados da tela que foi aberta
-  const carregadores = {
-    painel: carregarPainel,
-    agenda: carregarAgenda,
-    'nova-consulta': carregarFormularioConsulta,
-    pacientes: carregarPacientes,
-    medicos: carregarMedicos,
-    financeiro: carregarFinanceiro,
-  };
-  carregadores[nome]?.();
+  carregadores[nome]();
 }
 
 window.addEventListener('hashchange', () => abrirTela(location.hash.slice(1)));
 $('#btn-menu').addEventListener('click', () => $('#sidebar').classList.toggle('aberta'));
+$('#btn-recolher').addEventListener('click', () => $('#sidebar').classList.toggle('recolhida'));
 
-// ---------- Renderização de tabelas (já pronto) ----------
-// Passe um array de objetos e ele desenha as linhas.
+// ---------- Renderização (já pronto) ----------
+
+function renderResultadosBusca(pacientes) {
+  $('#atend-resultados').innerHTML = pacientes.map((p, i) => `
+    <li data-indice="${i}">
+      <strong>${esc(p.nome)}</strong>
+      <small>CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small>
+    </li>`).join('');
+  // guarda a lista para o clique saber qual paciente foi escolhido
+  $('#atend-resultados').dataset.lista = JSON.stringify(pacientes);
+}
+
+function selecionarPaciente(paciente) {
+  estado.paciente = paciente;
+  $('#atend-resultados').innerHTML = '';
+  const caixa = $('#atend-paciente');
+  if (!paciente) {
+    caixa.hidden = true;
+  } else {
+    caixa.hidden = false;
+    caixa.innerHTML = `
+      <strong>${esc(paciente.nome)}</strong>
+      <small style="display:block;color:var(--muted);margin-top:4px">
+        CPF ${esc(paciente.cpf)} · Nasc. ${formatarData(paciente.nascimento)}
+      </small>`;
+  }
+  atualizarBotaoAbrir();
+  carregarAtendimentosAnteriores();
+}
+
+function atualizarBotaoAbrir() {
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor);
+}
+
+function renderAnteriores(atendimentos) {
+  $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
+    <tr>
+      <td>${esc(a.numero)}</td>
+      <td>${esc(a.senha)}</td>
+      <td>${tagStatus(a.status)}</td>
+      <td>${formatarDataHora(a.entrada)}</td>
+      <td>${formatarDataHora(a.alta)}</td>
+      <td>${esc(a.medico)}</td>
+      <td>${formatarMoeda(a.valor)}</td>
+      <td><button class="btn-acao" data-id="${esc(a.numero)}">Abrir</button></td>
+    </tr>`).join('');
+  $('#vazio-anteriores').hidden = atendimentos.length > 0;
+  $('#vazio-anteriores').textContent = estado.paciente
+    ? 'Nenhum atendimento anterior para este paciente.'
+    : 'Selecione um paciente para visualizar os atendimentos anteriores.';
+}
 
 function renderProximos(consultas) {
   $('#tabela-proximos').innerHTML = consultas.map((c) => `
     <tr>
       <td>${esc(c.horario)}</td>
       <td>${esc(c.paciente)}</td>
-      <td>${esc(c.medico)}<br><small>${esc(c.especialidade)}</small></td>
+      <td>${esc(c.medico)} <small style="color:var(--muted)">${esc(c.especialidade)}</small></td>
       <td>${formatarMoeda(c.valor)}</td>
       <td>${tagStatus(c.status)}</td>
       <td><button class="btn-acao" data-id="${esc(c.id)}">Abrir</button></td>
@@ -138,23 +202,87 @@ function renderFinanceiro(recebimentos) {
   $('#vazio-financeiro').hidden = recebimentos.length > 0;
 }
 
-function preencherSelect(seletor, itens, textoPadrao = 'Selecione') {
-  $(seletor).innerHTML = `<option value="">${textoPadrao}</option>` +
-    itens.map((i) => `<option value="${esc(i.valor)}">${esc(i.texto)}</option>`).join('');
-}
-
 // =========================================================
-//   SUA LÓGICA AQUI  (cada função é chamada pela tela)
+//   SUA LÓGICA AQUI
 // =========================================================
 
+// ---------- Usuário logado ----------
 function carregarUsuario() {
-  // TODO: buscar o usuário logado e preencher a barra superior
-  // $('#usuario-nome').textContent = ...
-  // $('#usuario-perfil').textContent = ...
-  // $('#usuario-iniciais').textContent = ...
-  // preencherSelect('#select-unidade', [{ valor: '1', texto: 'Unidade X' }], 'Selecione a unidade');
+  // TODO: buscar o usuário logado
+  const nome = 'Usuário';
+  $('#usuario-nome').textContent = nome;
+  $('#usuario-iniciais').textContent = iniciais(nome);
 }
 
+// ---------- Tela: Atendimento ----------
+function carregarAtendimento() {
+  // TODO: buscar setores da unidade e o nome da unidade
+  // preencherSelect('#atend-setor', [{ valor: '93', texto: 'Consultório 1' }], 'Selecione o setor');
+  // $('#atend-unidade').textContent = 'Nome da unidade';
+  renderAnteriores([]);
+}
+
+$('#form-busca-atend').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const termo = $('#atend-busca').value.trim();
+  if (!termo) return;
+  // TODO: buscar pacientes por nome/CPF e chamar renderResultadosBusca(lista)
+  //   cada item: { id, nome, cpf, nascimento: 'AAAA-MM-DD' }
+  console.log('Buscar paciente', termo);
+});
+
+$('#atend-resultados').addEventListener('click', (e) => {
+  const item = e.target.closest('li');
+  if (!item) return;
+  const lista = JSON.parse($('#atend-resultados').dataset.lista || '[]');
+  selecionarPaciente(lista[item.dataset.indice]);
+});
+
+$('#btn-historico-busca').addEventListener('click', () => {
+  // TODO: mostrar as últimas buscas / últimos pacientes atendidos
+  console.log('Histórico de buscas');
+});
+
+$('#btn-novo-paciente').addEventListener('click', () => {
+  // TODO: abrir cadastro de novo paciente
+  location.hash = '#nova-consulta';
+});
+
+$('#atend-setor').addEventListener('change', (e) => {
+  estado.setor = e.target.value;
+  $('#atend-setor-nome').textContent = e.target.value ? e.target.selectedOptions[0].text : '';
+  atualizarBotaoAbrir();
+  carregarAtendimentosAnteriores();
+});
+
+$('#btn-atualizar-setor').addEventListener('click', () => carregarAtendimento());
+
+function carregarAtendimentosAnteriores() {
+  if (!estado.paciente) { renderAnteriores([]); return; }
+  // TODO: buscar atendimentos anteriores do paciente (e do setor, se quiser)
+  //   cada item: { numero, senha, status, entrada: 'AAAA-MM-DDTHH:MM', alta, medico, valor }
+  renderAnteriores([]);
+}
+
+$('#btn-atualizar-anteriores').addEventListener('click', () => carregarAtendimentosAnteriores());
+
+$('#btn-abrir-atendimento').addEventListener('click', () => {
+  const dados = { paciente: estado.paciente, setor: estado.setor, tipo: 'PARTICULAR' };
+  // TODO: abrir o atendimento particular e depois recarregar a lista
+  console.log('Abrir atendimento', dados);
+});
+
+$('#btn-recibo').addEventListener('click', () => {
+  // TODO: gerar/imprimir recibo da consulta
+  console.log('Recibo de consulta');
+});
+
+$('#btn-etiqueta').addEventListener('click', () => {
+  // TODO: imprimir etiqueta avulsa
+  console.log('Etiqueta avulsa');
+});
+
+// ---------- Tela: Painel ----------
 function carregarPainel() {
   // TODO: buscar consultas do dia e os números do resumo
   // $('#stat-agendadas').textContent = ...
@@ -162,6 +290,7 @@ function carregarPainel() {
   renderProximos([]);
 }
 
+// ---------- Tela: Agenda ----------
 function carregarAgenda() {
   // TODO: preencher a lista de médicos do filtro
   // preencherSelect('#filtro-medico', [...], 'Todos');
@@ -179,6 +308,7 @@ $('#form-filtro-agenda').addEventListener('submit', (e) => {
   renderAgenda([]);
 });
 
+// ---------- Tela: Agendar consulta ----------
 function carregarFormularioConsulta() {
   // TODO: preencher especialidades
   // preencherSelect('#cons-especialidade', [...]);
@@ -217,6 +347,7 @@ $('#form-consulta').addEventListener('reset', () => {
   $('#status-consulta').textContent = '';
 });
 
+// ---------- Tela: Pacientes ----------
 function carregarPacientes() {
   // TODO: carregar lista inicial (opcional)
   renderPacientes([]);
@@ -229,11 +360,13 @@ $('#form-busca-paciente').addEventListener('submit', (e) => {
   console.log('Buscar paciente', termo);
 });
 
+// ---------- Tela: Médicos ----------
 function carregarMedicos() {
   // TODO: buscar médicos e chamar renderMedicos(lista)
   renderMedicos([]);
 }
 
+// ---------- Tela: Financeiro ----------
 function carregarFinanceiro() {
   // TODO: carregar recebimentos do período padrão
   renderFinanceiro([]);
@@ -247,9 +380,20 @@ $('#form-filtro-financeiro').addEventListener('submit', (e) => {
   console.log('Filtrar financeiro', periodo);
 });
 
-$('#select-unidade').addEventListener('change', (e) => {
-  // TODO: guardar a unidade escolhida e recarregar a tela atual
-  console.log('Unidade', e.target.value);
+// ---------- Barra superior ----------
+$('#btn-busca-global').addEventListener('click', () => {
+  // TODO: busca geral
+  console.log('Busca geral');
+});
+
+$('#btn-notificacoes').addEventListener('click', () => {
+  // TODO: notificações
+  console.log('Notificações');
+});
+
+$('#btn-usuario').addEventListener('click', () => {
+  // TODO: menu do usuário (perfil, trocar unidade, etc.)
+  console.log('Menu do usuário');
 });
 
 $('#btn-sair').addEventListener('click', () => {
@@ -267,4 +411,4 @@ document.addEventListener('click', (e) => {
 
 // ---------- Início ----------
 carregarUsuario();
-abrirTela(location.hash.slice(1) || 'painel');
+abrirTela(location.hash.slice(1) || 'atendimento');

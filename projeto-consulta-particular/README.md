@@ -11,8 +11,8 @@ Dê dois cliques em `index.html`.
 
 ```
 projeto-consulta-particular/
-├── index.html     → telas: Painel, Agenda, Nova consulta, Pacientes, Médicos, Financeiro, Configurações
-├── css/style.css  → visual (paleta verde "health", menu lateral, responsivo)
+├── index.html     → telas: Atendimento, Painel, Agenda, Agendar consulta, Pacientes, Médicos, Financeiro, Relatórios, Administrador
+├── css/style.css  → visual (layout de hub: barra superior, menu lateral recolhível, responsivo)
 └── js/app.js      → navegação entre telas + funções vazias para a sua lógica
 ```
 
@@ -23,6 +23,8 @@ e os formulários já têm o `submit` capturado. Para exibir dados nas tabelas, 
 
 | Função | Tela |
 |---|---|
+| `renderResultadosBusca(lista)` | Atendimento (busca de paciente) |
+| `renderAnteriores(lista)` | Atendimento (atendimentos anteriores) |
 | `renderProximos(lista)` | Painel |
 | `renderAgenda(lista)` | Agenda |
 | `renderPacientes(lista)` | Pacientes |
