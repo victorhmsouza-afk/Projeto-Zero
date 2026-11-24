@@ -250,6 +250,13 @@
               <select id="ponto-medico" required></select>
               <p class="dica ponto-situacao" id="ponto-situacao"></p>
             </div>
+            <fieldset class="pg-formas" id="ponto-tipo">
+              <legend>Tipo de plantão *</legend>
+              <div class="segmentado">
+                <label><input type="radio" name="plantaoHoras" value="6"><span>Plantão 6 horas</span></label>
+                <label><input type="radio" name="plantaoHoras" value="12"><span>Plantão 12 horas</span></label>
+              </div>
+            </fieldset>
             <div class="ponto-foto">
               <video id="ponto-video" playsinline muted hidden></video>
               <img id="ponto-preview" alt="Foto do médico para o ponto" hidden>
@@ -264,7 +271,7 @@
             <p class="pg-erro" id="ponto-erro" role="alert"></p>
             <button type="submit" class="btn-primario largo" id="btn-registrar-ponto" disabled><svg class="i"><use href="#i-clock"/></svg><span id="btn-registrar-ponto-texto">Registrar entrada</span></button>
             <p class="status" id="ponto-status" role="status" aria-live="polite"></p>
-            <p class="storage-note">A foto serve só para confirmar a presença no ponto. Ela fica guardada neste computador e é apagada depois de 30 dias.</p>
+            <p class="storage-note">A foto confirma a presença no ponto. Fotos e horários ficam guardados neste computador por 13 meses, para o pagamento e a auditoria dos plantões. Os registros de ponto não podem ser apagados pela tela.</p>
           </form>
 
           <div class="col-atendimento">
@@ -280,13 +287,35 @@
               <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-history"/></svg>Registros de hoje</h2></div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Foto</th><th>Hora</th><th>Médico</th><th>Especialidade</th><th>Registro</th></tr></thead>
+                  <thead><tr><th>Foto</th><th>Hora</th><th>Médico</th><th>Especialidade</th><th>Plantão</th><th>Registro</th></tr></thead>
                   <tbody id="tabela-ponto"></tbody>
                 </table>
               </div>
               <p class="vazio centro" id="vazio-ponto">Nenhum registro hoje.</p>
             </div>
           </div>
+        </div>
+
+        <!-- Fechamento do mês: pagamento dos plantonistas -->
+        <div class="card tabela-card espaco" id="card-plantoes-mes">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-dollar"/></svg>Plantões do mês · pagamento médico</h2>
+            <span class="pill" id="pill-total-plantoes">R$ 0,00 a pagar</span>
+          </div>
+          <div class="form-preco">
+            <div><label for="pm-mes">Mês</label><input type="month" id="pm-mes"></div>
+            <div class="campo-valor"><label for="pm-valor6">Valor plantão 6 h (R$)</label><input id="pm-valor6" class="input-valor" inputmode="decimal" placeholder="0,00"></div>
+            <div class="campo-valor"><label for="pm-valor12">Valor plantão 12 h (R$)</label><input id="pm-valor12" class="input-valor" inputmode="decimal" placeholder="0,00"></div>
+            <p class="dica" id="pm-aviso"></p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médico</th><th>Especialidade</th><th>Plantões 6 h</th><th>Plantões 12 h</th><th>Horas trabalhadas</th><th>Pendências</th><th>Valor a pagar</th><th>Auditoria</th></tr></thead>
+              <tbody id="tabela-plantoes-mes"></tbody>
+              <tfoot id="rodape-plantoes-mes"></tfoot>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-plantoes-mes">Nenhum plantão registrado neste mês.</p>
         </div>
       </section>
 
@@ -680,6 +709,23 @@
         <button type="submit" class="btn-primario"><svg class="i"><use href="#i-heart"/></svg>Salvar triagem</button>
       </div>
     </form>
+  </div>
+
+  <!-- ===================== AUDITORIA DE PLANTÕES (janela) ===================== -->
+  <div class="modal-fundo" id="modal-auditoria" hidden>
+    <div class="modal modal-auditoria" role="dialog" aria-modal="true" aria-labelledby="aud-titulo">
+      <div class="modal-topo">
+        <div><h2 id="aud-titulo">Auditoria de plantões</h2><p class="sub" id="aud-sub"></p></div>
+        <button type="button" class="btn-icone" data-aud-fechar aria-label="Fechar">✕</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Contratado</th><th>Entrada</th><th>Saída</th><th>Trabalhado</th><th>Situação</th></tr></thead>
+          <tbody id="tabela-auditoria"></tbody>
+        </table>
+      </div>
+      <div class="acoes"><button type="button" class="btn" data-aud-fechar>Fechar</button></div>
+    </div>
   </div>
 
   <!-- ===================== RECIBO (janela) ===================== -->

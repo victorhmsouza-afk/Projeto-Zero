@@ -248,5 +248,25 @@ Tela **Ponto do plantão** (menu):
 - **Registros de hoje:** hora, médico, entrada/saída e a foto.
 - Na tela Médicos, a coluna *No plantão* mostra "Sim · desde 07:02" ou o atalho para registrar o ponto.
 - Se ninguém registrou entrada, o Atendimento mostra "Nenhum médico no plantão · registrar ponto".
-- A foto é reduzida (~320 px) e guardada **neste navegador** por **30 dias** (depois é apagada). Foto do rosto é dado
+- A foto é reduzida (~320 px). Fotos (no IndexedDB) e horários (no localStorage) ficam guardados **neste navegador** por **13 meses**, para auditoria. Foto do rosto é dado
   sensível pela LGPD: use só para o ponto. Quando tiver banco de dados, troque `lerPonto()`, `salvarPonto()` e `registrarPonto()`.
+
+## Tipo de plantão e pagamento do mês
+
+- Na **entrada** do ponto o médico escolhe **Plantão 6 horas** ou **Plantão 12 horas** (obrigatório). A saída usa o mesmo tipo.
+- O ponto mostra o horário previsto de término (ex.: "plantão 12 h · desde 07:30 até 19:30").
+- Quadro **Plantões do mês · pagamento médico** (na tela Ponto do plantão): escolha o mês e preencha o
+  **valor do plantão de 6 h** e **de 12 h**. Para cada médico aparecem os plantões de 6 h e 12 h, as horas trabalhadas,
+  as **pendências** (sem saída registrada, saída mais de 15 min antes do horário, plantão em andamento) e o **valor a pagar**,
+  com o total do mês para o contas a pagar.
+- Registro salvo: `{ tipo: 'ENTRADA' | 'SAIDA', horas: 6 | 12, entradaId, medicoId, dataHora, foto }`.
+
+## Auditoria dos plantões
+
+- Os registros de ponto **não podem ser apagados pela tela**. Fotos e horários ficam **13 meses** (`DIAS_GUARDAR_REGISTROS` / `DIAS_GUARDAR_FOTO`).
+- No quadro **Plantões do mês**, o botão **Auditoria** de cada médico mostra plantão por plantão: data, tipo contratado (6/12 h),
+  **entrada com foto e hora**, **saída com foto e hora**, horas trabalhadas e a situação:
+  *Cumprido*, *Faltaram X h* (em vermelho, ex.: fez 6 h de 12 h), *Sem saída registrada* ou *Em andamento*. Clique na foto para ampliar.
+- As fotos ficam no **IndexedDB** do navegador (cabe muito mais que o localStorage). Quando tiver banco de dados,
+  envie registro e foto em `registrarPonto(registro, foto)` e guarde lá para auditoria.
+- Foto do rosto é dado sensível (LGPD): defina com o jurídico do hospital por quanto tempo guardar e quem pode ver.

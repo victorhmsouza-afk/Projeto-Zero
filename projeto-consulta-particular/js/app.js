@@ -72,15 +72,72 @@ function salvarPlantonistas() {
 // Registros de entrada/saída com foto, guardados neste navegador por 30 dias.
 // TODO: quando tiver banco de dados, troque lerPonto()/salvarPonto() e registrarPonto().
 const CHAVE_PONTO = 'consultaParticular.ponto';
-const DIAS_GUARDAR_FOTO = 30;
+const DIAS_GUARDAR_FOTO = 400; // fotos também ficam ~13 meses, para auditoria
+
+const DIAS_GUARDAR_REGISTROS = 400; // ~13 meses, para o pagamento dos plantões
 
 function lerPonto() {
   try {
     const lista = JSON.parse(localStorage.getItem(CHAVE_PONTO)) || [];
-    const limite = Date.now() - DIAS_GUARDAR_FOTO * 86400000;
-    return lista.filter((r) => new Date(r.dataHora).getTime() >= limite); // apaga o que passou de 30 dias
+    const agora = Date.now();
+    return lista
+      .filter((r) => agora - new Date(r.dataHora).getTime() <= DIAS_GUARDAR_REGISTROS * 86400000);
   } catch (e) { return []; }
 }
+
+// Fotos do ponto ficam no IndexedDB do navegador (cabe muito mais que o localStorage).
+// Chave = id do registro de ponto. Se o IndexedDB não funcionar, a foto fica junto do registro.
+let conexaoFotos = null;
+function bancoFotos() {
+  return conexaoFotos ||= new Promise((resolver, rejeitar) => {
+    const req = indexedDB.open('consultaParticular', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('fotosPonto');
+    req.onsuccess = () => resolver(req.result);
+    req.onerror = () => rejeitar(req.error);
+  });
+}
+
+async function operacaoFotos(modo, acao) {
+  const db = await bancoFotos();
+  return new Promise((resolver, rejeitar) => {
+    const tx = db.transaction('fotosPonto', modo);
+    const req = acao(tx.objectStore('fotosPonto'));
+    tx.oncomplete = () => resolver(req?.result);
+    tx.onerror = () => rejeitar(tx.error);
+  });
+}
+
+const cacheFotos = new Map();
+async function guardarFoto(id, dataUrl) {
+  cacheFotos.set(id, dataUrl);
+  await operacaoFotos('readwrite', (s) => s.put(dataUrl, id));
+}
+async function lerFoto(id) {
+  if (cacheFotos.has(id)) return cacheFotos.get(id);
+  try { const f = await operacaoFotos('readonly', (s) => s.get(id)); if (f) cacheFotos.set(id, f); return f || ''; } catch (e) { return ''; }
+}
+
+// Preenche as <img data-foto-id="..."> depois de desenhar a tela
+function preencherFotos(raiz = document) {
+  raiz.querySelectorAll('img[data-foto-id]').forEach(async (img) => {
+    const f = await lerFoto(img.dataset.fotoId);
+    if (f && f.startsWith('data:image/')) img.src = f; else img.replaceWith(Object.assign(document.createElement('span'), { className: 'foto-ponto', title: 'Sem foto' }));
+  });
+}
+
+const tagFoto = (r, alt) => (r.foto && r.foto.startsWith('data:image/')
+  ? `<img class="foto-ponto" src="${r.foto}" alt="${alt}">`
+  : r.temFoto ? `<img class="foto-ponto" data-foto-id="${esc(r.id)}" alt="${alt}">` : '<span class="foto-ponto" title="Sem foto"></span>');
+
+// Ampliar foto ao clicar (auditoria)
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.aud-ponto img.foto-ponto');
+  if (!img || !img.src) return;
+  const cam = Object.assign(document.createElement('div'), { className: 'foto-ampliada' });
+  cam.innerHTML = `<img src="${img.src}" alt="${esc(img.alt)}">`;
+  cam.addEventListener('click', () => cam.remove());
+  document.body.appendChild(cam);
+});
 
 function salvarPonto(lista) {
   try { localStorage.setItem(CHAVE_PONTO, JSON.stringify(lista)); return true; } catch (e) { return false; }
@@ -498,14 +555,22 @@ function carregarPonto() {
   renderPonto();
 }
 
+const fimPrevisto = (e) => new Date(new Date(e.dataHora).getTime() + (Number(e.horas) || 0) * 3600000).toISOString();
+const horasPlantaoEscolhidas = () => document.querySelector('input[name="plantaoHoras"]:checked')?.value || '';
+
 function atualizarFormPonto() {
   const id = $('#ponto-medico').value;
   const e = id ? entradaAtiva(id) : null;
   $('#btn-registrar-ponto-texto').textContent = e ? 'Registrar saída' : 'Registrar entrada';
-  $('#ponto-situacao').textContent = !id ? '' : e ? `No plantão desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)}).` : 'Fora do plantão.';
+  $('#ponto-tipo').hidden = !!e; // tipo de plantão só na entrada
+  $('#ponto-situacao').textContent = !id ? ''
+    : e ? `No plantão de ${e.horas || '?'} h desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)})${e.horas ? ` · termina às ${horaBR(fimPrevisto(e))}` : ''}.`
+      : 'Fora do plantão.';
   $('#ponto-situacao').classList.toggle('dentro', !!e);
-  $('#btn-registrar-ponto').disabled = !(id && fotoPonto);
+  $('#btn-registrar-ponto').disabled = !(id && fotoPonto && (e || horasPlantaoEscolhidas()));
 }
+
+document.querySelectorAll('input[name="plantaoHoras"]').forEach((r) => r.addEventListener('change', atualizarFormPonto));
 
 function mostrarFoto(dataUrl) {
   fotoPonto = dataUrl;
@@ -578,27 +643,38 @@ $('#form-ponto').addEventListener('submit', async (e) => {
   e.preventDefault();
   const m = DADOS.medicosEmergencia.find((x) => String(x.id) === $('#ponto-medico').value);
   if (!m || !fotoPonto) return;
-  const tipo = entradaAtiva(m.id) ? 'SAIDA' : 'ENTRADA';
+  const aberta = entradaAtiva(m.id);
+  const tipo = aberta ? 'SAIDA' : 'ENTRADA';
+  const horas = aberta ? Number(aberta.horas) || '' : Number(horasPlantaoEscolhidas());
+  if (!aberta && !horas) { $('#ponto-erro').textContent = 'Escolha o tipo de plantão: 6 ou 12 horas.'; return; }
   const registro = {
     id: `${Date.now()}`, medicoId: m.id, medicoNome: m.nome, especialidade: m.especialidade, crm: m.crm,
-    tipo, dataHora: new Date().toISOString(), foto: fotoPonto,
+    tipo, horas, // 6 ou 12 (na saída, o mesmo da entrada)
+    entradaId: aberta?.id || '', // na saída, liga com a entrada
+    dataHora: new Date().toISOString(), temFoto: true,
   };
+  try {
+    await guardarFoto(registro.id, fotoPonto);
+  } catch (erro) {
+    registro.foto = fotoPonto; // sem IndexedDB: guarda a foto junto do registro
+  }
   const lista = lerPonto();
   lista.push(registro);
   if (!salvarPonto(lista)) { $('#ponto-erro').textContent = 'Não foi possível salvar o ponto neste navegador.'; return; }
-  await registrarPonto(registro);
+  await registrarPonto(registro, fotoPonto);
   $('#ponto-status').textContent = tipo === 'ENTRADA'
-    ? `Entrada registrada às ${horaBR(registro.dataHora)}: ${m.nome} já aparece no Pronto Socorro.`
+    ? `Entrada no plantão de ${horas} h registrada às ${horaBR(registro.dataHora)} (termina às ${horaBR(fimPrevisto(registro))}): ${m.nome} já aparece no Pronto Socorro.`
     : `Saída registrada às ${horaBR(registro.dataHora)}: ${m.nome} saiu da lista do Pronto Socorro.`;
   mostrarFoto('');
+  document.querySelectorAll('input[name="plantaoHoras"]').forEach((r) => { r.checked = false; });
   $('#ponto-medico').value = '';
   carregarPonto();
   if (estado.modalidade === 'PRONTO_SOCORRO') carregarMedicosConsulta();
 });
 
-async function registrarPonto(registro) {
-  // TODO: enviar o registro de ponto para o seu sistema (com a foto, se quiser guardar lá)
-  console.log('Ponto', { ...registro, foto: registro.foto ? '[foto]' : '' });
+async function registrarPonto(registro, foto) {
+  // TODO: enviar o registro de ponto (e a foto) para o seu sistema. Guarde para auditoria; não permita apagar.
+  console.log('Ponto', registro, foto ? '[foto]' : '[sem foto]');
 }
 
 function renderPonto() {
@@ -607,8 +683,8 @@ function renderPonto() {
     .sort((a, b) => a.e.dataHora.localeCompare(b.e.dataHora));
   $('#lista-no-plantao').innerHTML = noPlantao.map(({ m, e }) => `
     <li>
-      ${e.foto ? `<img class="foto-ponto" src="${e.foto}" alt="Foto de ${esc(m.nome)} no ponto">` : '<span class="foto-ponto"></span>'}
-      <div><strong>${esc(m.nome)}</strong><small>${esc(m.especialidade)} · desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)})</small></div>
+      ${tagFoto(e, `Foto de ${esc(m.nome)} no ponto`)}
+      <div><strong>${esc(m.nome)}</strong><small>${esc(m.especialidade)} · plantão ${e.horas || '?'} h · desde ${horaBR(e.dataHora)}${e.horas ? ` até ${horaBR(fimPrevisto(e))}` : ''} (${duracao(e.dataHora)})</small></div>
     </li>`).join('');
   $('#vazio-no-plantao').hidden = noPlantao.length > 0;
   $('#pill-no-plantao').textContent = `${noPlantao.length} médico${noPlantao.length === 1 ? '' : 's'}`;
@@ -617,13 +693,139 @@ function renderPonto() {
   const deHoje = lista.filter((r) => new Date(r.dataHora).toDateString() === hoje).sort((a, b) => b.dataHora.localeCompare(a.dataHora));
   $('#tabela-ponto').innerHTML = deHoje.map((r) => `
     <tr>
-      <td>${r.foto ? `<img class="foto-ponto" src="${r.foto}" alt="Foto de ${esc(r.medicoNome)}">` : ''}</td>
+      <td>${tagFoto(r, `Foto de ${esc(r.medicoNome)}`)}</td>
       <td>${horaBR(r.dataHora)}</td>
       <td>${esc(r.medicoNome)}</td>
       <td>${esc(r.especialidade)}</td>
+      <td>${r.horas ? `<span class="tag tag-plantao">${r.horas} h</span>` : '—'}</td>
       <td><span class="tag ${r.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${r.tipo === 'ENTRADA' ? 'Entrada' : 'Saída'}</span></td>
     </tr>`).join('');
   $('#vazio-ponto').hidden = deHoje.length > 0;
+  preencherFotos($('#tela-ponto'));
+  renderPlantoesMes();
+}
+
+// ---------- Fechamento do mês (pagamento dos plantonistas) ----------
+const CHAVE_VALORES_PLANTAO = 'consultaParticular.valoresPlantao';
+
+function lerValoresPlantao() {
+  try { return JSON.parse(localStorage.getItem(CHAVE_VALORES_PLANTAO)) || { 6: 0, 12: 0 }; } catch (e) { return { 6: 0, 12: 0 }; }
+}
+
+function salvarValoresPlantao(v) {
+  try { localStorage.setItem(CHAVE_VALORES_PLANTAO, JSON.stringify(v)); } catch (e) { /* ignora */ }
+}
+
+['#pm-valor6', '#pm-valor12'].forEach((s) => $(s).addEventListener('change', () => {
+  salvarValoresPlantao({ 6: lerMoeda($('#pm-valor6').value), 12: lerMoeda($('#pm-valor12').value) });
+  renderPlantoesMes();
+}));
+$('#pm-mes').addEventListener('change', () => renderPlantoesMes());
+
+function horasMin(min) {
+  return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+}
+
+// Junta cada entrada do mês com a sua saída e soma por médico
+function calcularPlantoesMes(mes) { // mes = 'AAAA-MM'
+  const lista = lerPonto();
+  const porMedico = {};
+  lista.filter((r) => r.tipo === 'ENTRADA' && r.dataHora.slice(0, 7) === mes).forEach((ent) => {
+    const saida = lista.find((r) => r.tipo === 'SAIDA' && r.entradaId === ent.id)
+      || lista.filter((r) => r.tipo === 'SAIDA' && String(r.medicoId) === String(ent.medicoId) && r.dataHora > ent.dataHora)
+        .sort((a, b) => a.dataHora.localeCompare(b.dataHora))[0];
+    const m = (porMedico[ent.medicoId] ||= { id: ent.medicoId, nome: ent.medicoNome, especialidade: ent.especialidade, p6: 0, p12: 0, minutos: 0, semSaida: 0, saiuAntes: 0, emAndamento: 0, plantoes: [] });
+    m.plantoes.push({ entrada: ent, saida: saida || null });
+    if (Number(ent.horas) === 6) m.p6++; else if (Number(ent.horas) === 12) m.p12++;
+    if (saida) {
+      const min = Math.round((new Date(saida.dataHora) - new Date(ent.dataHora)) / 60000);
+      m.minutos += min;
+      if (ent.horas && min < ent.horas * 60 - 15) m.saiuAntes++; // tolerância de 15 min
+    } else if (entradaAtiva(ent.medicoId)?.id === ent.id) {
+      m.emAndamento++;
+    } else {
+      m.semSaida++;
+    }
+  });
+  return porMedico;
+}
+
+// ---------- Auditoria: cada plantão do médico no mês, com fotos ----------
+function abrirAuditoria(medicoId) {
+  const mes = $('#pm-mes').value;
+  const m = calcularPlantoesMes(mes)[medicoId];
+  if (!m) return;
+  const [ano, mm] = mes.split('-');
+  $('#aud-sub').textContent = `${m.nome} · ${m.especialidade} · ${mm}/${ano}`;
+  const dataBR = (iso) => new Date(iso).toLocaleDateString('pt-BR');
+  $('#tabela-auditoria').innerHTML = m.plantoes.sort((a, b) => a.entrada.dataHora.localeCompare(b.entrada.dataHora)).map(({ entrada, saida }) => {
+    const contratado = (Number(entrada.horas) || 0) * 60;
+    const trabalhado = saida ? Math.round((new Date(saida.dataHora) - new Date(entrada.dataHora)) / 60000) : null;
+    let situacao;
+    if (trabalhado == null) {
+      situacao = entradaAtiva(entrada.medicoId)?.id === entrada.id
+        ? '<span class="aud-ok">Em andamento</span>'
+        : '<span class="aud-falta">Sem saída registrada<small>não dá para confirmar as horas</small></span>';
+    } else if (contratado && trabalhado < contratado - 15) {
+      situacao = `<span class="aud-falta">Faltaram ${horasMin(contratado - trabalhado)}<small>fez ${horasMin(trabalhado)} de ${entrada.horas} h</small></span>`;
+    } else {
+      situacao = `<span class="aud-ok">Cumprido<small>fez ${horasMin(trabalhado)} de ${entrada.horas} h</small></span>`;
+    }
+    return `
+      <tr>
+        <td>${dataBR(entrada.dataHora)}</td>
+        <td><span class="tag tag-plantao">${entrada.horas || '?'} h</span></td>
+        <td><div class="aud-ponto">${tagFoto(entrada, `Foto da entrada de ${esc(m.nome)}`)}<span>${horaBR(entrada.dataHora)}</span></div></td>
+        <td>${saida ? `<div class="aud-ponto">${tagFoto(saida, `Foto da saída de ${esc(m.nome)}`)}<span>${horaBR(saida.dataHora)}${dataBR(saida.dataHora) !== dataBR(entrada.dataHora) ? ` <small>(${dataBR(saida.dataHora)})</small>` : ''}</span></div>` : '—'}</td>
+        <td>${trabalhado == null ? '—' : horasMin(trabalhado)}</td>
+        <td>${situacao}</td>
+      </tr>`;
+  }).join('');
+  $('#modal-auditoria').hidden = false;
+  preencherFotos($('#modal-auditoria'));
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-auditar]');
+  if (b) abrirAuditoria(b.dataset.auditar);
+  if (e.target.closest('[data-aud-fechar]') || e.target.id === 'modal-auditoria') $('#modal-auditoria').hidden = true;
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-auditoria').hidden && !document.querySelector('.foto-ampliada')) $('#modal-auditoria').hidden = true; });
+
+function renderPlantoesMes() {
+  if (!$('#pm-mes').value) $('#pm-mes').value = new Date().toISOString().slice(0, 7);
+  const valores = lerValoresPlantao();
+  if (document.activeElement !== $('#pm-valor6')) $('#pm-valor6').value = valorCampo(valores[6]);
+  if (document.activeElement !== $('#pm-valor12')) $('#pm-valor12').value = valorCampo(valores[12]);
+  const semValor = !valores[6] || !valores[12];
+  $('#pm-aviso').textContent = semValor ? 'Preencha o valor de cada tipo de plantão para calcular o pagamento.' : '';
+
+  const linhas = Object.values(calcularPlantoesMes($('#pm-mes').value)).sort((a, b) => a.nome.localeCompare(b.nome));
+  let total = 0, t6 = 0, t12 = 0, tMin = 0;
+  $('#tabela-plantoes-mes').innerHTML = linhas.map((m) => {
+    const valor = m.p6 * (valores[6] || 0) + m.p12 * (valores[12] || 0);
+    total += valor; t6 += m.p6; t12 += m.p12; tMin += m.minutos;
+    const pend = [
+      m.semSaida && `${m.semSaida} sem saída registrada`,
+      m.saiuAntes && `${m.saiuAntes} com saída antes do horário`,
+      m.emAndamento && `${m.emAndamento} em andamento`,
+    ].filter(Boolean);
+    return `
+      <tr>
+        <td>${esc(m.nome)}</td>
+        <td>${esc(m.especialidade)}</td>
+        <td>${m.p6}</td>
+        <td>${m.p12}</td>
+        <td>${horasMin(m.minutos)}</td>
+        <td>${pend.length ? `<span class="pendencia">${pend.join(' · ')}</span>` : '<span class="sem-pendencia">Nenhuma</span>'}</td>
+        <td>${semValor ? '—' : formatarMoeda(valor)}</td>
+        <td><button class="btn-acao" data-auditar="${esc(m.id)}">Auditoria</button></td>
+      </tr>`;
+  }).join('');
+  $('#rodape-plantoes-mes').innerHTML = linhas.length ? `
+    <tr><td colspan="2">Total do mês</td><td>${t6}</td><td>${t12}</td><td>${horasMin(tMin)}</td><td></td><td>${semValor ? '—' : formatarMoeda(total)}</td><td></td></tr>` : '';
+  $('#vazio-plantoes-mes').hidden = linhas.length > 0;
+  $('#pill-total-plantoes').textContent = semValor ? 'Defina os valores' : `${formatarMoeda(total)} a pagar`;
 }
 
 // Fecha a câmera ao sair da tela do ponto
@@ -2132,6 +2334,14 @@ document.addEventListener('click', (e) => {
 });
 
 // ---------- Início ----------
+(async () => {
+  const lista = lerPonto();
+  if (!lista.some((r) => r.foto)) return;
+  try {
+    for (const r of lista.filter((x) => x.foto)) { await guardarFoto(r.id, r.foto); r.temFoto = true; delete r.foto; }
+    salvarPonto(lista);
+  } catch (e) { /* sem IndexedDB: fotos continuam no registro */ }
+})();
 montarOpcoesRisco();
 renderEtapas();
 carregarUsuario();
