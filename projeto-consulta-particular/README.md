@@ -1,5 +1,7 @@
 # Projeto Consulta Particular
 
+> Para ligar o sistema ao banco de dados / API do hospital, veja o **[Guia de integração](GUIA-INTEGRACAO.md)** (rascunho).
+
 Projeto pessoal, separado de qualquer outro sistema, para gestão de consultas particulares.
 Por enquanto é **só o front-end** (HTML + CSS + JavaScript puro, sem dependências).
 
