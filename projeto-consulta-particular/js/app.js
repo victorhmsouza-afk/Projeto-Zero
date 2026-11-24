@@ -68,7 +68,33 @@ function salvarPlantonistas() {
   try { localStorage.setItem(CHAVE_PLANTONISTAS, JSON.stringify(DADOS.medicosEmergencia)); } catch (e) { /* ignora */ }
 }
 
-const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => m.ativo !== false);
+// ---------- Ponto do plantão ----------
+// Registros de entrada/saída com foto, guardados neste navegador por 30 dias.
+// TODO: quando tiver banco de dados, troque lerPonto()/salvarPonto() e registrarPonto().
+const CHAVE_PONTO = 'consultaParticular.ponto';
+const DIAS_GUARDAR_FOTO = 30;
+
+function lerPonto() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CHAVE_PONTO)) || [];
+    const limite = Date.now() - DIAS_GUARDAR_FOTO * 86400000;
+    return lista.filter((r) => new Date(r.dataHora).getTime() >= limite); // apaga o que passou de 30 dias
+  } catch (e) { return []; }
+}
+
+function salvarPonto(lista) {
+  try { localStorage.setItem(CHAVE_PONTO, JSON.stringify(lista)); return true; } catch (e) { return false; }
+}
+
+// Último registro do médico nas últimas 24 h; se for ENTRADA, ele está no plantão
+function entradaAtiva(medicoId) {
+  const limite = Date.now() - 24 * 3600000;
+  const ultimo = lerPonto().filter((r) => String(r.medicoId) === String(medicoId) && new Date(r.dataHora).getTime() >= limite)
+    .sort((a, b) => a.dataHora.localeCompare(b.dataHora)).pop();
+  return ultimo?.tipo === 'ENTRADA' ? ultimo : null;
+}
+
+const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => entradaAtiva(m.id));
 
 carregarPlantonistas();
 
@@ -452,10 +478,162 @@ async function registrarTriagem(atendimento, triagem) {
   console.log('Triagem de enfermagem', atendimento, triagem);
 }
 
+// ---------- Tela: Ponto do plantão ----------
+const horaBR = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+let fotoPonto = '';      // foto atual (JPEG pequeno, em data URL)
+let streamCamera = null; // câmera aberta
+
+function duracao(desdeIso) {
+  const min = Math.floor((Date.now() - new Date(desdeIso).getTime()) / 60000);
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+}
+
+function carregarPonto() {
+  const atual = $('#ponto-medico').value;
+  $('#ponto-medico').innerHTML = '<option value="">Selecione o médico</option>' + [...DADOS.medicosEmergencia]
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+    .map((m) => `<option value="${esc(m.id)}">${esc(m.nome)} · ${esc(m.especialidade)}${entradaAtiva(m.id) ? ' (no plantão)' : ''}</option>`).join('');
+  $('#ponto-medico').value = atual;
+  atualizarFormPonto();
+  renderPonto();
+}
+
+function atualizarFormPonto() {
+  const id = $('#ponto-medico').value;
+  const e = id ? entradaAtiva(id) : null;
+  $('#btn-registrar-ponto-texto').textContent = e ? 'Registrar saída' : 'Registrar entrada';
+  $('#ponto-situacao').textContent = !id ? '' : e ? `No plantão desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)}).` : 'Fora do plantão.';
+  $('#ponto-situacao').classList.toggle('dentro', !!e);
+  $('#btn-registrar-ponto').disabled = !(id && fotoPonto);
+}
+
+function mostrarFoto(dataUrl) {
+  fotoPonto = dataUrl;
+  $('#ponto-preview').src = dataUrl;
+  $('#ponto-preview').hidden = !dataUrl;
+  $('#ponto-sem-foto').hidden = !!dataUrl || !$('#ponto-video').hidden;
+  atualizarFormPonto();
+}
+
+// Reduz a foto para ~320 px (JPEG) para não ocupar espaço
+function reduzirImagem(origem, largura, altura) {
+  const escala = Math.min(1, 320 / Math.max(largura, altura));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(largura * escala);
+  canvas.height = Math.round(altura * escala);
+  canvas.getContext('2d').drawImage(origem, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+function fecharCamera() {
+  streamCamera?.getTracks().forEach((t) => t.stop());
+  streamCamera = null;
+  $('#ponto-video').hidden = true;
+  $('#btn-tirar-foto').hidden = true;
+  $('#btn-abrir-camera').hidden = false;
+  $('#ponto-sem-foto').hidden = !!fotoPonto;
+}
+
+$('#btn-abrir-camera').addEventListener('click', async () => {
+  $('#ponto-erro').textContent = '';
+  try {
+    streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const v = $('#ponto-video');
+    v.srcObject = streamCamera;
+    v.hidden = false;
+    $('#ponto-preview').hidden = true;
+    $('#ponto-sem-foto').hidden = true;
+    await v.play();
+    $('#btn-tirar-foto').hidden = false;
+    $('#btn-abrir-camera').hidden = true;
+  } catch (e) {
+    fecharCamera();
+    $('#ponto-erro').textContent = 'Não foi possível abrir a câmera aqui. Use "Enviar foto" (no celular ele abre a câmera).';
+  }
+});
+
+$('#btn-tirar-foto').addEventListener('click', () => {
+  const v = $('#ponto-video');
+  if (!v.videoWidth) return;
+  const foto = reduzirImagem(v, v.videoWidth, v.videoHeight);
+  fecharCamera();
+  mostrarFoto(foto);
+});
+
+$('#ponto-arquivo').addEventListener('change', (e) => {
+  const arquivo = e.target.files?.[0];
+  e.target.value = '';
+  if (!arquivo) return;
+  if (!arquivo.type.startsWith('image/')) { $('#ponto-erro').textContent = 'Escolha um arquivo de imagem.'; return; }
+  $('#ponto-erro').textContent = '';
+  const img = new Image();
+  img.onload = () => { mostrarFoto(reduzirImagem(img, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(img.src); };
+  img.onerror = () => { $('#ponto-erro').textContent = 'Não foi possível ler essa imagem.'; };
+  img.src = URL.createObjectURL(arquivo);
+});
+
+$('#ponto-medico').addEventListener('change', () => { $('#ponto-status').textContent = ''; atualizarFormPonto(); });
+
+$('#form-ponto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === $('#ponto-medico').value);
+  if (!m || !fotoPonto) return;
+  const tipo = entradaAtiva(m.id) ? 'SAIDA' : 'ENTRADA';
+  const registro = {
+    id: `${Date.now()}`, medicoId: m.id, medicoNome: m.nome, especialidade: m.especialidade, crm: m.crm,
+    tipo, dataHora: new Date().toISOString(), foto: fotoPonto,
+  };
+  const lista = lerPonto();
+  lista.push(registro);
+  if (!salvarPonto(lista)) { $('#ponto-erro').textContent = 'Não foi possível salvar o ponto neste navegador.'; return; }
+  await registrarPonto(registro);
+  $('#ponto-status').textContent = tipo === 'ENTRADA'
+    ? `Entrada registrada às ${horaBR(registro.dataHora)}: ${m.nome} já aparece no Pronto Socorro.`
+    : `Saída registrada às ${horaBR(registro.dataHora)}: ${m.nome} saiu da lista do Pronto Socorro.`;
+  mostrarFoto('');
+  $('#ponto-medico').value = '';
+  carregarPonto();
+  if (estado.modalidade === 'PRONTO_SOCORRO') carregarMedicosConsulta();
+});
+
+async function registrarPonto(registro) {
+  // TODO: enviar o registro de ponto para o seu sistema (com a foto, se quiser guardar lá)
+  console.log('Ponto', { ...registro, foto: registro.foto ? '[foto]' : '' });
+}
+
+function renderPonto() {
+  const lista = lerPonto();
+  const noPlantao = plantonistasNoPlantao().map((m) => ({ m, e: entradaAtiva(m.id) }))
+    .sort((a, b) => a.e.dataHora.localeCompare(b.e.dataHora));
+  $('#lista-no-plantao').innerHTML = noPlantao.map(({ m, e }) => `
+    <li>
+      ${e.foto ? `<img class="foto-ponto" src="${e.foto}" alt="Foto de ${esc(m.nome)} no ponto">` : '<span class="foto-ponto"></span>'}
+      <div><strong>${esc(m.nome)}</strong><small>${esc(m.especialidade)} · desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)})</small></div>
+    </li>`).join('');
+  $('#vazio-no-plantao').hidden = noPlantao.length > 0;
+  $('#pill-no-plantao').textContent = `${noPlantao.length} médico${noPlantao.length === 1 ? '' : 's'}`;
+
+  const hoje = new Date().toDateString();
+  const deHoje = lista.filter((r) => new Date(r.dataHora).toDateString() === hoje).sort((a, b) => b.dataHora.localeCompare(a.dataHora));
+  $('#tabela-ponto').innerHTML = deHoje.map((r) => `
+    <tr>
+      <td>${r.foto ? `<img class="foto-ponto" src="${r.foto}" alt="Foto de ${esc(r.medicoNome)}">` : ''}</td>
+      <td>${horaBR(r.dataHora)}</td>
+      <td>${esc(r.medicoNome)}</td>
+      <td>${esc(r.especialidade)}</td>
+      <td><span class="tag ${r.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${r.tipo === 'ENTRADA' ? 'Entrada' : 'Saída'}</span></td>
+    </tr>`).join('');
+  $('#vazio-ponto').hidden = deHoje.length > 0;
+}
+
+// Fecha a câmera ao sair da tela do ponto
+window.addEventListener('hashchange', () => { if (location.hash !== '#ponto') fecharCamera(); });
+
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
   fila: () => carregarFila(),
+  ponto: () => carregarPonto(),
   painel: carregarPainel,
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
@@ -659,20 +837,18 @@ function renderMedicos(medicos) {
 // Plantonistas da Emergência
 function renderPlantonistas() {
   const lista = [...DADOS.medicosEmergencia].sort((a, b) =>
-    (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome));
-  $('#tabela-plantonistas').innerHTML = lista.map((m) => `
-    <tr class="${m.ativo === false ? 'fora-plantao' : ''}">
+    (!!entradaAtiva(b.id)) - (!!entradaAtiva(a.id)) || a.nome.localeCompare(b.nome));
+  $('#tabela-plantonistas').innerHTML = lista.map((m) => {
+    const e = entradaAtiva(m.id);
+    return `
+    <tr class="${e ? '' : 'fora-plantao'}">
       <td>${esc(m.nome)}</td>
       <td>${esc(m.crm)}</td>
       <td>${esc(m.especialidade)}</td>
-      <td>
-        <label class="chave" title="Aparece na lista de médicos de plantão do Pronto Socorro">
-          <input type="checkbox" data-plantao="${esc(m.id)}" ${m.ativo !== false ? 'checked' : ''}>
-          <span class="trilho" aria-hidden="true"></span>${m.ativo !== false ? 'Sim' : 'Não'}
-        </label>
-      </td>
+      <td>${e ? `<span class="tag tag-entrada">Sim · desde ${horaBR(e.dataHora)}</span>` : '<a class="link-cadastro" href="#ponto">Não · registrar ponto</a>'}</td>
       <td><button class="btn-acao" data-remover-plantonista="${esc(m.id)}">Remover</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   $('#vazio-plantonistas').hidden = lista.length > 0;
   $('#pill-plantonistas').textContent = `${plantonistasNoPlantao().length} no plantão`;
 }
@@ -696,24 +872,15 @@ $('#form-plantonista').addEventListener('submit', (e) => {
     return;
   }
   const id = Math.max(100, ...DADOS.medicosEmergencia.map((m) => Number(m.id) || 0)) + 1;
-  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade, ativo: true });
+  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade });
   salvarPlantonistas();
   e.target.reset();
-  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}), já no plantão.`;
+  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}). Para entrar no plantão, registre o ponto.`;
   atualizarListasDeMedicos();
   $('#pl-nome').focus();
 });
 
-document.addEventListener('change', (e) => {
-  const id = e.target.dataset?.plantao;
-  if (id === undefined) return;
-  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === id);
-  if (!m) return;
-  m.ativo = e.target.checked;
-  salvarPlantonistas();
-  $('#status-plantonistas').textContent = `${m.nome} ${m.ativo ? 'entrou no' : 'saiu do'} plantão.`;
-  atualizarListasDeMedicos();
-});
+
 
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-remover-plantonista]');
@@ -937,7 +1104,11 @@ function carregarMedicosConsulta() {
   // (vêm de DADOS; troque por banco de dados quando tiver)
   const ps = estado.modalidade === 'PRONTO_SOCORRO';
   preencherMedicosConsulta(ps ? plantonistasNoPlantao() : DADOS.medicosConsulta);
-  $('#link-cadastrar-plantonista').hidden = !ps;
+  const link = $('#link-cadastrar-plantonista');
+  link.hidden = !ps;
+  const ninguem = ps && plantonistasNoPlantao().length === 0;
+  link.textContent = ninguem ? 'Nenhum médico no plantão · registrar ponto' : '+ Cadastrar plantonista';
+  link.setAttribute('href', ninguem ? '#ponto' : '#medicos');
 }
 
 function preencherMedicosConsulta(lista) {

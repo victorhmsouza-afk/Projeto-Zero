@@ -459,6 +459,29 @@ tr.fora-plantao td { color: var(--muted); }
 .status.padrao { padding: 0 14px 12px; }
 @media (prefers-reduced-motion: reduce) { .chave .trilho, .chave .trilho::after { transition: none; } }
 
+/* Ponto do plantão */
+.ponto { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ponto-foto { position: relative; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 8px; overflow: hidden; background: var(--fundo); border: 1px dashed var(--linha); display: grid; place-items: center; }
+.ponto-foto video, .ponto-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ponto-foto video { transform: scaleX(-1); }
+.ponto-sem-foto { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.ponto-sem-foto .i { width: 32px; height: 32px; }
+.ponto-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.ponto-botoes label.btn { margin: 0; font-weight: 400; cursor: pointer; }
+.ponto-situacao { margin: 6px 0 0; }
+.ponto-situacao.dentro { color: var(--verde-escuro); font-weight: 600; }
+.lista-plantao { list-style: none; margin: 0; padding: 0; }
+.lista-plantao:empty { display: none; }
+.lista-plantao li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #eef1f0; }
+.lista-plantao li:last-child { border-bottom: 0; }
+.lista-plantao strong { display: block; font-size: 13.5px; }
+.lista-plantao small { display: block; color: var(--muted); font-size: 12px; }
+.foto-ponto { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--fundo); flex-shrink: 0; border: 1px solid var(--linha); }
+.tag-entrada { background: var(--verde-claro); color: var(--verde-escuro); }
+.tag-saida { background: #eef1f0; color: var(--texto-2); }
+.storage-note { font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+@media (max-width: 1150px) { .ponto { grid-template-columns: 1fr; } }
+
 /* ---------- Confirmação ---------- */
 .confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
 .confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
@@ -550,6 +573,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="4"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
       <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
     </defs>
   </svg>
@@ -577,6 +602,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <nav class="menu" aria-label="Menu principal">
         <a href="#atendimento" data-tela="atendimento"><svg class="i"><use href="#i-heart"/></svg><span>Atendimento</span></a>
         <a href="#fila" data-tela="fila"><svg class="i"><use href="#i-users"/></svg><span>Fila da emergência</span></a>
+        <a href="#ponto" data-tela="ponto"><svg class="i"><use href="#i-clock"/></svg><span>Ponto do plantão</span></a>
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
@@ -744,6 +770,57 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
             </table>
           </div>
           <p class="vazio centro" id="vazio-fila">Nenhum paciente aguardando na emergência.</p>
+        </div>
+      </section>
+
+      <!-- ===================== PONTO DO PLANTÃO ===================== -->
+      <section class="tela" id="tela-ponto">
+        <div class="cabecalho"><h1>Ponto do plantão</h1><p class="sub">O médico plantonista registra entrada e saída com foto. Quem registrou entrada aparece no Pronto Socorro.</p></div>
+        <div class="ponto">
+          <form class="card bloco" id="form-ponto" autocomplete="off">
+            <h2 class="card-titulo"><svg class="i"><use href="#i-camera"/></svg>Registrar ponto</h2>
+            <div>
+              <label for="ponto-medico">Médico plantonista *</label>
+              <select id="ponto-medico" required></select>
+              <p class="dica ponto-situacao" id="ponto-situacao"></p>
+            </div>
+            <div class="ponto-foto">
+              <video id="ponto-video" playsinline muted hidden></video>
+              <img id="ponto-preview" alt="Foto do médico para o ponto" hidden>
+              <div class="ponto-sem-foto" id="ponto-sem-foto"><svg class="i"><use href="#i-camera"/></svg><span>Sem foto</span></div>
+            </div>
+            <div class="ponto-botoes">
+              <button type="button" class="btn" id="btn-abrir-camera"><svg class="i"><use href="#i-camera"/></svg>Abrir câmera</button>
+              <button type="button" class="btn" id="btn-tirar-foto" hidden><svg class="i"><use href="#i-camera"/></svg>Tirar foto</button>
+              <label class="btn" for="ponto-arquivo"><svg class="i"><use href="#i-user"/></svg>Enviar foto</label>
+              <input type="file" id="ponto-arquivo" accept="image/*" capture="user" hidden>
+            </div>
+            <p class="pg-erro" id="ponto-erro" role="alert"></p>
+            <button type="submit" class="btn-primario largo" id="btn-registrar-ponto" disabled><svg class="i"><use href="#i-clock"/></svg><span id="btn-registrar-ponto-texto">Registrar entrada</span></button>
+            <p class="status" id="ponto-status" role="status" aria-live="polite"></p>
+            <p class="storage-note">A foto serve só para confirmar a presença no ponto. Ela fica guardada neste computador e é apagada depois de 30 dias.</p>
+          </form>
+
+          <div class="col-atendimento">
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-heart"/></svg>No plantão agora</h2>
+                <span class="pill" id="pill-no-plantao">0 médicos</span>
+              </div>
+              <ul class="lista-plantao" id="lista-no-plantao"></ul>
+              <p class="vazio centro" id="vazio-no-plantao">Nenhum médico registrou entrada.</p>
+            </div>
+            <div class="card tabela-card">
+              <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-history"/></svg>Registros de hoje</h2></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Foto</th><th>Hora</th><th>Médico</th><th>Especialidade</th><th>Registro</th></tr></thead>
+                  <tbody id="tabela-ponto"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ponto">Nenhum registro hoje.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1041,7 +1118,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           </form>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão (pelo ponto)</th><th>Ações</th></tr></thead>
               <tbody id="tabela-plantonistas"></tbody>
             </table>
           </div>
@@ -1277,7 +1354,33 @@ function salvarPlantonistas() {
   try { localStorage.setItem(CHAVE_PLANTONISTAS, JSON.stringify(DADOS.medicosEmergencia)); } catch (e) { /* ignora */ }
 }
 
-const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => m.ativo !== false);
+// ---------- Ponto do plantão ----------
+// Registros de entrada/saída com foto, guardados neste navegador por 30 dias.
+// TODO: quando tiver banco de dados, troque lerPonto()/salvarPonto() e registrarPonto().
+const CHAVE_PONTO = 'consultaParticular.ponto';
+const DIAS_GUARDAR_FOTO = 30;
+
+function lerPonto() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CHAVE_PONTO)) || [];
+    const limite = Date.now() - DIAS_GUARDAR_FOTO * 86400000;
+    return lista.filter((r) => new Date(r.dataHora).getTime() >= limite); // apaga o que passou de 30 dias
+  } catch (e) { return []; }
+}
+
+function salvarPonto(lista) {
+  try { localStorage.setItem(CHAVE_PONTO, JSON.stringify(lista)); return true; } catch (e) { return false; }
+}
+
+// Último registro do médico nas últimas 24 h; se for ENTRADA, ele está no plantão
+function entradaAtiva(medicoId) {
+  const limite = Date.now() - 24 * 3600000;
+  const ultimo = lerPonto().filter((r) => String(r.medicoId) === String(medicoId) && new Date(r.dataHora).getTime() >= limite)
+    .sort((a, b) => a.dataHora.localeCompare(b.dataHora)).pop();
+  return ultimo?.tipo === 'ENTRADA' ? ultimo : null;
+}
+
+const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => entradaAtiva(m.id));
 
 carregarPlantonistas();
 
@@ -1661,10 +1764,162 @@ async function registrarTriagem(atendimento, triagem) {
   console.log('Triagem de enfermagem', atendimento, triagem);
 }
 
+// ---------- Tela: Ponto do plantão ----------
+const horaBR = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+let fotoPonto = '';      // foto atual (JPEG pequeno, em data URL)
+let streamCamera = null; // câmera aberta
+
+function duracao(desdeIso) {
+  const min = Math.floor((Date.now() - new Date(desdeIso).getTime()) / 60000);
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+}
+
+function carregarPonto() {
+  const atual = $('#ponto-medico').value;
+  $('#ponto-medico').innerHTML = '<option value="">Selecione o médico</option>' + [...DADOS.medicosEmergencia]
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+    .map((m) => `<option value="${esc(m.id)}">${esc(m.nome)} · ${esc(m.especialidade)}${entradaAtiva(m.id) ? ' (no plantão)' : ''}</option>`).join('');
+  $('#ponto-medico').value = atual;
+  atualizarFormPonto();
+  renderPonto();
+}
+
+function atualizarFormPonto() {
+  const id = $('#ponto-medico').value;
+  const e = id ? entradaAtiva(id) : null;
+  $('#btn-registrar-ponto-texto').textContent = e ? 'Registrar saída' : 'Registrar entrada';
+  $('#ponto-situacao').textContent = !id ? '' : e ? `No plantão desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)}).` : 'Fora do plantão.';
+  $('#ponto-situacao').classList.toggle('dentro', !!e);
+  $('#btn-registrar-ponto').disabled = !(id && fotoPonto);
+}
+
+function mostrarFoto(dataUrl) {
+  fotoPonto = dataUrl;
+  $('#ponto-preview').src = dataUrl;
+  $('#ponto-preview').hidden = !dataUrl;
+  $('#ponto-sem-foto').hidden = !!dataUrl || !$('#ponto-video').hidden;
+  atualizarFormPonto();
+}
+
+// Reduz a foto para ~320 px (JPEG) para não ocupar espaço
+function reduzirImagem(origem, largura, altura) {
+  const escala = Math.min(1, 320 / Math.max(largura, altura));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(largura * escala);
+  canvas.height = Math.round(altura * escala);
+  canvas.getContext('2d').drawImage(origem, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+function fecharCamera() {
+  streamCamera?.getTracks().forEach((t) => t.stop());
+  streamCamera = null;
+  $('#ponto-video').hidden = true;
+  $('#btn-tirar-foto').hidden = true;
+  $('#btn-abrir-camera').hidden = false;
+  $('#ponto-sem-foto').hidden = !!fotoPonto;
+}
+
+$('#btn-abrir-camera').addEventListener('click', async () => {
+  $('#ponto-erro').textContent = '';
+  try {
+    streamCamera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const v = $('#ponto-video');
+    v.srcObject = streamCamera;
+    v.hidden = false;
+    $('#ponto-preview').hidden = true;
+    $('#ponto-sem-foto').hidden = true;
+    await v.play();
+    $('#btn-tirar-foto').hidden = false;
+    $('#btn-abrir-camera').hidden = true;
+  } catch (e) {
+    fecharCamera();
+    $('#ponto-erro').textContent = 'Não foi possível abrir a câmera aqui. Use "Enviar foto" (no celular ele abre a câmera).';
+  }
+});
+
+$('#btn-tirar-foto').addEventListener('click', () => {
+  const v = $('#ponto-video');
+  if (!v.videoWidth) return;
+  const foto = reduzirImagem(v, v.videoWidth, v.videoHeight);
+  fecharCamera();
+  mostrarFoto(foto);
+});
+
+$('#ponto-arquivo').addEventListener('change', (e) => {
+  const arquivo = e.target.files?.[0];
+  e.target.value = '';
+  if (!arquivo) return;
+  if (!arquivo.type.startsWith('image/')) { $('#ponto-erro').textContent = 'Escolha um arquivo de imagem.'; return; }
+  $('#ponto-erro').textContent = '';
+  const img = new Image();
+  img.onload = () => { mostrarFoto(reduzirImagem(img, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(img.src); };
+  img.onerror = () => { $('#ponto-erro').textContent = 'Não foi possível ler essa imagem.'; };
+  img.src = URL.createObjectURL(arquivo);
+});
+
+$('#ponto-medico').addEventListener('change', () => { $('#ponto-status').textContent = ''; atualizarFormPonto(); });
+
+$('#form-ponto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === $('#ponto-medico').value);
+  if (!m || !fotoPonto) return;
+  const tipo = entradaAtiva(m.id) ? 'SAIDA' : 'ENTRADA';
+  const registro = {
+    id: `${Date.now()}`, medicoId: m.id, medicoNome: m.nome, especialidade: m.especialidade, crm: m.crm,
+    tipo, dataHora: new Date().toISOString(), foto: fotoPonto,
+  };
+  const lista = lerPonto();
+  lista.push(registro);
+  if (!salvarPonto(lista)) { $('#ponto-erro').textContent = 'Não foi possível salvar o ponto neste navegador.'; return; }
+  await registrarPonto(registro);
+  $('#ponto-status').textContent = tipo === 'ENTRADA'
+    ? `Entrada registrada às ${horaBR(registro.dataHora)}: ${m.nome} já aparece no Pronto Socorro.`
+    : `Saída registrada às ${horaBR(registro.dataHora)}: ${m.nome} saiu da lista do Pronto Socorro.`;
+  mostrarFoto('');
+  $('#ponto-medico').value = '';
+  carregarPonto();
+  if (estado.modalidade === 'PRONTO_SOCORRO') carregarMedicosConsulta();
+});
+
+async function registrarPonto(registro) {
+  // TODO: enviar o registro de ponto para o seu sistema (com a foto, se quiser guardar lá)
+  console.log('Ponto', { ...registro, foto: registro.foto ? '[foto]' : '' });
+}
+
+function renderPonto() {
+  const lista = lerPonto();
+  const noPlantao = plantonistasNoPlantao().map((m) => ({ m, e: entradaAtiva(m.id) }))
+    .sort((a, b) => a.e.dataHora.localeCompare(b.e.dataHora));
+  $('#lista-no-plantao').innerHTML = noPlantao.map(({ m, e }) => `
+    <li>
+      ${e.foto ? `<img class="foto-ponto" src="${e.foto}" alt="Foto de ${esc(m.nome)} no ponto">` : '<span class="foto-ponto"></span>'}
+      <div><strong>${esc(m.nome)}</strong><small>${esc(m.especialidade)} · desde ${horaBR(e.dataHora)} (${duracao(e.dataHora)})</small></div>
+    </li>`).join('');
+  $('#vazio-no-plantao').hidden = noPlantao.length > 0;
+  $('#pill-no-plantao').textContent = `${noPlantao.length} médico${noPlantao.length === 1 ? '' : 's'}`;
+
+  const hoje = new Date().toDateString();
+  const deHoje = lista.filter((r) => new Date(r.dataHora).toDateString() === hoje).sort((a, b) => b.dataHora.localeCompare(a.dataHora));
+  $('#tabela-ponto').innerHTML = deHoje.map((r) => `
+    <tr>
+      <td>${r.foto ? `<img class="foto-ponto" src="${r.foto}" alt="Foto de ${esc(r.medicoNome)}">` : ''}</td>
+      <td>${horaBR(r.dataHora)}</td>
+      <td>${esc(r.medicoNome)}</td>
+      <td>${esc(r.especialidade)}</td>
+      <td><span class="tag ${r.tipo === 'ENTRADA' ? 'tag-entrada' : 'tag-saida'}">${r.tipo === 'ENTRADA' ? 'Entrada' : 'Saída'}</span></td>
+    </tr>`).join('');
+  $('#vazio-ponto').hidden = deHoje.length > 0;
+}
+
+// Fecha a câmera ao sair da tela do ponto
+window.addEventListener('hashchange', () => { if (location.hash !== '#ponto') fecharCamera(); });
+
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
   fila: () => carregarFila(),
+  ponto: () => carregarPonto(),
   painel: carregarPainel,
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
@@ -1868,20 +2123,18 @@ function renderMedicos(medicos) {
 // Plantonistas da Emergência
 function renderPlantonistas() {
   const lista = [...DADOS.medicosEmergencia].sort((a, b) =>
-    (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome));
-  $('#tabela-plantonistas').innerHTML = lista.map((m) => `
-    <tr class="${m.ativo === false ? 'fora-plantao' : ''}">
+    (!!entradaAtiva(b.id)) - (!!entradaAtiva(a.id)) || a.nome.localeCompare(b.nome));
+  $('#tabela-plantonistas').innerHTML = lista.map((m) => {
+    const e = entradaAtiva(m.id);
+    return `
+    <tr class="${e ? '' : 'fora-plantao'}">
       <td>${esc(m.nome)}</td>
       <td>${esc(m.crm)}</td>
       <td>${esc(m.especialidade)}</td>
-      <td>
-        <label class="chave" title="Aparece na lista de médicos de plantão do Pronto Socorro">
-          <input type="checkbox" data-plantao="${esc(m.id)}" ${m.ativo !== false ? 'checked' : ''}>
-          <span class="trilho" aria-hidden="true"></span>${m.ativo !== false ? 'Sim' : 'Não'}
-        </label>
-      </td>
+      <td>${e ? `<span class="tag tag-entrada">Sim · desde ${horaBR(e.dataHora)}</span>` : '<a class="link-cadastro" href="#ponto">Não · registrar ponto</a>'}</td>
       <td><button class="btn-acao" data-remover-plantonista="${esc(m.id)}">Remover</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   $('#vazio-plantonistas').hidden = lista.length > 0;
   $('#pill-plantonistas').textContent = `${plantonistasNoPlantao().length} no plantão`;
 }
@@ -1905,24 +2158,15 @@ $('#form-plantonista').addEventListener('submit', (e) => {
     return;
   }
   const id = Math.max(100, ...DADOS.medicosEmergencia.map((m) => Number(m.id) || 0)) + 1;
-  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade, ativo: true });
+  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade });
   salvarPlantonistas();
   e.target.reset();
-  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}), já no plantão.`;
+  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}). Para entrar no plantão, registre o ponto.`;
   atualizarListasDeMedicos();
   $('#pl-nome').focus();
 });
 
-document.addEventListener('change', (e) => {
-  const id = e.target.dataset?.plantao;
-  if (id === undefined) return;
-  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === id);
-  if (!m) return;
-  m.ativo = e.target.checked;
-  salvarPlantonistas();
-  $('#status-plantonistas').textContent = `${m.nome} ${m.ativo ? 'entrou no' : 'saiu do'} plantão.`;
-  atualizarListasDeMedicos();
-});
+
 
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-remover-plantonista]');
@@ -2146,7 +2390,11 @@ function carregarMedicosConsulta() {
   // (vêm de DADOS; troque por banco de dados quando tiver)
   const ps = estado.modalidade === 'PRONTO_SOCORRO';
   preencherMedicosConsulta(ps ? plantonistasNoPlantao() : DADOS.medicosConsulta);
-  $('#link-cadastrar-plantonista').hidden = !ps;
+  const link = $('#link-cadastrar-plantonista');
+  link.hidden = !ps;
+  const ninguem = ps && plantonistasNoPlantao().length === 0;
+  link.textContent = ninguem ? 'Nenhum médico no plantão · registrar ponto' : '+ Cadastrar plantonista';
+  link.setAttribute('href', ninguem ? '#ponto' : '#medicos');
 }
 
 function preencherMedicosConsulta(lista) {
@@ -3328,10 +3576,29 @@ abrirTela(location.hash.slice(1) || 'atendimento');
     }
   });
 
+  // Ponto: foto de teste (só na demonstração), para testar sem câmera
+  const fotoTeste = document.createElement('button');
+  fotoTeste.type = 'button'; fotoTeste.className = 'btn'; fotoTeste.id = 'btn-foto-teste';
+  fotoTeste.textContent = 'Usar foto de teste';
+  $('#ponto-arquivo').after(fotoTeste);
+  fotoTeste.addEventListener('click', () => {
+    const sel = $('#ponto-medico');
+    const nome = sel.value ? sel.selectedOptions[0].text.split(' · ')[0].replace(/^Dra?\.\s*/, '') : 'Médico';
+    const ini = nome.split(/\s+/).map((x) => x[0]).slice(0, 2).join('').toUpperCase();
+    const c = document.createElement('canvas'); c.width = 320; c.height = 240;
+    const g = c.getContext('2d');
+    const cores = ['#2f7d6a', '#1f6fd1', '#8a5a00', '#6b3fb8', '#b3261e'];
+    g.fillStyle = cores[(sel.selectedIndex || 0) % cores.length]; g.fillRect(0, 0, 320, 240);
+    g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(160, 105, 52, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1f2a27'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(ini, 160, 107);
+    g.fillStyle = '#fff'; g.font = '16px sans-serif'; g.fillText('foto de teste', 160, 205);
+    mostrarFoto(c.toDataURL('image/jpeg', 0.7));
+  });
+
   // Banner
   const banner = document.createElement('div');
   banner.className = 'demo-banner';
-  banner.innerHTML = '<strong>Modo demonstração · começando do zero</strong> · Nenhum atendimento, consulta ou pagamento ainda. Pacientes de teste: busque "123" ou cadastre um nome novo. No Pronto Socorro: a recepção faz a pré-classificação, o paciente paga e o enfermeiro faz a triagem pela Fila da emergência. Médicos e setores são fictícios e nada é salvo de verdade: recarregar a página volta tudo ao zero.';
+  banner.innerHTML = '<strong>Modo demonstração · começando do zero</strong> · Nenhum atendimento, consulta ou pagamento ainda. Pacientes de teste: busque "123" ou cadastre um nome novo. Antes do Pronto Socorro, registre a entrada de um médico em Ponto do plantão (use "Usar foto de teste" se não tiver câmera). No PS: pré-classificação na recepção, pagamento e triagem pela Fila da emergência. Médicos e setores são fictícios e nada é salvo de verdade: recarregar a página volta tudo ao zero.';
   document.querySelector('main').prepend(banner);
 
   abrirTela(location.hash.slice(1) || 'atendimento');

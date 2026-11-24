@@ -39,6 +39,8 @@
       <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="4"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
       <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
     </defs>
   </svg>
@@ -66,6 +68,7 @@
       <nav class="menu" aria-label="Menu principal">
         <a href="#atendimento" data-tela="atendimento"><svg class="i"><use href="#i-heart"/></svg><span>Atendimento</span></a>
         <a href="#fila" data-tela="fila"><svg class="i"><use href="#i-users"/></svg><span>Fila da emergência</span></a>
+        <a href="#ponto" data-tela="ponto"><svg class="i"><use href="#i-clock"/></svg><span>Ponto do plantão</span></a>
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
@@ -233,6 +236,57 @@
             </table>
           </div>
           <p class="vazio centro" id="vazio-fila">Nenhum paciente aguardando na emergência.</p>
+        </div>
+      </section>
+
+      <!-- ===================== PONTO DO PLANTÃO ===================== -->
+      <section class="tela" id="tela-ponto">
+        <div class="cabecalho"><h1>Ponto do plantão</h1><p class="sub">O médico plantonista registra entrada e saída com foto. Quem registrou entrada aparece no Pronto Socorro.</p></div>
+        <div class="ponto">
+          <form class="card bloco" id="form-ponto" autocomplete="off">
+            <h2 class="card-titulo"><svg class="i"><use href="#i-camera"/></svg>Registrar ponto</h2>
+            <div>
+              <label for="ponto-medico">Médico plantonista *</label>
+              <select id="ponto-medico" required></select>
+              <p class="dica ponto-situacao" id="ponto-situacao"></p>
+            </div>
+            <div class="ponto-foto">
+              <video id="ponto-video" playsinline muted hidden></video>
+              <img id="ponto-preview" alt="Foto do médico para o ponto" hidden>
+              <div class="ponto-sem-foto" id="ponto-sem-foto"><svg class="i"><use href="#i-camera"/></svg><span>Sem foto</span></div>
+            </div>
+            <div class="ponto-botoes">
+              <button type="button" class="btn" id="btn-abrir-camera"><svg class="i"><use href="#i-camera"/></svg>Abrir câmera</button>
+              <button type="button" class="btn" id="btn-tirar-foto" hidden><svg class="i"><use href="#i-camera"/></svg>Tirar foto</button>
+              <label class="btn" for="ponto-arquivo"><svg class="i"><use href="#i-user"/></svg>Enviar foto</label>
+              <input type="file" id="ponto-arquivo" accept="image/*" capture="user" hidden>
+            </div>
+            <p class="pg-erro" id="ponto-erro" role="alert"></p>
+            <button type="submit" class="btn-primario largo" id="btn-registrar-ponto" disabled><svg class="i"><use href="#i-clock"/></svg><span id="btn-registrar-ponto-texto">Registrar entrada</span></button>
+            <p class="status" id="ponto-status" role="status" aria-live="polite"></p>
+            <p class="storage-note">A foto serve só para confirmar a presença no ponto. Ela fica guardada neste computador e é apagada depois de 30 dias.</p>
+          </form>
+
+          <div class="col-atendimento">
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-heart"/></svg>No plantão agora</h2>
+                <span class="pill" id="pill-no-plantao">0 médicos</span>
+              </div>
+              <ul class="lista-plantao" id="lista-no-plantao"></ul>
+              <p class="vazio centro" id="vazio-no-plantao">Nenhum médico registrou entrada.</p>
+            </div>
+            <div class="card tabela-card">
+              <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-history"/></svg>Registros de hoje</h2></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Foto</th><th>Hora</th><th>Médico</th><th>Especialidade</th><th>Registro</th></tr></thead>
+                  <tbody id="tabela-ponto"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-ponto">Nenhum registro hoje.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -530,7 +584,7 @@
           </form>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão (pelo ponto)</th><th>Ações</th></tr></thead>
               <tbody id="tabela-plantonistas"></tbody>
             </table>
           </div>

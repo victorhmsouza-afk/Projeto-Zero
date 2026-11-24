@@ -227,9 +227,26 @@ Na tela **Médicos**, quadro **Médicos plantonistas · Emergência**:
 
 - **Cadastrar plantonista:** nome, CRM e especialidade (**Emergencista, Clínico geral, Ortopedista ou Pediatra**).
   Não deixa cadastrar dois médicos com o mesmo CRM. O médico novo já entra no plantão.
-- **No plantão (Sim/Não):** só quem está **Sim** aparece em *Médico de plantão* no Pronto Socorro. Use para a troca de plantão.
+- **No plantão:** agora vem do **ponto** (veja abaixo). Médico recém-cadastrado só entra no plantão depois de registrar a entrada.
 - **Remover:** tira o médico da lista (com confirmação). Atendimentos já feitos não mudam.
 - No Atendimento (aba Pronto Socorro) há o atalho **+ Cadastrar plantonista**.
 
 Os plantonistas ficam salvos **neste navegador**. Quando tiver banco de dados, troque `carregarPlantonistas()` e
 `salvarPlantonistas()` em `js/app.js`. As especialidades ficam em `DADOS.especialidadesPlantao`.
+
+## Ponto do plantão (com foto)
+
+Tela **Ponto do plantão** (menu):
+
+1. O médico escolhe o nome (plantonistas cadastrados na tela Médicos).
+2. Tira a foto: **Abrir câmera → Tirar foto** (no computador, abrindo o `index.html` no Chrome/Edge) ou **Enviar foto**
+   (no celular abre a câmera; no computador escolhe uma imagem).
+3. **Registrar entrada**: ele passa a aparecer em *Médico de plantão* no Pronto Socorro.
+   No próximo ponto o botão vira **Registrar saída**, e ele sai da lista.
+
+- **No plantão agora:** foto, nome, especialidade e há quanto tempo está no plantão.
+- **Registros de hoje:** hora, médico, entrada/saída e a foto.
+- Na tela Médicos, a coluna *No plantão* mostra "Sim · desde 07:02" ou o atalho para registrar o ponto.
+- Se ninguém registrou entrada, o Atendimento mostra "Nenhum médico no plantão · registrar ponto".
+- A foto é reduzida (~320 px) e guardada **neste navegador** por **30 dias** (depois é apagada). Foto do rosto é dado
+  sensível pela LGPD: use só para o ponto. Quando tiver banco de dados, troque `lerPonto()`, `salvarPonto()` e `registrarPonto()`.
