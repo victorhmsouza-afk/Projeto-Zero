@@ -188,7 +188,7 @@ Quando o paciente **já pagou** e, no Pronto Socorro, **já passou pela triagem*
 
 - **Raio-X:** um item só (vale para qualquer osso). Se escrever a região, como "Raio-X de joelho" ou "RX de tórax",
   o valor do Raio-X vem preenchido do mesmo jeito.
-- **Tomografia por região:** crânio, face, seios da face, órbitas, ouvidos (mastoides), pescoço, tórax, abdome superior,
+- **Tomografia por região** (R$ 750,00 cada): crânio, face, seios da face, órbitas, ouvidos (mastoides), pescoço, tórax, abdome superior,
   abdome total, pelve, coluna cervical, torácica e lombar, ombro, braço, cotovelo, antebraço, punho, mão, quadril,
   coxa, joelho, perna, tornozelo e pé.
 - Também: ultrassonografias, ressonâncias, mamografia, densitometria, **eletrocardiograma**, ecocardiograma e
