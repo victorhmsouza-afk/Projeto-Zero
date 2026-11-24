@@ -382,9 +382,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .selo-particular .ast { font-size: 13px; line-height: 1; }
 .marca-particular { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
   background: var(--particular); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; margin-right: 6px; vertical-align: -3px; flex-shrink: 0; }
-.paciente-selecionado.particular { background: var(--particular-claro); border-left: 4px solid var(--particular); }
 .paciente-cabeca { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.paciente-obs { display: block; margin-top: 6px; font-size: 12px; color: var(--particular); font-weight: 500; }
+.paciente-obs { display: block; margin-top: 6px; font-size: 12px; color: var(--texto-2); }
+.texto-particular { font-weight: 700; font-size: 12px; color: var(--texto); white-space: nowrap; }
 tr.linha-particular td:first-child { box-shadow: inset 4px 0 0 var(--particular); }
 .lista-resultados li .paciente-cabeca strong { font-weight: 600; }
 .legenda-particular { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--texto-2); }
@@ -397,8 +397,6 @@ tr.linha-particular td:first-child { box-shadow: inset 4px 0 0 var(--particular)
 .risco-verde    { --cor: var(--risco-verde);    --cor-claro: var(--risco-verde-claro);    --cor-texto: #fff; }
 
 .selo-particular[class*="risco-"], .marca-particular[class*="risco-"] { background: var(--cor); color: var(--cor-texto); }
-.paciente-selecionado.particular[class*="risco-"] { background: var(--cor-claro); border-left-color: var(--cor); }
-.paciente-selecionado[class*="risco-"] .paciente-obs { color: var(--texto-2); }
 tr[class*="risco-"] td:first-child { box-shadow: inset 4px 0 0 var(--cor); }
 
 .classificacao { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
@@ -1375,7 +1373,7 @@ function cartaoPaciente(p, risco = '', origem = 'RECEPCAO') {
   const r = RISCOS[risco];
   const quem = origem === 'ENFERMAGEM' ? 'triagem de enfermagem' : 'pré-classificação da recepção';
   return `
-    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular(risco) : `<span class="tag">${esc(p.convenio)}</span>`}</div>
+    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? (r ? seloParticular(risco) : '<span class="texto-particular">✱ Particular</span>') : `<span class="tag">${esc(p.convenio)}</span>`}</div>
     <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
     ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo}) · ${quem}</span>` : ''}
     ${part ? '<span class="paciente-obs"><strong>✱ Particular:</strong> sem convênio, cada serviço é pago antes de ser feito.</span>' : ''}`;
@@ -1614,7 +1612,7 @@ $('#btn-recolher').addEventListener('click', () => $('#sidebar').classList.toggl
 function renderResultadosBusca(pacientes) {
   $('#atend-resultados').innerHTML = pacientes.map((p, i) => `
     <li data-indice="${i}">
-      <span class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${ehParticular(p) ? seloParticular() : ''}</span>
+      <span class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${ehParticular(p) ? '<span class="texto-particular">✱ Particular</span>' : ''}</span>
       <small>${dadosPaciente(p)}</small>
     </li>`).join('');
   // guarda a lista para o clique saber qual paciente foi escolhido

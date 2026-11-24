@@ -224,7 +224,7 @@ function cartaoPaciente(p, risco = '', origem = 'RECEPCAO') {
   const r = RISCOS[risco];
   const quem = origem === 'ENFERMAGEM' ? 'triagem de enfermagem' : 'pré-classificação da recepção';
   return `
-    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular(risco) : `<span class="tag">${esc(p.convenio)}</span>`}</div>
+    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? (r ? seloParticular(risco) : '<span class="texto-particular">✱ Particular</span>') : `<span class="tag">${esc(p.convenio)}</span>`}</div>
     <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
     ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo}) · ${quem}</span>` : ''}
     ${part ? '<span class="paciente-obs"><strong>✱ Particular:</strong> sem convênio, cada serviço é pago antes de ser feito.</span>' : ''}`;
@@ -463,7 +463,7 @@ $('#btn-recolher').addEventListener('click', () => $('#sidebar').classList.toggl
 function renderResultadosBusca(pacientes) {
   $('#atend-resultados').innerHTML = pacientes.map((p, i) => `
     <li data-indice="${i}">
-      <span class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${ehParticular(p) ? seloParticular() : ''}</span>
+      <span class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${ehParticular(p) ? '<span class="texto-particular">✱ Particular</span>' : ''}</span>
       <small>${dadosPaciente(p)}</small>
     </li>`).join('');
   // guarda a lista para o clique saber qual paciente foi escolhido

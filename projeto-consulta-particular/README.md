@@ -138,7 +138,9 @@ O hospital também atende pacientes de convênio. O **particular** não tem plan
 com o selo **✱ Particular** em **roxo**, uma cor que não é usada na classificação de prioridade
 (vermelho, laranja, amarelo e verde). As duas marcas podem aparecer juntas sem confusão.
 
-- Onde aparece: busca e cartão do paciente (Atendimento e Exames), lista de atendimentos (faixa roxa e ✱ no número),
+- Na **busca** e no **cartão do paciente** (Atendimento e Exames) o fundo fica na cor padrão do site e aparece só **✱ Particular** em negrito;
+  quando o paciente já tem prioridade, o selo aparece na cor da prioridade (ex. ✱ Verde).
+- Também aparece na lista de atendimentos (faixa roxa e ✱ no número),
   Painel, Agenda, tela Pacientes (coluna Tipo) e no texto do recibo.
 - Regra: o paciente é particular quando o campo `convenio` está vazio (o cadastro rápido já cria assim).
   Se um paciente tiver `convenio`, o nome do convênio aparece no lugar do selo.
