@@ -115,6 +115,7 @@ function tagStatus(status) {
     AGENDADA: 'Agendada', CONFIRMADA: 'Confirmada', ATENDIDA: 'Atendida', CANCELADA: 'Cancelada',
     ABERTO: 'Aberto', EM_ATENDIMENTO: 'Em atendimento', ALTA: 'Alta', PAGO: 'Pago', PENDENTE: 'Pendente',
     AGUARDANDO: 'Liberado para consulta',
+    TRIADO: 'Triado · aguardando médico',
   };
   const s = String(status || '').toUpperCase();
   return `<span class="tag tag-${s.toLowerCase()}">${nomes[s] || esc(s)}</span>`;
@@ -169,7 +170,7 @@ function confirmar(mensagem, textoBotao = 'Confirmar') {
 
 // ---------- Marca de paciente particular ----------
 // Particular = sem convênio, paga por serviço. Usa roxo + asterisco, que não se confunde
-// com as cores de prioridade (vermelho, laranja, amarelo, verde, azul).
+// com as cores de prioridade (vermelho, laranja, amarelo, verde).
 // Um paciente é particular quando não tem convênio (campo "convenio" vazio).
 const TITULO_PARTICULAR = 'Particular: sem convênio, paga por serviço';
 
@@ -183,7 +184,6 @@ const RISCOS = {
   LARANJA: { nome: 'Laranja', descricao: 'Muito urgente', tempo: 'até 10 min', minutos: 10, ordem: 2 },
   AMARELO: { nome: 'Amarelo', descricao: 'Urgente', tempo: 'até 60 min', minutos: 60, ordem: 3 },
   VERDE: { nome: 'Verde', descricao: 'Pouco urgente', tempo: 'até 120 min', minutos: 120, ordem: 4 },
-  AZUL: { nome: 'Azul', descricao: 'Não urgente', tempo: 'até 240 min', minutos: 240, ordem: 5 },
 };
 const classeRisco = (risco) => (RISCOS[risco] ? ` risco-${risco.toLowerCase()}` : '');
 
@@ -203,7 +203,14 @@ function marcaParticular(risco) {
 
 // Risco mostrado no cartão do paciente: só no Pronto Socorro
 function riscoAtual() {
-  return estado.modalidade === 'PRONTO_SOCORRO' ? estado.risco : '';
+  if (estado.modalidade !== 'PRONTO_SOCORRO') return '';
+  const hoje = estado.paciente && (estado.anteriores || []).length ? atendimentoDeHoje() : null;
+  return hoje?.risco || estado.risco;
+}
+
+function origemRiscoAtual() {
+  const hoje = estado.paciente && (estado.anteriores || []).length ? atendimentoDeHoje() : null;
+  return hoje?.riscoOrigem || 'RECEPCAO';
 }
 
 function dadosPaciente(p) {
@@ -212,13 +219,14 @@ function dadosPaciente(p) {
 }
 
 // Cartão do paciente selecionado (Atendimento e Exames)
-function cartaoPaciente(p, risco = '') {
+function cartaoPaciente(p, risco = '', origem = 'RECEPCAO') {
   const part = ehParticular(p);
   const r = RISCOS[risco];
+  const quem = origem === 'ENFERMAGEM' ? 'triagem de enfermagem' : 'pré-classificação da recepção';
   return `
     <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular(risco) : `<span class="tag">${esc(p.convenio)}</span>`}</div>
     <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
-    ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo})</span>` : ''}
+    ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo}) · ${quem}</span>` : ''}
     ${part ? '<span class="paciente-obs"><strong>✱ Particular:</strong> sem convênio, cada serviço é pago antes de ser feito.</span>' : ''}`;
 }
 
@@ -230,7 +238,7 @@ function renderCartaoPaciente() {
   const risco = riscoAtual();
   caixa.hidden = false;
   caixa.className = `paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(risco)}`;
-  caixa.innerHTML = cartaoPaciente(p, risco);
+  caixa.innerHTML = cartaoPaciente(p, risco, origemRiscoAtual());
 }
 
 // ---------- Opções de classificação de risco ----------
@@ -265,7 +273,20 @@ function minutosDesde(iso) {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
+function textoQuemClassificou(a) {
+  const hist = a.historicoRisco || [];
+  const ultimo = hist[hist.length - 1];
+  const anterior = hist.length > 1 ? hist[hist.length - 2] : null;
+  const hora = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+  if (a.riscoOrigem === 'ENFERMAGEM') {
+    const mudou = anterior && anterior.risco !== ultimo?.risco ? ` · era ${RISCOS[anterior.risco]?.nome || anterior.risco}` : ' · confirmou a cor';
+    return `Enfermagem ${hora(ultimo?.dataHora)}<small>triagem feita${mudou}</small>`;
+  }
+  return `Recepção ${hora(ultimo?.dataHora)}<small>pré-classificação · falta triagem</small>`;
+}
+
 function renderFila(lista) {
+  estado.fila = lista;
   const ordenada = [...lista].sort((a, b) =>
     (RISCOS[a.risco]?.ordem || 9) - (RISCOS[b.risco]?.ordem || 9) || String(a.entrada).localeCompare(String(b.entrada)));
   $('#tabela-fila').innerHTML = ordenada.map((a) => {
@@ -277,10 +298,11 @@ function renderFila(lista) {
         <td>${a.particular === false ? `<span class="tag">${esc(r?.nome || '—')}</span>` : seloParticular(a.risco)}</td>
         <td>${esc(a.paciente)}</td>
         <td>${esc(a.numero)}</td>
-        <td>${formatarDataHora(a.entrada).slice(11)}</td>
-        <td class="espera${atrasado ? ' atrasado' : ''}">${espera} min<small>${r ? `meta: ${r.tempo}` : ''}${atrasado ? ' · acima do tempo' : ''}</small></td>
-        <td>${tagStatus(a.status)}</td>
-        <td>${esc(a.medico)}</td>
+        <td class="espera${atrasado ? ' atrasado' : ''}">${espera} min<small>chegou ${formatarDataHora(a.entrada).slice(11)}${r ? ` · meta ${r.tempo}` : ''}${atrasado ? ' · acima do tempo' : ''}</small></td>
+        <td class="quem-classificou">${textoQuemClassificou(a)}</td>
+        <td class="quem-classificou">${tagStatus(a.status)}<small>${esc(a.medico)}</small></td>
+        <td><div class="acoes-linha">${a.pago === false ? '<span class="dica">Aguardando pagamento</span>'
+          : `<button class="btn-acao${a.triagemEnfermagem ? '' : ' destaque'}" data-triagem="${esc(a.numero)}">${a.triagemEnfermagem ? 'Reclassificar' : 'Triagem enfermagem'}</button>`}</div></td>
       </tr>`;
   }).join('');
   $('#vazio-fila').hidden = ordenada.length > 0;
@@ -291,6 +313,63 @@ function renderFila(lista) {
 $('#btn-atualizar-fila').addEventListener('click', () => carregarFila());
 // Atualiza o tempo de espera a cada minuto enquanto a fila estiver aberta
 setInterval(() => { if ($('#tela-fila').classList.contains('ativa')) carregarFila(); }, 60000);
+
+// ---------- Triagem de enfermagem ----------
+// Abre pela Fila da emergência ou pela lista de atendimentos (botão "Triagem enfermagem" / "Reclassificar").
+let atendimentoTriagem = null;
+
+function abrirTriagem(atendimento, nomePaciente) {
+  atendimentoTriagem = atendimento;
+  $('#form-triagem').reset();
+  $('#tr-erro').textContent = '';
+  $('#tr-paciente').textContent = `${nomePaciente || 'Paciente'} · Atend. ${atendimento.numero}`;
+  const r = RISCOS[atendimento.risco];
+  $('#tr-atual').innerHTML = r
+    ? `Cor atual: ${seloParticular(atendimento.risco)} <span>${atendimento.riscoOrigem === 'ENFERMAGEM' ? 'definida na triagem' : 'pré-classificação da recepção'}</span>`
+    : 'Ainda sem classificação.';
+  $('#tr-riscos').innerHTML = Object.entries(RISCOS).map(([chave, x]) => `
+    <label class="risco-opcao${classeRisco(chave)}">
+      <input type="radio" name="riscoTriagem" value="${chave}" ${chave === atendimento.risco ? 'checked' : ''}>
+      <span class="risco-cor" aria-hidden="true"></span>
+      <span><strong>${x.nome}</strong><small>${x.descricao} · ${x.tempo}</small></span>
+    </label>`).join('');
+  $('#modal-triagem').hidden = false;
+  $('#form-triagem input[name="riscoTriagem"]:checked')?.focus();
+}
+
+function fecharTriagem() { $('#modal-triagem').hidden = true; atendimentoTriagem = null; }
+document.querySelectorAll('[data-tr-cancelar]').forEach((b) => b.addEventListener('click', fecharTriagem));
+$('#modal-triagem').addEventListener('click', (e) => { if (e.target.id === 'modal-triagem') fecharTriagem(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal-triagem').hidden) fecharTriagem(); });
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-triagem]');
+  if (!b) return;
+  const n = b.dataset.triagem;
+  const daFila = (estado.fila || []).find((x) => String(x.numero) === n);
+  const daLista = (estado.anteriores || []).find((x) => String(x.numero) === n);
+  const a = daLista || daFila;
+  if (a) abrirTriagem(a, daFila?.paciente || estado.paciente?.nome);
+});
+
+$('#form-triagem').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const risco = document.querySelector('input[name="riscoTriagem"]:checked')?.value;
+  if (!risco) { $('#tr-erro').textContent = 'Escolha a cor da classificação.'; return; }
+  const triagem = { risco, observacoes: $('#tr-obs').value.trim(), por: 'ENFERMAGEM', dataHora: new Date().toISOString() };
+  const a = atendimentoTriagem;
+  await registrarTriagem(a, triagem);
+  fecharTriagem();
+  carregarAtendimentosAnteriores();
+  if ($('#tela-fila').classList.contains('ativa')) carregarFila();
+});
+
+async function registrarTriagem(atendimento, triagem) {
+  // TODO: gravar a triagem no seu sistema. Depois dela o atendimento deve ficar com:
+  //   risco = triagem.risco, riscoOrigem = 'ENFERMAGEM', triagemEnfermagem = true, status = 'TRIADO'
+  //   e um item novo em historicoRisco: { risco, por: 'ENFERMAGEM', dataHora, observacoes }
+  console.log('Triagem de enfermagem', atendimento, triagem);
+}
 
 // ---------- Navegação entre telas ----------
 const carregadores = {
@@ -350,6 +429,7 @@ function atualizarBotaoAbrir() {
 
 function renderAnteriores(atendimentos) {
   estado.anteriores = atendimentos;
+  if (typeof renderCartaoPaciente === 'function') renderCartaoPaciente();
   $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
     <tr class="${a.particular === false ? '' : 'linha-particular'}${classeRisco(a.risco)}">
       <td>${a.particular === false ? '' : marcaParticular(a.risco)}${esc(a.numero)}</td>
@@ -388,11 +468,17 @@ function acoesAtendimento(a) {
   return recibo + acaoFluxo(a, n, botaoExames);
 }
 
+function precisaTriagem(a) {
+  return (a.tipo || estado.modalidade) === 'PRONTO_SOCORRO' && !a.triagemEnfermagem;
+}
+
 function acaoFluxo(a, n, botaoExames) {
   if (!consultaConcluida(a)) {
-    return a.pago
-      ? `<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`
-      : `<span class="dica">Aguardando pagamento</span>`;
+    if (!a.pago) return `<span class="dica">Aguardando pagamento</span>`;
+    if (precisaTriagem(a)) return `<button class="btn-acao destaque" data-triagem="${n}">Triagem enfermagem</button>`;
+    const reclass = (a.tipo || estado.modalidade) === 'PRONTO_SOCORRO'
+      ? `<button class="btn-acao" data-triagem="${n}" title="Mudar a cor da prioridade">Reclassificar</button>` : '';
+    return `${reclass}<button class="btn-acao destaque" data-concluir-atend="${n}">Concluir consulta</button>`;
   }
   return botaoExames(!a.exames);
 }
@@ -407,8 +493,9 @@ const ETAPAS = {
   ],
   PRONTO_SOCORRO: [
     { titulo: 'Paciente', dica: 'Basta o nome' },
-    { titulo: 'Classificação', dica: 'Cor da prioridade' },
+    { titulo: 'Pré-classificação', dica: 'Recepção define a cor' },
     { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
+    { titulo: 'Triagem', dica: 'Enfermeiro confirma ou muda a cor' },
     { titulo: 'Consulta', dica: 'Médico de plantão atende' },
     { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
   ],
@@ -422,7 +509,10 @@ function atendimentoDeHoje() {
 function renderEtapas() {
   const a = estado.paciente ? atendimentoDeHoje() : null;
   let feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
-  if (estado.modalidade === 'PRONTO_SOCORRO') feitas.splice(1, 0, !!(estado.risco || a?.risco));
+  if (estado.modalidade === 'PRONTO_SOCORRO') {
+    feitas = [!!estado.paciente, !!(estado.risco || a?.risco), !!a?.pago, !!a?.triagemEnfermagem,
+      !!a && consultaConcluida(a), !!a?.exames];
+  }
   const atual = feitas.indexOf(false);
   $('#atend-etapas').style.setProperty('--n-etapas', feitas.length);
   $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
@@ -724,7 +814,11 @@ $('#atend-medico').addEventListener('change', () => {
 $('#btn-abrir-atendimento').addEventListener('click', async () => {
   const setor = $('#atend-setor').selectedOptions[0]?.text || '';
   const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
-  if (estado.modalidade === 'PRONTO_SOCORRO') dados.risco = estado.risco; // VERMELHO | LARANJA | AMARELO | VERDE | AZUL
+  if (estado.modalidade === 'PRONTO_SOCORRO') {
+    dados.risco = estado.risco; // VERMELHO | LARANJA | AMARELO | VERDE
+    dados.riscoOrigem = 'RECEPCAO'; // pré-classificação; a enfermagem confirma ou muda na triagem
+    dados.historicoRisco = [{ risco: estado.risco, por: 'RECEPCAO', dataHora: new Date().toISOString() }];
+  }
 
   if (estado.modalidade === 'CONSULTA') {
     const m = medicoConsultaSelecionado();
@@ -1637,7 +1731,7 @@ $('#btn-sair').addEventListener('click', () => {
 // Clique nos botões "Abrir / Ver / Editar" das tabelas
 document.addEventListener('click', (e) => {
   const botao = e.target.closest('.btn-acao');
-  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend || botao.dataset.reciboAtend || botao.dataset.reciboFin) return;
+  if (!botao || botao.dataset.examesAtend || botao.dataset.concluirAtend || botao.dataset.reciboAtend || botao.dataset.reciboFin || botao.dataset.triagem) return;
   // TODO: abrir detalhes do registro botao.dataset.id
   console.log('Ação no registro', botao.dataset.id);
 });

@@ -139,11 +139,11 @@
 
             <ol class="card etapas" id="atend-etapas" aria-label="Etapas do atendimento"></ol>
 
-            <!-- Classificação de risco (só no Pronto Socorro) -->
+            <!-- Pré-classificação de risco feita pela recepção (só no Pronto Socorro) -->
             <div class="card classificacao" id="card-risco" hidden>
               <div class="classificacao-topo">
-                <span class="rotulo"><svg class="i"><use href="#i-heart"/></svg>Classificação de risco *</span>
-                <span class="dica">A cor muda conforme a prioridade; o ✱ de particular fica fixo.</span>
+                <span class="rotulo"><svg class="i"><use href="#i-heart"/></svg>Pré-classificação de risco (recepção) *</span>
+                <span class="dica">Primeira avaliação do recepcionista. Na triagem, o enfermeiro confirma ou muda a cor. O ✱ de particular fica fixo.</span>
               </div>
               <div class="riscos" id="riscos" role="radiogroup" aria-label="Classificação de risco"></div>
             </div>
@@ -224,7 +224,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Prioridade</th><th>Paciente</th><th>Atend.</th><th>Chegada</th><th>Espera</th><th>Status</th><th>Médico</th></tr></thead>
+              <thead><tr><th>Prioridade</th><th>Paciente</th><th>Atend.</th><th>Espera</th><th>Classificado por</th><th>Status / médico</th><th>Ações</th></tr></thead>
               <tbody id="tabela-fila"></tbody>
             </table>
           </div>
@@ -563,6 +563,31 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ===================== TRIAGEM DE ENFERMAGEM (janela) ===================== -->
+  <div class="modal-fundo" id="modal-triagem" hidden>
+    <form class="modal modal-triagem" id="form-triagem" role="dialog" aria-modal="true" aria-labelledby="tr-titulo" autocomplete="off">
+      <div class="modal-topo">
+        <div>
+          <h2 id="tr-titulo">Triagem de enfermagem</h2>
+          <p class="sub" id="tr-paciente"></p>
+        </div>
+        <button type="button" class="btn-icone" data-tr-cancelar aria-label="Fechar">✕</button>
+      </div>
+      <div class="triagem-atual" id="tr-atual"></div>
+      <fieldset class="pg-formas">
+        <legend>Classificação de risco (enfermagem) *</legend>
+        <div class="riscos" id="tr-riscos" role="radiogroup" aria-label="Classificação de risco da enfermagem"></div>
+      </fieldset>
+      <div><label for="tr-obs">Observações da triagem</label>
+        <textarea id="tr-obs" maxlength="1000" placeholder="Queixa principal, sinais vitais, dor (0 a 10)…"></textarea></div>
+      <p class="pg-erro" id="tr-erro" role="alert"></p>
+      <div class="acoes">
+        <button type="button" class="btn" data-tr-cancelar>Cancelar</button>
+        <button type="submit" class="btn-primario"><svg class="i"><use href="#i-heart"/></svg>Salvar triagem</button>
+      </div>
+    </form>
   </div>
 
   <!-- ===================== RECIBO (janela) ===================== -->

@@ -136,7 +136,7 @@ Nomes, CRMs e valores são **exemplos**: edite o objeto `DADOS` para colocar os 
 
 O hospital também atende pacientes de convênio. O **particular** não tem plano e **paga por serviço**, por isso aparece
 com o selo **✱ Particular** em **roxo**, uma cor que não é usada na classificação de prioridade
-(vermelho, laranja, amarelo, verde e azul). As duas marcas podem aparecer juntas sem confusão.
+(vermelho, laranja, amarelo e verde). As duas marcas podem aparecer juntas sem confusão.
 
 - Onde aparece: busca e cartão do paciente (Atendimento e Exames), lista de atendimentos (faixa roxa e ✱ no número),
   Painel, Agenda, tela Pacientes (coluna Tipo) e no texto do recibo.
@@ -152,6 +152,22 @@ com o selo **✱ Particular** em **roxo**, uma cor que não é usada na classifi
 - O selo do paciente passa a ter **a cor da prioridade** e mantém o **✱ fixo** de particular: ex. **✱ Verde · Pouco urgente**.
   Sem classificação (ou na Consulta), continua o roxo **✱ Particular**. O cartão mostra a prioridade e o aviso de *sem convênio*.
 - Etapas do Pronto Socorro: Paciente → **Classificação** → Pagamento → Consulta → Exames.
-- O atendimento salvo leva `risco: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE' | 'AZUL'` (em `registrarAtendimento(dados)`).
+- O atendimento salvo leva `risco: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE'` (em `registrarAtendimento(dados)`).
 - **Fila da emergência** (menu): pacientes do PS ainda sem consulta concluída, por prioridade e chegada, com tempo de espera
   (fica em vermelho quando passa da meta da cor) e contagem por cor. Ligue `carregarFila()` ao seu sistema e chame `renderFila(lista)`.
+
+## Pré-classificação (recepção) e triagem (enfermagem)
+
+Não existe mais a cor **azul**. Ficaram **vermelho, laranja, amarelo e verde**.
+
+1. **Recepção:** o recepcionista faz a **pré-classificação** (obrigatória) antes do pagamento.
+   O atendimento é salvo com `riscoOrigem: 'RECEPCAO'` e `historicoRisco: [{ risco, por: 'RECEPCAO', dataHora }]`.
+2. **Pagamento** e liberação.
+3. **Triagem de enfermagem:** botão **Triagem enfermagem** na lista de atendimentos ou na **Fila da emergência**.
+   O enfermeiro confirma ou **muda a cor** e pode anotar queixa e sinais vitais. Chama `registrarTriagem(atendimento, triagem)`;
+   depois dela o atendimento fica com `riscoOrigem: 'ENFERMAGEM'`, `triagemEnfermagem: true`, status `TRIADO`
+   e mais um item em `historicoRisco`.
+4. **Concluir consulta** só aparece depois da triagem. Depois dela ainda dá para **Reclassificar**.
+
+A Fila mostra a coluna **Classificado por** (Recepção ou Enfermagem, com a hora e a cor anterior quando mudou).
+Etapas do Pronto Socorro: Paciente → Pré-classificação → Pagamento → Triagem → Consulta → Exames.
