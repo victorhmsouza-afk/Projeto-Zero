@@ -50,6 +50,7 @@ Os valores que vêm preenchidos são a **tabela de referência aprovada**:
 | Exame / serviço | Valor |
 |---|---|
 | Tomografia (qualquer região) | R$ 750,00 |
+| Tomografia **com contraste** | R$ 750,00 + R$ 250,00 = **R$ 1.000,00** |
 | Raio-X (qualquer osso) | R$ 90,00 |
 | Ultrassonografia (USG) | R$ 140,00 a R$ 180,00 |
 | Ressonância magnética | R$ 750,00 a R$ 850,00 |
@@ -212,3 +213,10 @@ Quando o paciente **já pagou** e, no Pronto Socorro, **já passou pela triagem*
   **endoscopia** (digestiva alta e colonoscopia).
 - Quem já tinha a tabela salva no navegador recebe os exames novos automaticamente, sem perder os valores que alterou.
 - Os valores são **exemplos**: ajuste na tela Tabela de preços.
+
+## Tomografia com contraste
+
+Quando o tipo do exame é **Tomografia**, aparece a opção **Com contraste (+ R$ 250,00)**. Marcando, o valor do exame
+soma o adicional (ex.: TC de crânio com contraste = R$ 1.000,00) e o nome fica "TC de crânio com contraste"
+(na lista, na janela de pagamento e no recibo). O adicional pode ser mudado na tela **Tabela de preços**
+("Adicional de contraste na tomografia"). No código: `precos.adicionais.contrasteTomografia`.

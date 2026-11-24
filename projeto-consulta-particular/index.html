@@ -303,6 +303,10 @@
                   <label for="ex-valor">Valor (R$) *</label>
                   <input id="ex-valor" class="input-valor" inputmode="decimal" placeholder="0,00">
                 </div>
+                <label class="check-contraste" id="campo-contraste" hidden>
+                  <input type="checkbox" id="ex-contraste">
+                  <span>Com contraste <small id="ex-contraste-valor">(+ R$ 250,00)</small></span>
+                </label>
               </div>
 
               <!-- Laboratorial: numeração -->
@@ -369,6 +373,11 @@
           <div class="tabela-topo">
             <h2 class="card-titulo"><svg class="i verde"><use href="#i-scan"/></svg>Imagem e outros</h2>
             <span class="pill" id="pill-pr-imagem">0 exames</span>
+          </div>
+          <div class="form-preco adicional-contraste">
+            <label for="pr-contraste">Adicional de contraste na tomografia (R$)</label>
+            <input id="pr-contraste" class="input-valor" inputmode="decimal" placeholder="0,00">
+            <span class="dica">Somado ao valor da tomografia quando é feita com contraste.</span>
           </div>
           <form class="form-preco" id="form-preco-imagem" autocomplete="off">
             <div><label for="pr-categoria">Tipo</label><select id="pr-categoria" class="sel-categoria"></select></div>

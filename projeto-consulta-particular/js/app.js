@@ -1227,6 +1227,8 @@ const CATEGORIAS_EXAME = ['Ultrassonografia', 'Tomografia', 'Ressonância magné
   'Densitometria', 'Eletrocardiograma', 'Ecocardiograma', 'Endoscopia', 'Outro'];
 
 const PRECOS_EXEMPLO = {
+  // Adicional cobrado quando a tomografia é feita com contraste
+  adicionais: { contrasteTomografia: 250 },
   imagem: [
     { categoria: 'Ultrassonografia', nome: 'USG de abdome total', valor: 180 },
     { categoria: 'Ultrassonografia', nome: 'USG de abdome superior', valor: 150 },
@@ -1301,6 +1303,7 @@ function carregarTabelaPrecos() {
       // Tomografia passou a custar R$ 750,00: atualiza quem ainda está com o valor de exemplo antigo
       const tcAntigo = { 'TC de crânio': 350, 'TC de face': 330, 'TC de seios da face': 330, 'TC de órbitas': 350, 'TC de ouvidos (mastoides)': 350, 'TC de pescoço': 400, 'TC de tórax': 420, 'TC de abdome superior': 450, 'TC de abdome total': 650, 'TC de pelve': 450, 'TC de coluna cervical': 450, 'TC de coluna torácica': 450, 'TC de coluna lombar': 450, 'TC de ombro': 400, 'TC de braço': 380, 'TC de cotovelo': 380, 'TC de antebraço': 380, 'TC de punho': 380, 'TC de mão': 380, 'TC de quadril': 420, 'TC de coxa': 400, 'TC de joelho': 400, 'TC de perna': 400, 'TC de tornozelo': 380, 'TC de pé': 380 };
       salvo.imagem.forEach((p) => { if (p.categoria === 'Tomografia' && tcAntigo[p.nome] === p.valor) p.valor = 750; });
+      salvo.adicionais = { ...copiarExemplos().adicionais, ...(salvo.adicionais || {}) };
       return salvo;
     }
   } catch (e) { /* navegador sem armazenamento: usa os exemplos */ }
@@ -1329,7 +1332,15 @@ function botaoRemover(atributos) {
   return `<button type="button" class="btn-icone btn-remover" ${atributos} title="Remover"><svg class="i"><use href="#i-trash"/></svg></button>`;
 }
 
+$('#pr-contraste').addEventListener('change', (e) => {
+  precos.adicionais = { ...(precos.adicionais || {}), contrasteTomografia: lerMoeda(e.target.value) };
+  salvarTabelaPrecos();
+  $('#status-precos').textContent = `Adicional de contraste: ${formatarMoeda(adicionalContraste())}.`;
+  atualizarCampoContraste();
+});
+
 function renderPrecos() {
+  $('#pr-contraste').value = valorCampo(adicionalContraste());
   $('#tabela-pr-imagem').innerHTML = precos.imagem.map((p, i) => `
     <tr>
       <td>${esc(p.categoria)}</td>
@@ -1416,6 +1427,7 @@ function carregarExames() {
   renderPacienteExames();
   renderVinculoExames();
   atualizarSugestoesExames();
+  atualizarCampoContraste();
   trocarTipoExame(false);
   renderExames();
 }
@@ -1459,15 +1471,40 @@ function trocarTipoExame(focar = true) {
 }
 
 document.querySelectorAll('input[name="tipoExame"]').forEach((r) => r.addEventListener('change', () => trocarTipoExame()));
-$('#ex-categoria').addEventListener('change', () => { atualizarSugestoesExames(); $('#ex-nome').focus(); });
+// ---------- Tomografia com contraste ----------
+const SUFIXO_CONTRASTE = ' com contraste';
+const adicionalContraste = () => Number(precos.adicionais?.contrasteTomografia || 0);
+
+function atualizarCampoContraste() {
+  const tc = $('#ex-categoria').value === 'Tomografia';
+  $('#campo-contraste').hidden = !tc;
+  if (!tc) $('#ex-contraste').checked = false;
+  $('#ex-contraste-valor').textContent = `(+ ${formatarMoeda(adicionalContraste())})`;
+}
+
+// Valor do exame de imagem pela tabela, somando o contraste quando marcado
+function valorImagem(nome, contraste) {
+  const base = precoImagem(String(nome).replace(new RegExp(SUFIXO_CONTRASTE + '$', 'i'), ''));
+  if (!base) return null;
+  return base.valor + (contraste ? adicionalContraste() : 0);
+}
+
+function recalcularValorImagem() {
+  const v = valorImagem($('#ex-nome').value, $('#ex-contraste').checked);
+  if (v != null) $('#ex-valor').value = valorCampo(v);
+}
+
+$('#ex-contraste').addEventListener('change', recalcularValorImagem);
+
+$('#ex-categoria').addEventListener('change', () => { atualizarSugestoesExames(); atualizarCampoContraste(); $('#ex-nome').focus(); });
 
 // Ao escolher o exame, puxa o valor da tabela de preços
 $('#ex-nome').addEventListener('input', (e) => {
   e.target.setCustomValidity('');
-  const p = precoImagem(e.target.value);
+  const p = precoImagem(e.target.value.replace(new RegExp(SUFIXO_CONTRASTE + '$', 'i'), ''));
   if (p) {
-    $('#ex-valor').value = valorCampo(p.valor);
-    $('#ex-categoria').value = p.categoria;
+    if ($('#ex-categoria').value !== p.categoria) { $('#ex-categoria').value = p.categoria; atualizarCampoContraste(); }
+    recalcularValorImagem();
   }
 });
 
@@ -1486,12 +1523,15 @@ $('#form-exame').addEventListener('submit', (e) => {
 
   if (tipoExameAtual() === 'imagem') {
     const campo = $('#ex-nome');
-    const nome = campo.value.trim();
+    let nome = campo.value.trim();
     if (!nome) { campo.setCustomValidity('Digite o nome do exame.'); campo.reportValidity(); return; }
-    const valor = lerMoeda($('#ex-valor').value) || precoImagem(nome)?.valor || 0;
-    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome, valor });
+    const contraste = $('#ex-contraste').checked && $('#ex-categoria').value === 'Tomografia';
+    if (contraste && !nome.toLowerCase().endsWith(SUFIXO_CONTRASTE)) nome += SUFIXO_CONTRASTE;
+    const valor = lerMoeda($('#ex-valor').value) || valorImagem(nome, contraste) || 0;
+    estado.exames.imagem.push({ categoria: $('#ex-categoria').value, nome, valor, contraste });
     campo.value = '';
     $('#ex-valor').value = '';
+    $('#ex-contraste').checked = false;
     campo.focus();
   } else {
     const campo = $('#ex-codigo');
