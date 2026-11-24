@@ -72,6 +72,7 @@
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
+        <a href="#pedido" data-tela="pedido"><svg class="i"><use href="#i-clipboard"/></svg><span>Pedido do médico</span></a>
         <a href="#exames" data-tela="exames"><svg class="i"><use href="#i-flask"/></svg><span>Exames</span></a>
         <a href="#precos" data-tela="precos"><svg class="i"><use href="#i-tag"/></svg><span>Tabela de preços</span></a>
         <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
@@ -319,6 +320,74 @@
         </div>
       </section>
 
+      <!-- ===================== PEDIDO DO MÉDICO ===================== -->
+      <section class="tela" id="tela-pedido">
+        <div class="cabecalho"><h1>Pedido do médico</h1><p class="sub">O médico escolhe os exames (imagem e laboratório) e gera um código. A recepção digita o código na tela Exames para cobrar.</p></div>
+        <div class="atendimento">
+          <div class="col-paciente">
+            <div class="card">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-user"/></svg>Paciente</h2>
+              <div id="pd-paciente"></div>
+            </div>
+            <div class="card bloco">
+              <h2 class="card-titulo"><svg class="i"><use href="#i-clipboard"/></svg>Pedido</h2>
+              <div><label for="pd-medico">Médico solicitante *</label><select id="pd-medico"></select></div>
+              <div><label for="pd-obs">Indicação clínica / observações</label><textarea id="pd-obs" maxlength="1000" placeholder="Ex.: dor abdominal há 2 dias, febre"></textarea></div>
+              <button type="button" class="btn-primario largo" id="btn-gerar-pedido" disabled><svg class="i"><use href="#i-clipboard"/></svg>Gerar pedido</button>
+              <p class="pg-erro" id="pd-erro" role="alert"></p>
+            </div>
+            <div class="card codigo-pedido" id="pd-codigo-card" hidden>
+              <span>Código do pedido</span>
+              <strong id="pd-codigo"></strong>
+              <p id="pd-codigo-info">Entregue ao paciente. A recepção digita este código na tela Exames para cobrar.</p>
+              <button type="button" class="btn" id="btn-copiar-codigo">Copiar código</button>
+            </div>
+          </div>
+
+          <div class="col-atendimento">
+            <form class="card form-exame" id="form-pedido-item" autocomplete="off">
+              <div class="campos-exame">
+                <div class="grow">
+                  <label for="pd-exame">Exame (imagem ou laboratório) *</label>
+                  <input id="pd-exame" list="pd-sugestoes" maxlength="150" placeholder="Digite: hemograma, TC de crânio, raio-x de joelho…">
+                  <datalist id="pd-sugestoes"></datalist>
+                </div>
+                <label class="check-contraste" id="pd-campo-contraste" hidden>
+                  <input type="checkbox" id="pd-contraste"><span>Com contraste</span>
+                </label>
+              </div>
+              <button type="submit" class="btn-primario"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
+              <p class="dica full">Escolha na lista. Raio-X vale para qualquer osso: escreva a região (ex.: Raio-X de joelho). O médico não vê preços: eles entram na recepção.</p>
+            </form>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo">
+                <h2 class="card-titulo"><svg class="i verde"><use href="#i-flask"/></svg>Exames do pedido</h2>
+                <span class="pill" id="pd-pill">0 exames</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>Tipo</th><th>Exame</th><th>Ações</th></tr></thead>
+                  <tbody id="tabela-pedido-itens"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-pedido-itens">Nenhum exame no pedido.</p>
+            </div>
+
+            <div class="card tabela-card">
+              <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-history"/></svg>Pedidos de hoje</h2></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Código</th><th>Hora</th><th>Paciente</th><th>Médico</th><th>Exames</th><th>Situação</th></tr></thead>
+                  <tbody id="tabela-pedidos"></tbody>
+                </table>
+              </div>
+              <p class="vazio centro" id="vazio-pedidos">Nenhum pedido hoje.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ===================== EXAMES ===================== -->
       <section class="tela" id="tela-exames">
         <div class="atendimento">
@@ -365,6 +434,17 @@
                 <a class="btn" href="#precos"><svg class="i"><use href="#i-tag"/></svg>Tabela de preços</a>
               </div>
             </div>
+
+            <!-- Recepção: carrega todos os exames pelo código do pedido do médico -->
+            <form class="card form-codigo-pedido" id="form-codigo-pedido" autocomplete="off">
+              <label class="rotulo" for="ex-codigo-pedido"><svg class="i"><use href="#i-clipboard"/></svg>Código do pedido médico</label>
+              <div class="linha-codigo">
+                <input id="ex-codigo-pedido" maxlength="12" placeholder="PED-XXXXXX">
+                <button type="submit" class="btn-primario">Carregar exames</button>
+              </div>
+              <p class="dica" id="ex-pedido-info">Digite o código que o médico gerou: todos os exames (imagem e laboratório) entram com os preços da tabela.</p>
+              <div class="pendentes" id="ex-pendentes"></div>
+            </form>
 
             <form class="card form-exame" id="form-exame" autocomplete="off">
               <div class="segmentado" role="radiogroup" aria-label="Tipo de exame">

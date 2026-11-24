@@ -173,6 +173,8 @@ const estado = {
   vinculoExames: null,    // atendimento de origem da requisição de exames (ex.: Pronto Socorro)
   medicosConsulta: [],    // médicos da aba Consulta: [{ id, nome, valorConsulta }]
   ultimoPagamento: null,  // último pagamento confirmado (para o recibo)
+  pedido: { itens: [] },  // pedido do médico em montagem
+  pedidoCarregado: null,  // código do pedido carregado na tela Exames (recepção)
 };
 
 // Textos de cada aba do Atendimento
@@ -840,6 +842,7 @@ const carregadores = {
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
   exames: carregarExames,
+  pedido: carregarPedido,
   precos: carregarPrecos,
   pacientes: carregarPacientes,
   medicos: carregarMedicos,
@@ -875,6 +878,7 @@ function renderResultadosBusca(pacientes) {
 function selecionarPaciente(paciente) {
   estado.paciente = paciente;
   estado.vinculoExames = null;
+  estado.pedido = { itens: [] };
   estado.risco = '';
   document.querySelectorAll('input[name="risco"]').forEach((r) => { r.checked = false; });
   $('#atend-resultados').innerHTML = '';
@@ -923,7 +927,7 @@ function acoesAtendimento(a) {
   const n = esc(a.numero);
   const qtd = a.exames ? ` (${a.exames})` : '';
   const botaoExames = (destaque) =>
-    `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="Exames pedidos pelo médico neste atendimento">Pedir exames${qtd}</button>`;
+    `<button class="btn-acao${destaque ? ' destaque' : ''}" data-exames-atend="${n}" title="O médico monta o pedido de exames e gera o código">Pedido de exames${qtd}</button>`;
   // Consulta e Pronto Socorro seguem o mesmo fluxo: pago → consulta → exames
   const recibo = a.pagamento ? `<button class="btn-acao" data-recibo-atend="${n}">Recibo</button>` : '';
   return recibo + acaoFluxo(a, n, botaoExames);
@@ -950,7 +954,7 @@ const ETAPAS = {
     { titulo: 'Paciente', dica: 'Buscar ou cadastrar' },
     { titulo: 'Pagamento', dica: 'Paga antes da consulta' },
     { titulo: 'Consulta', dica: 'Médico atende' },
-    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
+    { titulo: 'Exames', dica: 'Médico gera o pedido; recepção cobra pelo código' },
   ],
   PRONTO_SOCORRO: [
     { titulo: 'Paciente', dica: 'Basta o nome' },
@@ -958,7 +962,7 @@ const ETAPAS = {
     { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
     { titulo: 'Triagem', dica: 'Enfermeiro confirma ou muda a cor' },
     { titulo: 'Consulta', dica: 'Médico de plantão atende' },
-    { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
+    { titulo: 'Exames', dica: 'Médico gera o pedido; recepção cobra pelo código' },
   ],
 };
 
@@ -1628,7 +1632,10 @@ document.addEventListener('click', (e) => {
   if (!botao) return;
   const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.examesAtend);
   estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico, risco: a?.risco || '' };
-  location.hash = '#exames';
+  estado.pedido = { itens: [] };
+  $('#pd-codigo-card').hidden = true;
+  $('#pd-obs').value = '';
+  location.hash = '#pedido';
 });
 
 // Botão "Concluir consulta": o médico atendeu; a partir daí pode pedir exames
@@ -1747,9 +1754,35 @@ const PRECOS_EXEMPLO = {
     { categoria: 'Endoscopia', nome: 'Colonoscopia', valor: 700 },
   ],
   laboratorial: [
+    // Valores de EXEMPLO. Códigos LAB-xxx são internos: troque pelos códigos e valores do laboratório do hospital.
     { codigo: '40304361', nome: 'Hemograma completo', valor: 25 },
     { codigo: '40302040', nome: 'Glicose', valor: 10 },
     { codigo: '40301630', nome: 'Creatinina', valor: 12 },
+    { codigo: 'LAB-001', nome: 'Ureia', valor: 12 },
+    { codigo: 'LAB-002', nome: 'Sódio', valor: 12 },
+    { codigo: 'LAB-003', nome: 'Potássio', valor: 12 },
+    { codigo: 'LAB-004', nome: 'TGO (AST)', valor: 15 },
+    { codigo: 'LAB-005', nome: 'TGP (ALT)', valor: 15 },
+    { codigo: 'LAB-006', nome: 'Colesterol total', valor: 15 },
+    { codigo: 'LAB-007', nome: 'HDL colesterol', valor: 15 },
+    { codigo: 'LAB-008', nome: 'LDL colesterol', valor: 15 },
+    { codigo: 'LAB-009', nome: 'Triglicerídeos', valor: 15 },
+    { codigo: 'LAB-010', nome: 'Hemoglobina glicada (HbA1c)', valor: 35 },
+    { codigo: 'LAB-011', nome: 'TSH', valor: 40 },
+    { codigo: 'LAB-012', nome: 'T4 livre', valor: 40 },
+    { codigo: 'LAB-013', nome: 'PCR (proteína C reativa)', valor: 30 },
+    { codigo: 'LAB-014', nome: 'VHS', valor: 15 },
+    { codigo: 'LAB-015', nome: 'Urina tipo I (EAS)', valor: 20 },
+    { codigo: 'LAB-016', nome: 'Urocultura', valor: 40 },
+    { codigo: 'LAB-017', nome: 'Beta-HCG (teste de gravidez)', valor: 45 },
+    { codigo: 'LAB-018', nome: 'Coagulograma (TAP e TTPA)', valor: 40 },
+    { codigo: 'LAB-019', nome: 'Troponina', valor: 80 },
+    { codigo: 'LAB-020', nome: 'CK-MB', valor: 50 },
+    { codigo: 'LAB-021', nome: 'Amilase', valor: 25 },
+    { codigo: 'LAB-022', nome: 'Lipase', valor: 30 },
+    { codigo: 'LAB-023', nome: 'Gasometria arterial', valor: 60 },
+    { codigo: 'LAB-024', nome: 'Dengue NS1', valor: 80 },
+    { codigo: 'LAB-025', nome: 'Tipagem sanguínea (ABO e Rh)', valor: 25 },
   ],
 };
 
@@ -1768,6 +1801,8 @@ function carregarTabelaPrecos() {
       // acrescenta exames novos da lista de exemplo que ainda não estão na tabela salva
       const nomes = new Set(salvo.imagem.map((p) => normalizar(p.nome)));
       copiarExemplos().imagem.forEach((p) => { if (!nomes.has(normalizar(p.nome))) salvo.imagem.push(p); });
+      const codigos = new Set(salvo.laboratorial.map((p) => normalizar(p.codigo)));
+      copiarExemplos().laboratorial.forEach((p) => { if (!codigos.has(normalizar(p.codigo))) salvo.laboratorial.push(p); });
       // Tomografia passou a custar R$ 750,00: atualiza quem ainda está com o valor de exemplo antigo
       const tcAntigo = { 'TC de crânio': 350, 'TC de face': 330, 'TC de seios da face': 330, 'TC de órbitas': 350, 'TC de ouvidos (mastoides)': 350, 'TC de pescoço': 400, 'TC de tórax': 420, 'TC de abdome superior': 450, 'TC de abdome total': 650, 'TC de pelve': 450, 'TC de coluna cervical': 450, 'TC de coluna torácica': 450, 'TC de coluna lombar': 450, 'TC de ombro': 400, 'TC de braço': 380, 'TC de cotovelo': 380, 'TC de antebraço': 380, 'TC de punho': 380, 'TC de mão': 380, 'TC de quadril': 420, 'TC de coxa': 400, 'TC de joelho': 400, 'TC de perna': 400, 'TC de tornozelo': 380, 'TC de pé': 380 };
       salvo.imagem.forEach((p) => { if (p.categoria === 'Tomografia' && tcAntigo[p.nome] === p.valor) p.valor = 750; });
@@ -1894,11 +1929,238 @@ function carregarExames() {
   if (!$('#ex-data').value) $('#ex-data').value = new Date().toISOString().slice(0, 10);
   renderPacienteExames();
   renderVinculoExames();
+  renderPendentes();
   atualizarSugestoesExames();
   atualizarCampoContraste();
   trocarTipoExame(false);
   renderExames();
 }
+
+// =========================================================
+//   PEDIDO DO MÉDICO (código) → RECEPÇÃO CARREGA E COBRA
+//   Os pedidos ficam neste navegador. TODO: quando tiver banco de dados,
+//   troque lerPedidos(), salvarPedidoMedico(), buscarPedidoMedico() e marcarPedidoPago().
+// =========================================================
+const CHAVE_PEDIDOS = 'consultaParticular.pedidos';
+
+function lerPedidos() {
+  try { return JSON.parse(localStorage.getItem(CHAVE_PEDIDOS)) || []; } catch (e) { return []; }
+}
+function gravarPedidos(lista) {
+  try { localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify(lista)); return true; } catch (e) { return false; }
+}
+async function salvarPedidoMedico(pedido) {
+  const lista = lerPedidos(); lista.push(pedido);
+  if (!gravarPedidos(lista)) throw new Error('sem espaço');
+}
+async function buscarPedidoMedico(codigo) {
+  return lerPedidos().find((p) => p.codigo === codigo) || null;
+}
+async function marcarPedidoPago(codigo, pagamento) {
+  const lista = lerPedidos();
+  const p = lista.find((x) => x.codigo === codigo);
+  if (p) { p.status = 'PAGO'; p.pagoEm = pagamento?.dataHora || new Date().toISOString(); gravarPedidos(lista); }
+}
+
+// Código curto, sem letras/números que confundem (0/O, 1/I)
+function gerarCodigoPedido() {
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const usados = new Set(lerPedidos().map((p) => p.codigo));
+  let codigo;
+  do {
+    codigo = 'PED-' + Array.from({ length: 6 }, () => letras[Math.floor(Math.random() * letras.length)]).join('');
+  } while (usados.has(codigo));
+  return codigo;
+}
+
+function normalizarCodigoPedido(texto) {
+  const limpo = String(texto || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!limpo) return '';
+  return 'PED-' + limpo.replace(/^PED/, '');
+}
+
+// Catálogo para o médico: exames de imagem e de laboratório da Tabela de preços
+function catalogoExames() {
+  return [
+    ...precos.imagem.map((p) => ({ tipo: 'imagem', categoria: p.categoria, nome: p.nome })),
+    ...precos.laboratorial.map((p) => ({ tipo: 'laboratorial', codigo: p.codigo, nome: p.nome })),
+  ];
+}
+
+function identificarExame(texto) {
+  const t = String(texto || '').trim();
+  const base = t.replace(new RegExp(SUFIXO_CONTRASTE + '$', 'i'), '');
+  const img = precos.imagem.find((p) => normalizar(p.nome) === normalizar(base));
+  if (img) return { tipo: 'imagem', categoria: img.categoria, nome: img.nome };
+  if (/^(raio[\s-]?x|rx)\b/.test(normalizar(t))) return { tipo: 'imagem', categoria: 'Raio-X', nome: t };
+  const lab = precos.laboratorial.find((p) => normalizar(p.nome) === normalizar(t) || normalizar(p.codigo) === normalizar(t));
+  if (lab) return { tipo: 'laboratorial', codigo: lab.codigo, nome: lab.nome };
+  return null;
+}
+
+function carregarPedido() {
+  const atual = $('#pd-medico').value;
+  const medicos = todosMedicos();
+  preencherSelect('#pd-medico', medicos.map((m) => ({ valor: m.id, texto: `${m.nome} · ${m.especialidade}` })));
+  // sugere o médico do atendimento de origem
+  const doAtendimento = medicos.find((m) => m.nome === estado.vinculoExames?.medico);
+  $('#pd-medico').value = atual || (doAtendimento ? String(doAtendimento.id) : '');
+  $('#pd-sugestoes').innerHTML = catalogoExames().map((e) =>
+    `<option value="${esc(e.nome)}" label="${e.tipo === 'imagem' ? esc(e.categoria) : 'Laboratório · ' + esc(e.codigo)}">`).join('');
+  const p = estado.paciente;
+  $('#pd-paciente').innerHTML = p
+    ? `<div class="paciente-selecionado${classeRisco(estado.vinculoExames?.risco)}">${cartaoPaciente(p, estado.vinculoExames?.risco)}</div>
+       ${estado.vinculoExames ? `<p class="dica" style="margin:8px 0 0">${esc(MODALIDADES[estado.vinculoExames.modalidade]?.nome || '')} · Atend. ${esc(estado.vinculoExames.numero)}</p>` : ''}`
+    : '<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Abra pelo botão Pedido de exames no Atendimento</a>.</p>';
+  renderItensPedido();
+  renderPedidosHoje();
+}
+
+function renderItensPedido() {
+  const itens = estado.pedido.itens;
+  $('#tabela-pedido-itens').innerHTML = itens.map((x, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${x.tipo === 'imagem' ? esc(x.categoria) : 'Laboratório'}</td>
+      <td>${esc(x.nome)}${x.tipo === 'laboratorial' ? ` <small class="codigo" style="color:var(--muted)">${esc(x.codigo)}</small>` : ''}</td>
+      <td>${botaoRemover(`data-remover-item-pedido="${i}"`)}</td>
+    </tr>`).join('');
+  $('#vazio-pedido-itens').hidden = itens.length > 0;
+  $('#pd-pill').textContent = `${itens.length} exame${itens.length === 1 ? '' : 's'}`;
+  $('#btn-gerar-pedido').disabled = !(estado.paciente && itens.length && $('#pd-medico').value);
+}
+
+function renderPedidosHoje() {
+  const hoje = new Date().toDateString();
+  const lista = lerPedidos().filter((p) => new Date(p.criadoEm).toDateString() === hoje).sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+  $('#tabela-pedidos').innerHTML = lista.map((p) => `
+    <tr>
+      <td class="codigo">${esc(p.codigo)}</td>
+      <td>${horaBR(p.criadoEm)}</td>
+      <td>${esc(p.paciente?.nome)}</td>
+      <td>${esc(p.medicoNome)}</td>
+      <td>${p.itens.length}</td>
+      <td>${p.status === 'PAGO' ? '<span class="tag tag-pago">Pago</span>' : '<span class="tag tag-pendente-pedido">Aguardando pagamento</span>'}</td>
+    </tr>`).join('');
+  $('#vazio-pedidos').hidden = lista.length > 0;
+}
+
+$('#pd-exame').addEventListener('input', (e) => {
+  e.target.setCustomValidity('');
+  const ex = identificarExame(e.target.value);
+  $('#pd-campo-contraste').hidden = ex?.categoria !== 'Tomografia';
+  if (ex?.categoria !== 'Tomografia') $('#pd-contraste').checked = false;
+});
+$('#pd-medico').addEventListener('change', renderItensPedido);
+
+$('#form-pedido-item').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const campo = $('#pd-exame');
+  const ex = identificarExame(campo.value);
+  if (!ex) { campo.setCustomValidity('Exame não encontrado na Tabela de preços. Escolha um item da lista.'); campo.reportValidity(); return; }
+  if (ex.categoria === 'Tomografia' && $('#pd-contraste').checked) { ex.contraste = true; ex.nome += SUFIXO_CONTRASTE; }
+  const repetido = estado.pedido.itens.some((x) => normalizar(x.nome) === normalizar(ex.nome));
+  if (repetido) { campo.setCustomValidity('Esse exame já está no pedido.'); campo.reportValidity(); return; }
+  estado.pedido.itens.push(ex);
+  campo.value = '';
+  $('#pd-contraste').checked = false;
+  $('#pd-campo-contraste').hidden = true;
+  $('#pd-codigo-card').hidden = true;
+  renderItensPedido();
+  campo.focus();
+});
+
+$('#tabela-pedido-itens').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-remover-item-pedido]');
+  if (!b) return;
+  estado.pedido.itens.splice(Number(b.dataset.removerItemPedido), 1);
+  renderItensPedido();
+});
+
+$('#btn-gerar-pedido').addEventListener('click', async () => {
+  $('#pd-erro').textContent = '';
+  const medico = todosMedicos().find((m) => String(m.id) === $('#pd-medico').value);
+  if (!estado.paciente || !medico || !estado.pedido.itens.length) return;
+  const p = estado.paciente;
+  const pedido = {
+    codigo: gerarCodigoPedido(),
+    criadoEm: new Date().toISOString(),
+    paciente: { id: p.id, nome: p.nome, cpf: p.cpf || '', nascimento: p.nascimento || '', convenio: p.convenio || '' },
+    origem: estado.vinculoExames, // atendimento de onde veio (consulta ou PS)
+    medicoId: medico.id, medicoNome: medico.nome,
+    observacoes: $('#pd-obs').value.trim(),
+    itens: estado.pedido.itens, // [{ tipo: 'imagem', categoria, nome, contraste? } | { tipo: 'laboratorial', codigo, nome }]
+    status: 'PENDENTE',
+  };
+  try { await salvarPedidoMedico(pedido); } catch (erro) { $('#pd-erro').textContent = 'Não foi possível salvar o pedido.'; return; }
+  $('#pd-codigo').textContent = pedido.codigo;
+  $('#pd-codigo-info').textContent = `${pedido.itens.length} exame${pedido.itens.length === 1 ? '' : 's'} para ${p.nome}. Entregue ao paciente: a recepção digita este código na tela Exames para cobrar.`;
+  $('#pd-codigo-card').hidden = false;
+  estado.pedido = { itens: [] };
+  $('#pd-obs').value = '';
+  renderItensPedido();
+  renderPedidosHoje();
+});
+
+$('#btn-copiar-codigo').addEventListener('click', async () => {
+  const codigo = $('#pd-codigo').textContent;
+  try { await navigator.clipboard.writeText(codigo); $('#btn-copiar-codigo').textContent = 'Copiado!'; }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($('#pd-codigo'));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    $('#btn-copiar-codigo').textContent = 'Selecionado: Ctrl+C';
+  }
+  setTimeout(() => { $('#btn-copiar-codigo').textContent = 'Copiar código'; }, 2500);
+});
+
+// ---------- Recepção: carregar pelo código ----------
+function avisoPedido(texto, tipo = '') {
+  const el = $('#ex-pedido-info');
+  el.textContent = texto;
+  el.className = `dica${tipo ? ' ' + tipo : ''}`;
+}
+
+function renderPendentes() {
+  const hoje = new Date().toDateString();
+  const pend = lerPedidos().filter((p) => p.status !== 'PAGO' && new Date(p.criadoEm).toDateString() === hoje);
+  $('#ex-pendentes').innerHTML = pend.length
+    ? 'Pendentes hoje: ' + pend.map((p) => `<button type="button" class="btn-acao" data-carregar-pedido="${esc(p.codigo)}">${esc(p.codigo)} · ${esc(p.paciente?.nome)}</button>`).join('')
+    : '';
+}
+
+async function carregarPedidoNaRecepcao(codigoDigitado) {
+  const codigo = normalizarCodigoPedido(codigoDigitado);
+  if (!codigo) { avisoPedido('Digite o código do pedido.', 'erro'); return; }
+  const pedido = await buscarPedidoMedico(codigo);
+  if (!pedido) { avisoPedido(`Pedido ${codigo} não encontrado. Confira o código com o paciente.`, 'erro'); return; }
+  if (pedido.status === 'PAGO') {
+    avisoPedido(`O pedido ${codigo} já foi pago em ${new Date(pedido.pagoEm).toLocaleString('pt-BR')}.`, 'erro');
+    return;
+  }
+  estado.paciente = pedido.paciente;
+  estado.vinculoExames = pedido.origem || null;
+  const medico = todosMedicos().find((m) => String(m.id) === String(pedido.medicoId));
+  if (medico) $('#ex-medico').value = String(medico.id);
+  $('#ex-obs').value = pedido.observacoes || '';
+  estado.exames = {
+    imagem: pedido.itens.filter((x) => x.tipo === 'imagem')
+      .map((x) => ({ categoria: x.categoria, nome: x.nome, contraste: !!x.contraste, valor: valorImagem(x.nome, x.contraste) || 0 })),
+    laboratorial: pedido.itens.filter((x) => x.tipo === 'laboratorial')
+      .map((x) => ({ codigo: x.codigo, nome: x.nome, valor: precoLab(x.codigo)?.valor || 0 })),
+  };
+  estado.pedidoCarregado = codigo;
+  $('#ex-codigo-pedido').value = codigo;
+  renderPacienteExames();
+  renderVinculoExames();
+  renderExames();
+  avisoPedido(`Pedido ${codigo} carregado: ${pedido.itens.length} exame${pedido.itens.length === 1 ? '' : 's'} de ${pedido.medicoNome}. Confira e clique em Pagar.`, 'ok');
+}
+
+$('#form-codigo-pedido').addEventListener('submit', (e) => { e.preventDefault(); carregarPedidoNaRecepcao($('#ex-codigo-pedido').value); });
+$('#ex-pendentes').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-carregar-pedido]');
+  if (b) carregarPedidoNaRecepcao(b.dataset.carregarPedido);
+});
 
 function renderPacienteExames() {
   const p = estado.paciente;
@@ -2107,6 +2369,9 @@ $('#btn-limpar-exames').addEventListener('click', async () => {
   if (total && !(await confirmar('Remover todos os exames da requisição?', 'Limpar tudo'))) return;
   estado.exames = { imagem: [], laboratorial: [] };
   $('#ex-obs').value = '';
+  estado.pedidoCarregado = null;
+  $('#ex-codigo-pedido').value = '';
+  avisoPedido('Digite o código que o médico gerou: todos os exames (imagem e laboratório) entram com os preços da tabela.');
   $('#ex-desconto').value = '';
   $('#status-exames').textContent = '';
   renderExames();
@@ -2164,7 +2429,15 @@ $('#btn-salvar-exames').addEventListener('click', async () => {
     return;
   }
   requisicao.pagamento = pagamento;
+  requisicao.pedido = estado.pedidoCarregado; // código do pedido do médico (ou null)
   await salvarRequisicaoExames(requisicao);
+  if (estado.pedidoCarregado) {
+    await marcarPedidoPago(estado.pedidoCarregado, pagamento);
+    avisoPedido(`Pedido ${estado.pedidoCarregado} pago.`, 'ok');
+    estado.pedidoCarregado = null;
+    $('#ex-codigo-pedido').value = '';
+    renderPendentes();
+  }
   $('#status-exames').textContent = `Pagamento confirmado: ${descreverPagamento(pagamento)}.`;
 });
 

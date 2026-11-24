@@ -272,3 +272,16 @@ Tela **Ponto do plantão** (menu):
 - As fotos ficam no **IndexedDB** do navegador (cabe muito mais que o localStorage). Quando tiver banco de dados,
   envie registro e foto em `registrarPonto(registro, foto)` e guarde lá para auditoria.
 - Foto do rosto é dado sensível (LGPD): defina com o jurídico do hospital por quanto tempo guardar e quem pode ver.
+
+## Pedido do médico (código) e exames de laboratório
+
+1. **Médico** — tela **Pedido do médico** (aberta pelo botão **Pedido de exames** no atendimento, depois da consulta):
+   escolhe todos os exames (**imagem e laboratório**) pelo nome; na tomografia marca *com contraste*. Não vê preços.
+   **Gerar pedido** cria um código curto (ex.: `PED-K7M3QX`), com botão para copiar. A lista *Pedidos de hoje* mostra o status.
+2. **Recepção** — tela **Exames**: digita o **código do pedido médico** (ou clica num pendente do dia) e **todos os exames**
+   entram de uma vez, com paciente, médico e **preços da Tabela de preços**. Depois é só **Pagar e salvar**.
+   O pedido fica **Pago** e não pode ser cobrado de novo. O jeito manual continua disponível.
+- **Laboratório:** a tabela tem os exames mais comuns de emergência (hemograma, glicose, ureia, creatinina, sódio, potássio,
+  TGO/TGP, colesterol, triglicerídeos, HbA1c, TSH, T4 livre, PCR, VHS, urina tipo I, urocultura, beta-HCG, coagulograma,
+  troponina, CK-MB, amilase, lipase, gasometria, dengue NS1, tipagem sanguínea). **Valores de exemplo**; códigos `LAB-xxx` são internos.
+- Pedidos ficam neste navegador. Na integração: `salvarPedidoMedico`, `buscarPedidoMedico`, `marcarPedidoPago`.

@@ -1,7 +1,7 @@
 # Guia de integração · Consulta Particular
 
 > **Rascunho.** Este guia acompanha o projeto e será atualizado conforme o sistema mudar.
-> Última revisão: 24/11/2026. Pendências em aberto estão no fim do documento.
+> Última revisão: 24/11/2026 (inclui pedido do médico por código e exames de laboratório). Pendências em aberto estão no fim do documento.
 
 Este guia é para a equipe de TI que vai ligar o **Consulta Particular** (front-end, nesta pasta) ao sistema do hospital.
 Ele lista cada ponto de integração, os dados que vão e voltam e uma sugestão de rota na API.
@@ -87,6 +87,18 @@ os dados do particular ficam em tabela própria.
 
 Tomografia com contraste = valor da tomografia + `adicionais.contrasteTomografia` (hoje R$ 250,00).
 
+### 2.5.1 Pedido do médico (código)
+
+| Função | Quando | Dados | Rota sugerida |
+|---|---|---|---|
+| `salvarPedidoMedico(pedido)` | Médico clica em Gerar pedido | `{ codigo: 'PED-XXXXXX', criadoEm, paciente: { id, nome, cpf, nascimento, convenio }, origem, medicoId, medicoNome, observacoes, itens: [{ tipo: 'imagem', categoria, nome, contraste? } \| { tipo: 'laboratorial', codigo, nome }], status: 'PENDENTE' }` | `POST /api/particular/pedidos` |
+| `buscarPedidoMedico(codigo)` | Recepção digita o código | devolve o pedido ou `null` | `GET /api/particular/pedidos/:codigo` |
+| `marcarPedidoPago(codigo, pagamento)` | Depois do pagamento dos exames | status `PAGO`, `pagoEm` | `POST /api/particular/pedidos/:codigo/pago` |
+| `lerPedidos()` | Pedidos de hoje / pendentes | lista de pedidos | `GET /api/particular/pedidos?data=&status=` |
+
+**Regras:** o médico não define preço (vem da tabela na recepção); um pedido **pago** não pode ser cobrado de novo;
+o código não usa caracteres que confundem (0/O, 1/I). Sugestão de tabelas: `PARTICULAR_PEDIDO` e `PARTICULAR_PEDIDO_ITEM`.
+
 ### 2.6 Agenda e agendamento
 
 | Função | Quando | Dados | Rota sugerida |
@@ -169,7 +181,7 @@ curl -X GET "http://localhost:3000/api/particular/fila" \
 
 ## 6. Pontos em aberto (antes de implantar)
 
-- [ ] **Exames de laboratório** (próxima etapa): códigos reais e valores.
+- [ ] **Exames de laboratório:** trocar códigos `LAB-xxx` e valores de exemplo pela tabela do laboratório.
 - [ ] **Retorno de consulta**: existe retorno sem cobrança? Em quantos dias?
 - [ ] **Médicos e valores reais** da consulta particular (hoje fictícios).
 - [ ] **Jurídico:** cobrança antes do atendimento de **vermelho/laranja** (art. 135-A do Código Penal).
