@@ -112,7 +112,8 @@
                   <div><label for="rap-nascimento">Nascimento</label><input type="date" id="rap-nascimento"></div>
                 </div>
                 <div><label for="rap-telefone">Telefone</label><input type="tel" id="rap-telefone" maxlength="15" placeholder="(92) 99999-9999"></div>
-                <p class="dica">No Pronto Socorro basta o nome. Os outros dados podem ser completados depois.</p>
+                <p class="dica">No Pronto Socorro basta o nome. Os outros dados podem ser completados depois.
+                  O paciente entra como <strong style="color:var(--particular)">✱ Particular</strong> (sem convênio, paga por serviço).</p>
                 <div class="acoes">
                   <button type="button" class="btn" id="btn-cancelar-rapido">Cancelar</button>
                   <button type="submit" class="btn-primario">Cadastrar e selecionar</button>
@@ -162,6 +163,7 @@
 
             <div class="card linha">
               <span class="rotulo">Tipo:</span><strong class="valor" id="atend-tipo">Consulta particular</strong>
+              <span class="legenda-particular"><span class="selo-particular" title="Particular: sem convênio, paga por serviço"><span class="ast">✱</span>Particular</span>sem convênio · paga por serviço</span>
             </div>
 
             <div class="card linha tracejado">
@@ -457,7 +459,7 @@
         <div class="card tabela-card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Paciente</th><th>CPF</th><th>Telefone</th><th>Última consulta</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Paciente</th><th>Tipo</th><th>CPF</th><th>Telefone</th><th>Última consulta</th><th>Ações</th></tr></thead>
               <tbody id="tabela-pacientes"></tbody>
             </table>
           </div>

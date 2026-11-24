@@ -167,6 +167,38 @@ function confirmar(mensagem, textoBotao = 'Confirmar') {
   });
 }
 
+// ---------- Marca de paciente particular ----------
+// Particular = sem convênio, paga por serviço. Usa roxo + asterisco, que não se confunde
+// com as cores de prioridade (vermelho, laranja, amarelo, verde, azul).
+// Um paciente é particular quando não tem convênio (campo "convenio" vazio).
+const TITULO_PARTICULAR = 'Particular: sem convênio, paga por serviço';
+
+function ehParticular(p) {
+  return !p || !p.convenio;
+}
+
+function seloParticular() {
+  return `<span class="selo-particular" title="${TITULO_PARTICULAR}"><span class="ast">✱</span>Particular</span>`;
+}
+
+function marcaParticular() {
+  return `<span class="marca-particular" title="${TITULO_PARTICULAR}" aria-label="${TITULO_PARTICULAR}">✱</span>`;
+}
+
+function dadosPaciente(p) {
+  return [p.cpf && `CPF ${esc(p.cpf)}`, p.nascimento && `Nasc. ${formatarData(p.nascimento)}`]
+    .filter(Boolean).join(' · ') || 'Cadastro rápido (só o nome)';
+}
+
+// Cartão do paciente selecionado (Atendimento e Exames)
+function cartaoPaciente(p) {
+  const part = ehParticular(p);
+  return `
+    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular() : `<span class="tag">${esc(p.convenio)}</span>`}</div>
+    <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
+    ${part ? '<span class="paciente-obs">Sem convênio: cada serviço é pago antes de ser feito.</span>' : ''}`;
+}
+
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
@@ -199,8 +231,8 @@ $('#btn-recolher').addEventListener('click', () => $('#sidebar').classList.toggl
 function renderResultadosBusca(pacientes) {
   $('#atend-resultados').innerHTML = pacientes.map((p, i) => `
     <li data-indice="${i}">
-      <strong>${esc(p.nome)}</strong>
-      <small>CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small>
+      <span class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${ehParticular(p) ? seloParticular() : ''}</span>
+      <small>${dadosPaciente(p)}</small>
     </li>`).join('');
   // guarda a lista para o clique saber qual paciente foi escolhido
   $('#atend-resultados').dataset.lista = JSON.stringify(pacientes);
@@ -215,12 +247,8 @@ function selecionarPaciente(paciente) {
     caixa.hidden = true;
   } else {
     caixa.hidden = false;
-    caixa.innerHTML = `
-      <strong>${esc(paciente.nome)}</strong>
-      <small style="display:block;color:var(--muted);margin-top:4px">
-        ${[paciente.cpf && `CPF ${esc(paciente.cpf)}`, paciente.nascimento && `Nasc. ${formatarData(paciente.nascimento)}`]
-          .filter(Boolean).join(' · ') || 'Cadastro rápido (só o nome)'}
-      </small>`;
+    caixa.classList.toggle('particular', ehParticular(paciente));
+    caixa.innerHTML = cartaoPaciente(paciente);
   }
   atualizarBotaoAbrir();
   carregarAtendimentosAnteriores();
@@ -233,8 +261,8 @@ function atualizarBotaoAbrir() {
 function renderAnteriores(atendimentos) {
   estado.anteriores = atendimentos;
   $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
-    <tr>
-      <td>${esc(a.numero)}</td>
+    <tr class="${a.particular === false ? '' : 'linha-particular'}">
+      <td>${a.particular === false ? '' : marcaParticular()}${esc(a.numero)}</td>
       <td>${esc(a.senha)}</td>
       <td>${tagStatus(a.status)}</td>
       <td>${formatarDataHora(a.entrada)}</td>
@@ -315,7 +343,7 @@ function renderProximos(consultas) {
   $('#tabela-proximos').innerHTML = consultas.map((c) => `
     <tr>
       <td>${esc(c.horario)}</td>
-      <td>${esc(c.paciente)}</td>
+      <td>${c.particular === false ? '' : marcaParticular()}${esc(c.paciente)}</td>
       <td>${esc(c.medico)} <small style="color:var(--muted)">${esc(c.especialidade)}</small></td>
       <td>${formatarMoeda(c.valor)}</td>
       <td>${tagStatus(c.status)}</td>
@@ -330,7 +358,7 @@ function renderAgenda(consultas) {
     <tr>
       <td>${formatarData(c.data)}</td>
       <td>${esc(c.horario)}</td>
-      <td>${esc(c.paciente)}</td>
+      <td>${c.particular === false ? '' : marcaParticular()}${esc(c.paciente)}</td>
       <td>${esc(c.medico)}</td>
       <td>${formatarMoeda(c.valor)}</td>
       <td>${tagStatus(c.status)}</td>
@@ -343,6 +371,7 @@ function renderPacientes(pacientes) {
   $('#tabela-pacientes').innerHTML = pacientes.map((p) => `
     <tr>
       <td>${esc(p.nome)}</td>
+      <td>${ehParticular(p) ? seloParticular() : esc(p.convenio)}</td>
       <td>${esc(p.cpf)}</td>
       <td>${esc(p.telefone)}</td>
       <td>${formatarData(p.ultimaConsulta)}</td>
@@ -529,6 +558,7 @@ $('#form-paciente-rapido').addEventListener('submit', async (e) => {
     cpf: $('#rap-cpf').value.trim(),
     nascimento: $('#rap-nascimento').value,
     telefone: $('#rap-telefone').value.trim(),
+    convenio: '', // vazio = particular (sem convênio, paga por serviço)
   };
   if (!paciente.nome) return;
   const salvo = await cadastrarPaciente(paciente);
@@ -826,7 +856,8 @@ function mostrarRecibo(p) {
         <p class="recibo-texto">
           Recebemos de <strong>${esc(ctx.paciente || 'paciente')}</strong>${ctx.cpf ? `, CPF ${esc(ctx.cpf)},` : ''}
           a importância de <strong>${formatarMoeda(p.valor)}</strong> (${valorPorExtenso(p.valor)}),
-          referente a ${referente}, conforme os itens abaixo.
+          referente a ${referente}, em atendimento <strong>particular</strong> (sem convênio, pago por serviço),
+          conforme os itens abaixo.
         </p>
 
         <table>
@@ -1114,8 +1145,7 @@ function carregarExames() {
 function renderPacienteExames() {
   const p = estado.paciente;
   $('#ex-paciente').innerHTML = p
-    ? `<div class="paciente-selecionado"><strong>${esc(p.nome)}</strong>
-         <small style="display:block;color:var(--muted);margin-top:4px">CPF ${esc(p.cpf)} · Nasc. ${formatarData(p.nascimento)}</small></div>`
+    ? `<div class="paciente-selecionado${ehParticular(p) ? ' particular' : ''}">${cartaoPaciente(p)}</div>`
     : `<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Selecione na tela Atendimento</a>.</p>`;
 }
 

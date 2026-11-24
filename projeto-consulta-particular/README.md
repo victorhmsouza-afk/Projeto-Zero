@@ -131,3 +131,15 @@ O sistema de verdade continua sendo o `index.html` (com `css/style.css` e `js/ap
 - No Pronto Socorro é obrigatório escolher o **médico de plantão** antes de pagar; o pagamento entra no Financeiro no nome dele.
 
 Nomes, CRMs e valores são **exemplos**: edite o objeto `DADOS` para colocar os reais.
+
+## Marca de paciente particular (✱ roxo)
+
+O hospital também atende pacientes de convênio. O **particular** não tem plano e **paga por serviço**, por isso aparece
+com o selo **✱ Particular** em **roxo**, uma cor que não é usada na classificação de prioridade
+(vermelho, laranja, amarelo, verde e azul). As duas marcas podem aparecer juntas sem confusão.
+
+- Onde aparece: busca e cartão do paciente (Atendimento e Exames), lista de atendimentos (faixa roxa e ✱ no número),
+  Painel, Agenda, tela Pacientes (coluna Tipo) e no texto do recibo.
+- Regra: o paciente é particular quando o campo `convenio` está vazio (o cadastro rápido já cria assim).
+  Se um paciente tiver `convenio`, o nome do convênio aparece no lugar do selo.
+- Para mudar a cor, troque `--particular` e `--particular-claro` no `css/style.css`.
