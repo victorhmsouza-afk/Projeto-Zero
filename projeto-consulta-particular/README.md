@@ -171,3 +171,13 @@ Não existe mais a cor **azul**. Ficaram **vermelho, laranja, amarelo e verde**.
 
 A Fila mostra a coluna **Classificado por** (Recepção ou Enfermagem, com a hora e a cor anterior quando mudou).
 Etapas do Pronto Socorro: Paciente → Pré-classificação → Pagamento → Triagem → Consulta → Exames.
+
+## Retirar da tela (✕)
+
+Quando o paciente **já pagou** e, no Pronto Socorro, **já passou pela triagem** (classificação concluída), aparece um **✕**:
+
+- **Fila da emergência:** o ✕ tira o paciente da fila. O botão **Mostrar retirados (n)** mostra de novo, e
+  **Voltar para a fila** desfaz. Os retirados ficam guardados por dia neste navegador.
+- **Atendimento:** o ✕ no cartão do paciente limpa a tela para o próximo atendimento.
+
+É só visualização: nada é apagado nem cancelado, e o pagamento continua registrado.

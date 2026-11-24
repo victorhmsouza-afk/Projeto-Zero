@@ -237,9 +237,28 @@ function renderCartaoPaciente() {
   if (!p) { caixa.hidden = true; return; }
   const risco = riscoAtual();
   caixa.hidden = false;
-  caixa.className = `paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(risco)}`;
-  caixa.innerHTML = cartaoPaciente(p, risco, origemRiscoAtual());
+  const hoje = (estado.anteriores || []).length ? atendimentoDeHoje() : null;
+  const podeFechar = !!hoje && podeRetirar(hoje);
+  caixa.className = `paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(risco)}${podeFechar ? ' com-fechar' : ''}`;
+  caixa.innerHTML = cartaoPaciente(p, risco, origemRiscoAtual())
+    + (podeFechar ? `<button type="button" class="cartao-fechar" data-fechar-paciente
+         title="Retirar da tela (já pago e classificado)" aria-label="Retirar paciente da tela">✕</button>` : '');
 }
+
+// Já pode sair da tela: pagou e, no Pronto Socorro, já passou pela triagem (classificação concluída)
+function podeRetirar(a) {
+  if (!a || !a.pago) return false;
+  const ps = (a.tipo || estado.modalidade) === 'PRONTO_SOCORRO';
+  return !!a.pago && (!ps || !!a.triagemEnfermagem);
+}
+
+// ✕ do cartão: limpa a tela para o próximo paciente (não apaga nada)
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-fechar-paciente]')) return;
+  $('#atend-busca').value = '';
+  selecionarPaciente(null);
+  $('#atend-busca').focus();
+});
 
 // ---------- Opções de classificação de risco ----------
 function montarOpcoesRisco() {
@@ -285,16 +304,48 @@ function textoQuemClassificou(a) {
   return `Recepção ${hora(ultimo?.dataHora)}<small>pré-classificação · falta triagem</small>`;
 }
 
+// Pacientes retirados da tela da fila (só visualização; nada é apagado). Guardado por dia neste navegador.
+const chaveRetirados = () => `consultaParticular.filaRetirados.${new Date().toISOString().slice(0, 10)}`;
+let mostrarRetirados = false;
+
+function lerRetirados() {
+  try { return new Set(JSON.parse(localStorage.getItem(chaveRetirados())) || []); } catch (e) { return new Set(); }
+}
+
+function salvarRetirados(conjunto) {
+  try { localStorage.setItem(chaveRetirados(), JSON.stringify([...conjunto])); } catch (e) { /* ignora */ }
+}
+
+document.addEventListener('click', (e) => {
+  const retirar = e.target.closest('[data-retirar]');
+  const voltar = e.target.closest('[data-voltar-fila]');
+  if (!retirar && !voltar) return;
+  const ret = lerRetirados();
+  if (retirar) ret.add(retirar.dataset.retirar); else ret.delete(voltar.dataset.voltarFila);
+  salvarRetirados(ret);
+  renderFila(estado.fila || []);
+});
+
+$('#btn-mostrar-retirados').addEventListener('click', () => {
+  mostrarRetirados = !mostrarRetirados;
+  renderFila(estado.fila || []);
+});
+
 function renderFila(lista) {
   estado.fila = lista;
-  const ordenada = [...lista].sort((a, b) =>
+  const ret = lerRetirados();
+  const qtdRetirados = lista.filter((a) => ret.has(String(a.numero))).length;
+  $('#btn-mostrar-retirados').hidden = qtdRetirados === 0;
+  $('#btn-mostrar-retirados').textContent = mostrarRetirados ? 'Ocultar retirados' : `Mostrar retirados (${qtdRetirados})`;
+  const visiveis = mostrarRetirados ? lista : lista.filter((a) => !ret.has(String(a.numero)));
+  const ordenada = [...visiveis].sort((a, b) =>
     (RISCOS[a.risco]?.ordem || 9) - (RISCOS[b.risco]?.ordem || 9) || String(a.entrada).localeCompare(String(b.entrada)));
   $('#tabela-fila').innerHTML = ordenada.map((a) => {
     const r = RISCOS[a.risco];
     const espera = minutosDesde(a.entrada);
     const atrasado = r && espera > r.minutos && !['ATENDIDA', 'ALTA'].includes(a.status);
     return `
-      <tr class="linha-particular${classeRisco(a.risco)}">
+      <tr class="linha-particular${classeRisco(a.risco)}${ret.has(String(a.numero)) ? ' retirado' : ''}">
         <td>${a.particular === false ? `<span class="tag">${esc(r?.nome || '—')}</span>` : seloParticular(a.risco)}</td>
         <td>${esc(a.paciente)}</td>
         <td>${esc(a.numero)}</td>
@@ -302,12 +353,20 @@ function renderFila(lista) {
         <td class="quem-classificou">${textoQuemClassificou(a)}</td>
         <td class="quem-classificou">${tagStatus(a.status)}<small>${esc(a.medico)}</small></td>
         <td><div class="acoes-linha">${a.pago === false ? '<span class="dica">Aguardando pagamento</span>'
-          : `<button class="btn-acao${a.triagemEnfermagem ? '' : ' destaque'}" data-triagem="${esc(a.numero)}">${a.triagemEnfermagem ? 'Reclassificar' : 'Triagem enfermagem'}</button>`}</div></td>
+          : `<button class="btn-acao${a.triagemEnfermagem ? '' : ' destaque'}" data-triagem="${esc(a.numero)}">${a.triagemEnfermagem ? 'Reclassificar' : 'Triagem enfermagem'}</button>`}
+          ${ret.has(String(a.numero))
+            ? `<button class="btn-acao" data-voltar-fila="${esc(a.numero)}">Voltar para a fila</button>`
+            : podeRetirar({ ...a, tipo: 'PRONTO_SOCORRO' })
+              ? `<button type="button" class="btn-retirar" data-retirar="${esc(a.numero)}" title="Retirar da tela (já pago e classificado)" aria-label="Retirar ${esc(a.paciente)} da tela">✕</button>` : ''}</div></td>
       </tr>`;
   }).join('');
   $('#vazio-fila').hidden = ordenada.length > 0;
+  $('#vazio-fila').textContent = lista.length && !ordenada.length
+    ? 'Todos os pacientes foram retirados da tela. Use "Mostrar retirados" para ver de novo.'
+    : 'Nenhum paciente aguardando na emergência.';
+  const naTela = lista.filter((a) => !ret.has(String(a.numero)));
   $('#fila-resumo').innerHTML = Object.entries(RISCOS).map(([chave, r]) => `
-    <article class="card${classeRisco(chave)}"><strong>${lista.filter((a) => a.risco === chave).length}</strong><span>${r.nome} · ${r.descricao}</span></article>`).join('');
+    <article class="card${classeRisco(chave)}"><strong>${naTela.filter((a) => a.risco === chave).length}</strong><span>${r.nome} · ${r.descricao}</span></article>`).join('');
 }
 
 $('#btn-atualizar-fila').addEventListener('click', () => carregarFila());
