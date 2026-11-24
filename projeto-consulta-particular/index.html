@@ -65,6 +65,7 @@
       <p class="sidebar-label">Navegação</p>
       <nav class="menu" aria-label="Menu principal">
         <a href="#atendimento" data-tela="atendimento"><svg class="i"><use href="#i-heart"/></svg><span>Atendimento</span></a>
+        <a href="#fila" data-tela="fila"><svg class="i"><use href="#i-users"/></svg><span>Fila da emergência</span></a>
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
@@ -138,6 +139,15 @@
 
             <ol class="card etapas" id="atend-etapas" aria-label="Etapas do atendimento"></ol>
 
+            <!-- Classificação de risco (só no Pronto Socorro) -->
+            <div class="card classificacao" id="card-risco" hidden>
+              <div class="classificacao-topo">
+                <span class="rotulo"><svg class="i"><use href="#i-heart"/></svg>Classificação de risco *</span>
+                <span class="dica">A cor muda conforme a prioridade; o ✱ de particular fica fixo.</span>
+              </div>
+              <div class="riscos" id="riscos" role="radiogroup" aria-label="Classificação de risco"></div>
+            </div>
+
             <div class="card linha">
               <label class="rotulo" for="atend-setor"><svg class="i"><use href="#i-building"/></svg>Setor:</label>
               <div class="select-wrap">
@@ -197,6 +207,28 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ===================== FILA DA EMERGÊNCIA ===================== -->
+      <section class="tela" id="tela-fila">
+        <div class="cabecalho cabecalho-acoes">
+          <div><h1>Fila da emergência</h1><p class="sub">Pacientes do Pronto Socorro ainda sem consulta concluída, por prioridade e ordem de chegada.</p></div>
+          <button type="button" class="btn" id="btn-atualizar-fila"><svg class="i"><use href="#i-refresh"/></svg>Atualizar</button>
+        </div>
+        <div class="fila-resumo" id="fila-resumo"></div>
+        <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-users"/></svg>Fila</h2>
+            <div class="legenda-riscos" id="legenda-riscos"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Prioridade</th><th>Paciente</th><th>Atend.</th><th>Chegada</th><th>Espera</th><th>Status</th><th>Médico</th></tr></thead>
+              <tbody id="tabela-fila"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-fila">Nenhum paciente aguardando na emergência.</p>
         </div>
       </section>
 

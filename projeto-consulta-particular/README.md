@@ -143,3 +143,15 @@ com o selo **✱ Particular** em **roxo**, uma cor que não é usada na classifi
 - Regra: o paciente é particular quando o campo `convenio` está vazio (o cadastro rápido já cria assim).
   Se um paciente tiver `convenio`, o nome do convênio aparece no lugar do selo.
 - Para mudar a cor, troque `--particular` e `--particular-claro` no `css/style.css`.
+
+## Classificação de risco e fila da emergência
+
+- No **Pronto Socorro**, depois de escolher o paciente, é obrigatório escolher a **classificação de risco**:
+  **Vermelho** (emergência, imediato), **Laranja** (muito urgente, até 10 min), **Amarelo** (urgente, até 60 min),
+  **Verde** (pouco urgente, até 120 min) e **Azul** (não urgente, até 240 min).
+- O selo do paciente passa a ter **a cor da prioridade** e mantém o **✱ fixo** de particular: ex. **✱ Verde · Pouco urgente**.
+  Sem classificação (ou na Consulta), continua o roxo **✱ Particular**. O cartão mostra a prioridade e o aviso de *sem convênio*.
+- Etapas do Pronto Socorro: Paciente → **Classificação** → Pagamento → Consulta → Exames.
+- O atendimento salvo leva `risco: 'VERMELHO' | 'LARANJA' | 'AMARELO' | 'VERDE' | 'AZUL'` (em `registrarAtendimento(dados)`).
+- **Fila da emergência** (menu): pacientes do PS ainda sem consulta concluída, por prioridade e chegada, com tempo de espera
+  (fica em vermelho quando passa da meta da cor) e contagem por cor. Ligue `carregarFila()` ao seu sistema e chame `renderFila(lista)`.

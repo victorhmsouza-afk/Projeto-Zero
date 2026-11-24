@@ -24,6 +24,12 @@
      (prioridade usa vermelho, laranja, amarelo, verde e azul) */
   --particular: #6b3fb8;
   --particular-claro: #f1eafb;
+  /* Classificação de risco (prioridade) */
+  --risco-vermelho: #d32f2f; --risco-vermelho-claro: #fdecec;
+  --risco-laranja: #e8630a;  --risco-laranja-claro: #fff1e6;
+  --risco-amarelo: #f2c200;  --risco-amarelo-claro: #fff9dc;
+  --risco-verde: #2e9e4f;    --risco-verde-claro: #e8f6ec;
+  --risco-azul: #1f6fd1;     --risco-azul-claro: #e8f0fc;
   --texto: #1f2a27;
   --texto-2: #4b5753;
   --muted: #7b8682;
@@ -290,7 +296,7 @@ a.btn { text-decoration: none; color: inherit; }
 .pg-erro { margin: 0; color: var(--perigo); font-size: 13px; }
 .pg-erro:empty { display: none; }
 /* Etapas do atendimento */
-.etapas { list-style: none; margin: 0; padding: 12px 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.etapas { list-style: none; margin: 0; padding: 12px 14px; display: grid; grid-template-columns: repeat(var(--n-etapas, 4), 1fr); gap: 8px; }
 .etapas li { display: flex; align-items: flex-start; gap: 10px; position: relative; min-width: 0; }
 .etapas li:not(:last-child)::after { content: ""; position: absolute; left: 40px; right: 8px; top: 13px; height: 2px; background: var(--linha); }
 .etapas li.feito:not(:last-child)::after { background: var(--verde); }
@@ -373,6 +379,46 @@ tr.linha-particular td:first-child { box-shadow: inset 4px 0 0 var(--particular)
 .lista-resultados li .paciente-cabeca strong { font-weight: 600; }
 .legenda-particular { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--texto-2); }
 
+/* ---------- Classificação de risco ---------- */
+/* Cada prioridade define --cor/--cor-claro/--cor-texto; o ✱ de particular continua fixo */
+.risco-vermelho { --cor: var(--risco-vermelho); --cor-claro: var(--risco-vermelho-claro); --cor-texto: #fff; }
+.risco-laranja  { --cor: var(--risco-laranja);  --cor-claro: var(--risco-laranja-claro);  --cor-texto: #fff; }
+.risco-amarelo  { --cor: var(--risco-amarelo);  --cor-claro: var(--risco-amarelo-claro);  --cor-texto: #3a2e00; }
+.risco-verde    { --cor: var(--risco-verde);    --cor-claro: var(--risco-verde-claro);    --cor-texto: #fff; }
+.risco-azul     { --cor: var(--risco-azul);     --cor-claro: var(--risco-azul-claro);     --cor-texto: #fff; }
+
+.selo-particular[class*="risco-"], .marca-particular[class*="risco-"] { background: var(--cor); color: var(--cor-texto); }
+.paciente-selecionado.particular[class*="risco-"] { background: var(--cor-claro); border-left-color: var(--cor); }
+.paciente-selecionado[class*="risco-"] .paciente-obs { color: var(--texto-2); }
+tr[class*="risco-"] td:first-child { box-shadow: inset 4px 0 0 var(--cor); }
+
+.classificacao { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+.classificacao[hidden] { display: none; }
+.classificacao-topo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.classificacao-topo .rotulo { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; }
+.riscos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.risco-opcao { position: relative; display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 10px; border: 2px solid var(--linha);
+  border-radius: 8px; cursor: pointer; font-weight: 400; background: var(--branco); min-width: 0; }
+.risco-opcao input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.risco-opcao .risco-cor { width: 18px; height: 18px; border-radius: 50%; background: var(--cor); flex-shrink: 0; }
+.risco-opcao strong { display: block; font-size: 13px; color: var(--texto); }
+.risco-opcao small { display: block; font-size: 11px; color: var(--muted); line-height: 1.3; }
+.risco-opcao:hover { border-color: var(--cor); }
+.risco-opcao:has(input:checked) { border-color: var(--cor); background: var(--cor-claro); box-shadow: 0 0 0 2px var(--cor-claro); }
+.risco-opcao:has(input:focus-visible) { outline: 2px solid var(--cor); outline-offset: 2px; }
+
+/* Fila da emergência */
+.legenda-riscos { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 12px; color: var(--texto-2); }
+.legenda-riscos span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-riscos i { width: 12px; height: 12px; border-radius: 50%; background: var(--cor); display: inline-block; }
+.espera { font-variant-numeric: tabular-nums; }
+.espera.atrasado { color: var(--perigo); font-weight: 700; }
+.espera small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+.fila-resumo { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+.fila-resumo article { border-top: 4px solid var(--cor); }
+.fila-resumo strong { font-size: 24px; font-weight: 650; display: block; }
+.fila-resumo span { font-size: 12px; color: var(--muted); }
+
 /* ---------- Confirmação ---------- */
 .confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
 .confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
@@ -380,6 +426,7 @@ tr.linha-particular td:first-child { box-shadow: inset 4px 0 0 var(--particular)
 
 /* ---------- Responsivo ---------- */
 @media (max-width: 1150px) {
+  .riscos { grid-template-columns: repeat(3, 1fr); }
   .atendimento { grid-template-columns: 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
 }
@@ -405,6 +452,8 @@ tr.linha-particular td:first-child { box-shadow: inset 4px 0 0 var(--particular)
   .recibo-numero { text-align: left; }
   .recibo-pagamento { grid-template-columns: 1fr; }
   .etapas { grid-template-columns: 1fr 1fr; row-gap: 14px; }
+  .riscos { grid-template-columns: 1fr 1fr; }
+  .fila-resumo { grid-template-columns: repeat(3, 1fr); }
   .etapas li::after { display: none; }
   .pg-total { flex-direction: column; align-items: flex-start; }
   .campo-valor { width: 100%; }
@@ -487,6 +536,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <p class="sidebar-label">Navegação</p>
       <nav class="menu" aria-label="Menu principal">
         <a href="#atendimento" data-tela="atendimento"><svg class="i"><use href="#i-heart"/></svg><span>Atendimento</span></a>
+        <a href="#fila" data-tela="fila"><svg class="i"><use href="#i-users"/></svg><span>Fila da emergência</span></a>
         <a href="#painel" data-tela="painel"><svg class="i"><use href="#i-grid"/></svg><span>Painel</span></a>
         <a href="#agenda" data-tela="agenda"><svg class="i"><use href="#i-calendar"/></svg><span>Agenda</span></a>
         <a href="#nova-consulta" data-tela="nova-consulta"><svg class="i"><use href="#i-calendar-plus"/></svg><span>Agendar consulta</span></a>
@@ -560,6 +610,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
             <ol class="card etapas" id="atend-etapas" aria-label="Etapas do atendimento"></ol>
 
+            <!-- Classificação de risco (só no Pronto Socorro) -->
+            <div class="card classificacao" id="card-risco" hidden>
+              <div class="classificacao-topo">
+                <span class="rotulo"><svg class="i"><use href="#i-heart"/></svg>Classificação de risco *</span>
+                <span class="dica">A cor muda conforme a prioridade; o ✱ de particular fica fixo.</span>
+              </div>
+              <div class="riscos" id="riscos" role="radiogroup" aria-label="Classificação de risco"></div>
+            </div>
+
             <div class="card linha">
               <label class="rotulo" for="atend-setor"><svg class="i"><use href="#i-building"/></svg>Setor:</label>
               <div class="select-wrap">
@@ -619,6 +678,28 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ===================== FILA DA EMERGÊNCIA ===================== -->
+      <section class="tela" id="tela-fila">
+        <div class="cabecalho cabecalho-acoes">
+          <div><h1>Fila da emergência</h1><p class="sub">Pacientes do Pronto Socorro ainda sem consulta concluída, por prioridade e ordem de chegada.</p></div>
+          <button type="button" class="btn" id="btn-atualizar-fila"><svg class="i"><use href="#i-refresh"/></svg>Atualizar</button>
+        </div>
+        <div class="fila-resumo" id="fila-resumo"></div>
+        <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-users"/></svg>Fila</h2>
+            <div class="legenda-riscos" id="legenda-riscos"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Prioridade</th><th>Paciente</th><th>Atend.</th><th>Chegada</th><th>Espera</th><th>Status</th><th>Médico</th></tr></thead>
+              <tbody id="tabela-fila"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-fila">Nenhum paciente aguardando na emergência.</p>
         </div>
       </section>
 
@@ -1202,12 +1283,33 @@ function ehParticular(p) {
   return !p || !p.convenio;
 }
 
-function seloParticular() {
-  return `<span class="selo-particular" title="${TITULO_PARTICULAR}"><span class="ast">✱</span>Particular</span>`;
+// Classificação de risco (prioridade). A cor muda; o ✱ de particular fica fixo.
+const RISCOS = {
+  VERMELHO: { nome: 'Vermelho', descricao: 'Emergência', tempo: 'atendimento imediato', minutos: 0, ordem: 1 },
+  LARANJA: { nome: 'Laranja', descricao: 'Muito urgente', tempo: 'até 10 min', minutos: 10, ordem: 2 },
+  AMARELO: { nome: 'Amarelo', descricao: 'Urgente', tempo: 'até 60 min', minutos: 60, ordem: 3 },
+  VERDE: { nome: 'Verde', descricao: 'Pouco urgente', tempo: 'até 120 min', minutos: 120, ordem: 4 },
+  AZUL: { nome: 'Azul', descricao: 'Não urgente', tempo: 'até 240 min', minutos: 240, ordem: 5 },
+};
+const classeRisco = (risco) => (RISCOS[risco] ? ` risco-${risco.toLowerCase()}` : '');
+
+// Selo do paciente: roxo "✱ Particular" sem classificação; com classificação, "✱ Verde · Pouco urgente" na cor da prioridade
+function seloParticular(risco) {
+  const r = RISCOS[risco];
+  const titulo = r ? `${r.nome} (${r.descricao}, ${r.tempo}) · ${TITULO_PARTICULAR}` : TITULO_PARTICULAR;
+  return `<span class="selo-particular${classeRisco(risco)}" title="${titulo}"><span class="ast">✱</span>${r ? `${r.nome} · ${r.descricao}` : 'Particular'}</span>`;
 }
 
-function marcaParticular() {
-  return `<span class="marca-particular" title="${TITULO_PARTICULAR}" aria-label="${TITULO_PARTICULAR}">✱</span>`;
+// Marca curta (bolinha com ✱) usada nas listas; pega a cor da prioridade
+function marcaParticular(risco) {
+  const r = RISCOS[risco];
+  const titulo = r ? `${r.nome} · ${TITULO_PARTICULAR}` : TITULO_PARTICULAR;
+  return `<span class="marca-particular${classeRisco(risco)}" title="${titulo}" aria-label="${titulo}">✱</span>`;
+}
+
+// Risco mostrado no cartão do paciente: só no Pronto Socorro
+function riscoAtual() {
+  return estado.modalidade === 'PRONTO_SOCORRO' ? estado.risco : '';
 }
 
 function dadosPaciente(p) {
@@ -1216,17 +1318,90 @@ function dadosPaciente(p) {
 }
 
 // Cartão do paciente selecionado (Atendimento e Exames)
-function cartaoPaciente(p) {
+function cartaoPaciente(p, risco = '') {
   const part = ehParticular(p);
+  const r = RISCOS[risco];
   return `
-    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular() : `<span class="tag">${esc(p.convenio)}</span>`}</div>
+    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular(risco) : `<span class="tag">${esc(p.convenio)}</span>`}</div>
     <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
-    ${part ? '<span class="paciente-obs">Sem convênio: cada serviço é pago antes de ser feito.</span>' : ''}`;
+    ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo})</span>` : ''}
+    ${part ? '<span class="paciente-obs"><strong>✱ Particular:</strong> sem convênio, cada serviço é pago antes de ser feito.</span>' : ''}`;
 }
+
+// Redesenha o cartão do paciente no Atendimento (cor da prioridade + ✱)
+function renderCartaoPaciente() {
+  const caixa = $('#atend-paciente');
+  const p = estado.paciente;
+  if (!p) { caixa.hidden = true; return; }
+  const risco = riscoAtual();
+  caixa.hidden = false;
+  caixa.className = `paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(risco)}`;
+  caixa.innerHTML = cartaoPaciente(p, risco);
+}
+
+// ---------- Opções de classificação de risco ----------
+function montarOpcoesRisco() {
+  $('#riscos').innerHTML = Object.entries(RISCOS).map(([chave, r]) => `
+    <label class="risco-opcao${classeRisco(chave)}">
+      <input type="radio" name="risco" value="${chave}">
+      <span class="risco-cor" aria-hidden="true"></span>
+      <span><strong>${r.nome}</strong><small>${r.descricao} · ${r.tempo}</small></span>
+    </label>`).join('');
+  $('#legenda-riscos').innerHTML = Object.entries(RISCOS).map(([chave, r]) =>
+    `<span class="${classeRisco(chave).trim()}"><i></i>${r.nome}</span>`).join('');
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.name !== 'risco') return;
+  estado.risco = e.target.value;
+  renderCartaoPaciente();
+  renderEtapas();
+  atualizarBotaoAbrir();
+});
+
+// ---------- Fila da emergência ----------
+function carregarFila() {
+  // TODO: buscar no seu sistema os atendimentos de Pronto Socorro do dia que ainda não tiveram consulta concluída
+  //   e chamar renderFila(lista). Cada item:
+  //   { numero, paciente, particular: true, risco: 'VERDE', entrada: 'AAAA-MM-DDTHH:MM', status, medico }
+  renderFila([]);
+}
+
+function minutosDesde(iso) {
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+function renderFila(lista) {
+  const ordenada = [...lista].sort((a, b) =>
+    (RISCOS[a.risco]?.ordem || 9) - (RISCOS[b.risco]?.ordem || 9) || String(a.entrada).localeCompare(String(b.entrada)));
+  $('#tabela-fila').innerHTML = ordenada.map((a) => {
+    const r = RISCOS[a.risco];
+    const espera = minutosDesde(a.entrada);
+    const atrasado = r && espera > r.minutos && !['ATENDIDA', 'ALTA'].includes(a.status);
+    return `
+      <tr class="linha-particular${classeRisco(a.risco)}">
+        <td>${a.particular === false ? `<span class="tag">${esc(r?.nome || '—')}</span>` : seloParticular(a.risco)}</td>
+        <td>${esc(a.paciente)}</td>
+        <td>${esc(a.numero)}</td>
+        <td>${formatarDataHora(a.entrada).slice(11)}</td>
+        <td class="espera${atrasado ? ' atrasado' : ''}">${espera} min<small>${r ? `meta: ${r.tempo}` : ''}${atrasado ? ' · acima do tempo' : ''}</small></td>
+        <td>${tagStatus(a.status)}</td>
+        <td>${esc(a.medico)}</td>
+      </tr>`;
+  }).join('');
+  $('#vazio-fila').hidden = ordenada.length > 0;
+  $('#fila-resumo').innerHTML = Object.entries(RISCOS).map(([chave, r]) => `
+    <article class="card${classeRisco(chave)}"><strong>${lista.filter((a) => a.risco === chave).length}</strong><span>${r.nome} · ${r.descricao}</span></article>`).join('');
+}
+
+$('#btn-atualizar-fila').addEventListener('click', () => carregarFila());
+// Atualiza o tempo de espera a cada minuto enquanto a fila estiver aberta
+setInterval(() => { if ($('#tela-fila').classList.contains('ativa')) carregarFila(); }, 60000);
 
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
+  fila: () => carregarFila(),
   painel: carregarPainel,
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
@@ -1266,28 +1441,24 @@ function renderResultadosBusca(pacientes) {
 function selecionarPaciente(paciente) {
   estado.paciente = paciente;
   estado.vinculoExames = null;
+  estado.risco = '';
+  document.querySelectorAll('input[name="risco"]').forEach((r) => { r.checked = false; });
   $('#atend-resultados').innerHTML = '';
-  const caixa = $('#atend-paciente');
-  if (!paciente) {
-    caixa.hidden = true;
-  } else {
-    caixa.hidden = false;
-    caixa.classList.toggle('particular', ehParticular(paciente));
-    caixa.innerHTML = cartaoPaciente(paciente);
-  }
+  renderCartaoPaciente();
   atualizarBotaoAbrir();
   carregarAtendimentosAnteriores();
 }
 
 function atualizarBotaoAbrir() {
-  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && $('#atend-medico').value);
+  const precisaRisco = estado.modalidade === 'PRONTO_SOCORRO';
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && $('#atend-medico').value && (!precisaRisco || estado.risco));
 }
 
 function renderAnteriores(atendimentos) {
   estado.anteriores = atendimentos;
   $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
-    <tr class="${a.particular === false ? '' : 'linha-particular'}">
-      <td>${a.particular === false ? '' : marcaParticular()}${esc(a.numero)}</td>
+    <tr class="${a.particular === false ? '' : 'linha-particular'}${classeRisco(a.risco)}">
+      <td>${a.particular === false ? '' : marcaParticular(a.risco)}${esc(a.numero)}</td>
       <td>${esc(a.senha)}</td>
       <td>${tagStatus(a.status)}</td>
       <td>${formatarDataHora(a.entrada)}</td>
@@ -1342,6 +1513,7 @@ const ETAPAS = {
   ],
   PRONTO_SOCORRO: [
     { titulo: 'Paciente', dica: 'Basta o nome' },
+    { titulo: 'Classificação', dica: 'Cor da prioridade' },
     { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
     { titulo: 'Consulta', dica: 'Médico de plantão atende' },
     { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
@@ -1355,8 +1527,10 @@ function atendimentoDeHoje() {
 
 function renderEtapas() {
   const a = estado.paciente ? atendimentoDeHoje() : null;
-  const feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  let feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  if (estado.modalidade === 'PRONTO_SOCORRO') feitas.splice(1, 0, !!(estado.risco || a?.risco));
   const atual = feitas.indexOf(false);
+  $('#atend-etapas').style.setProperty('--n-etapas', feitas.length);
   $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
     <li class="${feitas[i] ? 'feito' : i === atual ? 'atual' : ''}">
       <span class="etapa-num">${feitas[i] ? '✓' : i + 1}</span>
@@ -1523,6 +1697,8 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-btn-texto').textContent = m.botao;
   $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
   $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
+  $('#card-risco').hidden = modalidade !== 'PRONTO_SOCORRO';
+  renderCartaoPaciente();
   estado.setor = '';
   carregarSetores();
   carregarMedicosConsulta();
@@ -1654,6 +1830,7 @@ $('#atend-medico').addEventListener('change', () => {
 $('#btn-abrir-atendimento').addEventListener('click', async () => {
   const setor = $('#atend-setor').selectedOptions[0]?.text || '';
   const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
+  if (estado.modalidade === 'PRONTO_SOCORRO') dados.risco = estado.risco; // VERMELHO | LARANJA | AMARELO | VERDE | AZUL
 
   if (estado.modalidade === 'CONSULTA') {
     const m = medicoConsultaSelecionado();
@@ -1935,7 +2112,7 @@ document.addEventListener('click', (e) => {
   const botao = e.target.closest('[data-exames-atend]');
   if (!botao) return;
   const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.examesAtend);
-  estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico };
+  estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico, risco: a?.risco || '' };
   location.hash = '#exames';
 });
 
@@ -2170,7 +2347,7 @@ function carregarExames() {
 function renderPacienteExames() {
   const p = estado.paciente;
   $('#ex-paciente').innerHTML = p
-    ? `<div class="paciente-selecionado${ehParticular(p) ? ' particular' : ''}">${cartaoPaciente(p)}</div>`
+    ? `<div class="paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(estado.vinculoExames?.risco)}">${cartaoPaciente(p, estado.vinculoExames?.risco)}</div>`
     : `<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Selecione na tela Atendimento</a>.</p>`;
 }
 
@@ -2572,6 +2749,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ---------- Início ----------
+montarOpcoesRisco();
 renderEtapas();
 carregarUsuario();
 carregarSetores();
@@ -2642,7 +2820,7 @@ abrirTela(location.hash.slice(1) || 'atendimento');
     const agora = new Date(); const iso = `${hoje}T${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
     const ps = dados.modalidade === 'PRONTO_SOCORRO';
     lista.unshift({ numero: ++proximoAtend, tipo: dados.modalidade, senha: (ps ? 'E' : 'P') + String(proximoAtend % 100).padStart(3, '0'),
-      status: 'AGUARDANDO', entrada: iso, alta: '', medico: dados.medico?.nome || (ps ? 'Plantão PS' : '—'), pagamento: dados.pagamento, valor: dados.valor || 0, pago: !!dados.pagamento });
+      status: 'AGUARDANDO', entrada: iso, alta: '', medico: dados.medico?.nome || (ps ? 'Plantão PS' : '—'), pagamento: dados.pagamento, risco: dados.risco || '', valor: dados.valor || 0, pago: !!dados.pagamento });
     aviso(`Pagamento confirmado (${descreverPagamento(dados.pagamento)}). ${dados.paciente.nome} está liberado(a) para a consulta${ps ? ' de emergência' : ''}.`);
   };
   let proximoRecibo = 1;
@@ -2655,6 +2833,15 @@ abrirTela(location.hash.slice(1) || 'atendimento');
     CONSULTAS.push({ id: CONSULTAS.length + 1, data: dados.data, horario: dados.horario, paciente: dados.nome,
       medico: $('#cons-medico').selectedOptions[0]?.text || '', especialidade: dados.especialidade, valor: dados.valor, status: 'CONFIRMADA' });
     aviso('Consulta agendada e paga. Veja em Financeiro > Recebido por médico.');
+  };
+  carregarFila = () => {
+    const lista = [];
+    Object.entries(ANTERIORES).forEach(([id, atends]) => {
+      const pac = PACIENTES.find((x) => String(x.id) === String(id));
+      atends.filter((a) => a.tipo === 'PRONTO_SOCORRO' && !['ATENDIDA', 'ALTA'].includes(a.status))
+        .forEach((a) => lista.push({ ...a, paciente: pac?.nome || '—', particular: true }));
+    });
+    renderFila(lista);
   };
   registrarConclusaoConsulta = async (a) => {
     const agora = new Date();
@@ -2715,7 +2902,7 @@ abrirTela(location.hash.slice(1) || 'atendimento');
   // Banner
   const banner = document.createElement('div');
   banner.className = 'demo-banner';
-  banner.innerHTML = '<strong>Modo demonstração · começando do zero</strong> · Nenhum atendimento, consulta ou pagamento ainda. Pacientes de teste: busque "123" ou cadastre um nome novo. Médicos e setores são fictícios e nada é salvo de verdade: recarregar a página volta tudo ao zero.';
+  banner.innerHTML = '<strong>Modo demonstração · começando do zero</strong> · Nenhum atendimento, consulta ou pagamento ainda. Pacientes de teste: busque "123" ou cadastre um nome novo. No Pronto Socorro, classifique o risco e acompanhe na Fila da emergência. Médicos e setores são fictícios e nada é salvo de verdade: recarregar a página volta tudo ao zero.';
   document.querySelector('main').prepend(banner);
 
   abrirTela(location.hash.slice(1) || 'atendimento');

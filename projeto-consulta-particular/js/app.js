@@ -177,12 +177,33 @@ function ehParticular(p) {
   return !p || !p.convenio;
 }
 
-function seloParticular() {
-  return `<span class="selo-particular" title="${TITULO_PARTICULAR}"><span class="ast">✱</span>Particular</span>`;
+// Classificação de risco (prioridade). A cor muda; o ✱ de particular fica fixo.
+const RISCOS = {
+  VERMELHO: { nome: 'Vermelho', descricao: 'Emergência', tempo: 'atendimento imediato', minutos: 0, ordem: 1 },
+  LARANJA: { nome: 'Laranja', descricao: 'Muito urgente', tempo: 'até 10 min', minutos: 10, ordem: 2 },
+  AMARELO: { nome: 'Amarelo', descricao: 'Urgente', tempo: 'até 60 min', minutos: 60, ordem: 3 },
+  VERDE: { nome: 'Verde', descricao: 'Pouco urgente', tempo: 'até 120 min', minutos: 120, ordem: 4 },
+  AZUL: { nome: 'Azul', descricao: 'Não urgente', tempo: 'até 240 min', minutos: 240, ordem: 5 },
+};
+const classeRisco = (risco) => (RISCOS[risco] ? ` risco-${risco.toLowerCase()}` : '');
+
+// Selo do paciente: roxo "✱ Particular" sem classificação; com classificação, "✱ Verde · Pouco urgente" na cor da prioridade
+function seloParticular(risco) {
+  const r = RISCOS[risco];
+  const titulo = r ? `${r.nome} (${r.descricao}, ${r.tempo}) · ${TITULO_PARTICULAR}` : TITULO_PARTICULAR;
+  return `<span class="selo-particular${classeRisco(risco)}" title="${titulo}"><span class="ast">✱</span>${r ? `${r.nome} · ${r.descricao}` : 'Particular'}</span>`;
 }
 
-function marcaParticular() {
-  return `<span class="marca-particular" title="${TITULO_PARTICULAR}" aria-label="${TITULO_PARTICULAR}">✱</span>`;
+// Marca curta (bolinha com ✱) usada nas listas; pega a cor da prioridade
+function marcaParticular(risco) {
+  const r = RISCOS[risco];
+  const titulo = r ? `${r.nome} · ${TITULO_PARTICULAR}` : TITULO_PARTICULAR;
+  return `<span class="marca-particular${classeRisco(risco)}" title="${titulo}" aria-label="${titulo}">✱</span>`;
+}
+
+// Risco mostrado no cartão do paciente: só no Pronto Socorro
+function riscoAtual() {
+  return estado.modalidade === 'PRONTO_SOCORRO' ? estado.risco : '';
 }
 
 function dadosPaciente(p) {
@@ -191,17 +212,90 @@ function dadosPaciente(p) {
 }
 
 // Cartão do paciente selecionado (Atendimento e Exames)
-function cartaoPaciente(p) {
+function cartaoPaciente(p, risco = '') {
   const part = ehParticular(p);
+  const r = RISCOS[risco];
   return `
-    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular() : `<span class="tag">${esc(p.convenio)}</span>`}</div>
+    <div class="paciente-cabeca"><strong>${esc(p.nome)}</strong>${part ? seloParticular(risco) : `<span class="tag">${esc(p.convenio)}</span>`}</div>
     <small style="display:block;color:var(--muted);margin-top:4px">${dadosPaciente(p)}</small>
-    ${part ? '<span class="paciente-obs">Sem convênio: cada serviço é pago antes de ser feito.</span>' : ''}`;
+    ${r ? `<span class="paciente-obs"><strong>Prioridade:</strong> ${r.nome} · ${r.descricao} (${r.tempo})</span>` : ''}
+    ${part ? '<span class="paciente-obs"><strong>✱ Particular:</strong> sem convênio, cada serviço é pago antes de ser feito.</span>' : ''}`;
 }
+
+// Redesenha o cartão do paciente no Atendimento (cor da prioridade + ✱)
+function renderCartaoPaciente() {
+  const caixa = $('#atend-paciente');
+  const p = estado.paciente;
+  if (!p) { caixa.hidden = true; return; }
+  const risco = riscoAtual();
+  caixa.hidden = false;
+  caixa.className = `paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(risco)}`;
+  caixa.innerHTML = cartaoPaciente(p, risco);
+}
+
+// ---------- Opções de classificação de risco ----------
+function montarOpcoesRisco() {
+  $('#riscos').innerHTML = Object.entries(RISCOS).map(([chave, r]) => `
+    <label class="risco-opcao${classeRisco(chave)}">
+      <input type="radio" name="risco" value="${chave}">
+      <span class="risco-cor" aria-hidden="true"></span>
+      <span><strong>${r.nome}</strong><small>${r.descricao} · ${r.tempo}</small></span>
+    </label>`).join('');
+  $('#legenda-riscos').innerHTML = Object.entries(RISCOS).map(([chave, r]) =>
+    `<span class="${classeRisco(chave).trim()}"><i></i>${r.nome}</span>`).join('');
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target.name !== 'risco') return;
+  estado.risco = e.target.value;
+  renderCartaoPaciente();
+  renderEtapas();
+  atualizarBotaoAbrir();
+});
+
+// ---------- Fila da emergência ----------
+function carregarFila() {
+  // TODO: buscar no seu sistema os atendimentos de Pronto Socorro do dia que ainda não tiveram consulta concluída
+  //   e chamar renderFila(lista). Cada item:
+  //   { numero, paciente, particular: true, risco: 'VERDE', entrada: 'AAAA-MM-DDTHH:MM', status, medico }
+  renderFila([]);
+}
+
+function minutosDesde(iso) {
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+function renderFila(lista) {
+  const ordenada = [...lista].sort((a, b) =>
+    (RISCOS[a.risco]?.ordem || 9) - (RISCOS[b.risco]?.ordem || 9) || String(a.entrada).localeCompare(String(b.entrada)));
+  $('#tabela-fila').innerHTML = ordenada.map((a) => {
+    const r = RISCOS[a.risco];
+    const espera = minutosDesde(a.entrada);
+    const atrasado = r && espera > r.minutos && !['ATENDIDA', 'ALTA'].includes(a.status);
+    return `
+      <tr class="linha-particular${classeRisco(a.risco)}">
+        <td>${a.particular === false ? `<span class="tag">${esc(r?.nome || '—')}</span>` : seloParticular(a.risco)}</td>
+        <td>${esc(a.paciente)}</td>
+        <td>${esc(a.numero)}</td>
+        <td>${formatarDataHora(a.entrada).slice(11)}</td>
+        <td class="espera${atrasado ? ' atrasado' : ''}">${espera} min<small>${r ? `meta: ${r.tempo}` : ''}${atrasado ? ' · acima do tempo' : ''}</small></td>
+        <td>${tagStatus(a.status)}</td>
+        <td>${esc(a.medico)}</td>
+      </tr>`;
+  }).join('');
+  $('#vazio-fila').hidden = ordenada.length > 0;
+  $('#fila-resumo').innerHTML = Object.entries(RISCOS).map(([chave, r]) => `
+    <article class="card${classeRisco(chave)}"><strong>${lista.filter((a) => a.risco === chave).length}</strong><span>${r.nome} · ${r.descricao}</span></article>`).join('');
+}
+
+$('#btn-atualizar-fila').addEventListener('click', () => carregarFila());
+// Atualiza o tempo de espera a cada minuto enquanto a fila estiver aberta
+setInterval(() => { if ($('#tela-fila').classList.contains('ativa')) carregarFila(); }, 60000);
 
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
+  fila: () => carregarFila(),
   painel: carregarPainel,
   agenda: carregarAgenda,
   'nova-consulta': carregarFormularioConsulta,
@@ -241,28 +335,24 @@ function renderResultadosBusca(pacientes) {
 function selecionarPaciente(paciente) {
   estado.paciente = paciente;
   estado.vinculoExames = null;
+  estado.risco = '';
+  document.querySelectorAll('input[name="risco"]').forEach((r) => { r.checked = false; });
   $('#atend-resultados').innerHTML = '';
-  const caixa = $('#atend-paciente');
-  if (!paciente) {
-    caixa.hidden = true;
-  } else {
-    caixa.hidden = false;
-    caixa.classList.toggle('particular', ehParticular(paciente));
-    caixa.innerHTML = cartaoPaciente(paciente);
-  }
+  renderCartaoPaciente();
   atualizarBotaoAbrir();
   carregarAtendimentosAnteriores();
 }
 
 function atualizarBotaoAbrir() {
-  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && $('#atend-medico').value);
+  const precisaRisco = estado.modalidade === 'PRONTO_SOCORRO';
+  $('#btn-abrir-atendimento').disabled = !(estado.paciente && estado.setor && $('#atend-medico').value && (!precisaRisco || estado.risco));
 }
 
 function renderAnteriores(atendimentos) {
   estado.anteriores = atendimentos;
   $('#tabela-anteriores').innerHTML = atendimentos.map((a) => `
-    <tr class="${a.particular === false ? '' : 'linha-particular'}">
-      <td>${a.particular === false ? '' : marcaParticular()}${esc(a.numero)}</td>
+    <tr class="${a.particular === false ? '' : 'linha-particular'}${classeRisco(a.risco)}">
+      <td>${a.particular === false ? '' : marcaParticular(a.risco)}${esc(a.numero)}</td>
       <td>${esc(a.senha)}</td>
       <td>${tagStatus(a.status)}</td>
       <td>${formatarDataHora(a.entrada)}</td>
@@ -317,6 +407,7 @@ const ETAPAS = {
   ],
   PRONTO_SOCORRO: [
     { titulo: 'Paciente', dica: 'Basta o nome' },
+    { titulo: 'Classificação', dica: 'Cor da prioridade' },
     { titulo: 'Pagamento', dica: 'Antes da consulta de emergência' },
     { titulo: 'Consulta', dica: 'Médico de plantão atende' },
     { titulo: 'Exames', dica: 'Se o médico pedir (pagos antes)' },
@@ -330,8 +421,10 @@ function atendimentoDeHoje() {
 
 function renderEtapas() {
   const a = estado.paciente ? atendimentoDeHoje() : null;
-  const feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  let feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  if (estado.modalidade === 'PRONTO_SOCORRO') feitas.splice(1, 0, !!(estado.risco || a?.risco));
   const atual = feitas.indexOf(false);
+  $('#atend-etapas').style.setProperty('--n-etapas', feitas.length);
   $('#atend-etapas').innerHTML = ETAPAS[estado.modalidade].map((e, i) => `
     <li class="${feitas[i] ? 'feito' : i === atual ? 'atual' : ''}">
       <span class="etapa-num">${feitas[i] ? '✓' : i + 1}</span>
@@ -498,6 +591,8 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-btn-texto').textContent = m.botao;
   $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
   $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
+  $('#card-risco').hidden = modalidade !== 'PRONTO_SOCORRO';
+  renderCartaoPaciente();
   estado.setor = '';
   carregarSetores();
   carregarMedicosConsulta();
@@ -629,6 +724,7 @@ $('#atend-medico').addEventListener('change', () => {
 $('#btn-abrir-atendimento').addEventListener('click', async () => {
   const setor = $('#atend-setor').selectedOptions[0]?.text || '';
   const dados = { paciente: estado.paciente, setor: estado.setor, modalidade: estado.modalidade };
+  if (estado.modalidade === 'PRONTO_SOCORRO') dados.risco = estado.risco; // VERMELHO | LARANJA | AMARELO | VERDE | AZUL
 
   if (estado.modalidade === 'CONSULTA') {
     const m = medicoConsultaSelecionado();
@@ -910,7 +1006,7 @@ document.addEventListener('click', (e) => {
   const botao = e.target.closest('[data-exames-atend]');
   if (!botao) return;
   const a = estado.anteriores.find((x) => String(x.numero) === botao.dataset.examesAtend);
-  estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico };
+  estado.vinculoExames = { modalidade: a?.tipo || estado.modalidade, numero: a?.numero, entrada: a?.entrada, medico: a?.medico, risco: a?.risco || '' };
   location.hash = '#exames';
 });
 
@@ -1145,7 +1241,7 @@ function carregarExames() {
 function renderPacienteExames() {
   const p = estado.paciente;
   $('#ex-paciente').innerHTML = p
-    ? `<div class="paciente-selecionado${ehParticular(p) ? ' particular' : ''}">${cartaoPaciente(p)}</div>`
+    ? `<div class="paciente-selecionado${ehParticular(p) ? ' particular' : ''}${classeRisco(estado.vinculoExames?.risco)}">${cartaoPaciente(p, estado.vinculoExames?.risco)}</div>`
     : `<p class="paciente-vazio">Nenhum paciente selecionado.<br><a href="#atendimento">Selecione na tela Atendimento</a>.</p>`;
 }
 
@@ -1547,6 +1643,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ---------- Início ----------
+montarOpcoesRisco();
 renderEtapas();
 carregarUsuario();
 carregarSetores();
