@@ -445,6 +445,20 @@ tr[class*="risco-"] td:first-child { box-shadow: inset 4px 0 0 var(--cor); }
 .adicional-contraste label { margin: 0; }
 .adicional-contraste input { width: 120px; }
 
+/* Plantonistas */
+.chave { position: relative; display: inline-flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-weight: 500; font-size: 12.5px; }
+.chave input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chave .trilho { width: 36px; height: 20px; border-radius: 20px; background: #c9d1ce; position: relative; transition: background .15s; flex-shrink: 0; }
+.chave .trilho::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: transform .15s; }
+.chave input:checked + .trilho { background: var(--verde); }
+.chave input:checked + .trilho::after { transform: translateX(16px); }
+.chave input:focus-visible + .trilho { outline: 2px solid var(--verde); outline-offset: 2px; }
+tr.fora-plantao td { color: var(--muted); }
+.link-cadastro { font-size: 12.5px; color: var(--verde); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.link-cadastro:hover { text-decoration: underline; }
+.status.padrao { padding: 0 14px 12px; }
+@media (prefers-reduced-motion: reduce) { .chave .trilho, .chave .trilho::after { transition: none; } }
+
 /* ---------- Confirmação ---------- */
 .confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
 .confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
@@ -666,6 +680,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
                 <select id="atend-medico"><option value="">Selecione o médico</option></select>
               </div>
               <span class="unidade" id="atend-valor-consulta-linha">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
+              <a class="link-cadastro" id="link-cadastrar-plantonista" href="#medicos" hidden>+ Cadastrar plantonista</a>
             </div>
 
             <div class="card linha">
@@ -1010,11 +1025,36 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
       <!-- ===================== MÉDICOS ===================== -->
       <section class="tela" id="tela-medicos">
-        <div class="cabecalho"><h1>Médicos</h1><p class="sub">Profissionais que atendem particular e seus valores.</p></div>
+        <div class="cabecalho"><h1>Médicos</h1><p class="sub">Plantonistas da Emergência e médicos da consulta particular.</p></div>
+
+        <!-- Plantonistas da Emergência -->
         <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-heart"/></svg>Médicos plantonistas · Emergência</h2>
+            <span class="pill" id="pill-plantonistas">0 no plantão</span>
+          </div>
+          <form class="form-preco" id="form-plantonista" autocomplete="off">
+            <div class="grow"><label for="pl-nome">Nome do médico *</label><input id="pl-nome" maxlength="100" required placeholder="Ex.: Dra. Ana Lima"></div>
+            <div><label for="pl-crm">CRM *</label><input id="pl-crm" maxlength="20" required placeholder="Ex.: CRM-AM 12345"></div>
+            <div><label for="pl-especialidade">Especialidade *</label><select id="pl-especialidade" required></select></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-user-plus"/></svg>Cadastrar plantonista</button>
+          </form>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Atende</th><th>Valor da consulta</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-plantonistas"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-plantonistas">Nenhum plantonista cadastrado.</p>
+          <p class="status padrao" id="status-plantonistas" role="status" aria-live="polite"></p>
+        </div>
+
+        <!-- Médicos da consulta particular -->
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-steth"/></svg>Médicos da consulta particular</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Valor da consulta</th></tr></thead>
               <tbody id="tabela-medicos"></tbody>
             </table>
           </div>
@@ -1208,16 +1248,38 @@ const DADOS = {
     { id: 4, nome: 'Dr. Paulo Nogueira', crm: 'CRM 1004', especialidade: 'Clínica geral', valorConsulta: 200 },
   ],
   // Médicos de plantão da Emergência (o valor vem do setor Emergência)
+  // (lista inicial; novos plantonistas são cadastrados na tela Médicos)
   medicosEmergencia: [
-    { id: 101, nome: 'Dr. Rafael Monteiro', crm: 'CRM 2001', especialidade: 'Clínica médica' },
-    { id: 102, nome: 'Dra. Camila Andrade', crm: 'CRM 2002', especialidade: 'Clínica médica' },
-    { id: 103, nome: 'Dr. Thiago Barbosa', crm: 'CRM 2003', especialidade: 'Pediatria' },
-    { id: 104, nome: 'Dra. Larissa Pinheiro', crm: 'CRM 2004', especialidade: 'Cirurgia geral' },
-    { id: 105, nome: 'Dr. Eduardo Farias', crm: 'CRM 2005', especialidade: 'Ortopedia' },
+    { id: 101, nome: 'Dr. Rafael Monteiro', crm: 'CRM 2001', especialidade: 'Emergencista', ativo: true },
+    { id: 102, nome: 'Dra. Camila Andrade', crm: 'CRM 2002', especialidade: 'Clínico geral', ativo: true },
+    { id: 103, nome: 'Dr. Thiago Barbosa', crm: 'CRM 2003', especialidade: 'Pediatra', ativo: true },
+    { id: 104, nome: 'Dra. Larissa Pinheiro', crm: 'CRM 2004', especialidade: 'Emergencista', ativo: true },
+    { id: 105, nome: 'Dr. Eduardo Farias', crm: 'CRM 2005', especialidade: 'Ortopedista', ativo: true },
   ],
+  // Especialidades dos plantonistas da Emergência
+  especialidadesPlantao: ['Emergencista', 'Clínico geral', 'Ortopedista', 'Pediatra'],
   horarios: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'],
 };
+
+// ---------- Plantonistas (cadastro na tela Médicos) ----------
+// Guardados neste navegador. TODO: quando tiver banco de dados, troque carregarPlantonistas()/salvarPlantonistas().
+const CHAVE_PLANTONISTAS = 'consultaParticular.plantonistas';
+
+function carregarPlantonistas() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_PLANTONISTAS));
+    if (Array.isArray(salvo)) DADOS.medicosEmergencia = salvo;
+  } catch (e) { /* sem armazenamento: usa a lista inicial */ }
+}
+
+function salvarPlantonistas() {
+  try { localStorage.setItem(CHAVE_PLANTONISTAS, JSON.stringify(DADOS.medicosEmergencia)); } catch (e) { /* ignora */ }
+}
+
+const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => m.ativo !== false);
+
+carregarPlantonistas();
 
 function todosMedicos() {
   const valorEmergencia = DADOS.setores.PRONTO_SOCORRO[0]?.valorConsulta || 0;
@@ -1791,18 +1853,90 @@ function renderPacientes(pacientes) {
   $('#vazio-pacientes').hidden = pacientes.length > 0;
 }
 
+// Médicos da consulta particular
 function renderMedicos(medicos) {
   $('#tabela-medicos').innerHTML = medicos.map((m) => `
     <tr>
       <td>${esc(m.nome)}</td>
       <td>${esc(m.crm)}</td>
       <td>${esc(m.especialidade)}</td>
-      <td>${esc(m.atende || '')}</td>
       <td>${formatarMoeda(m.valorConsulta)}</td>
-      <td><button class="btn-acao" data-id="${esc(m.id)}">Editar</button></td>
     </tr>`).join('');
   $('#vazio-medicos').hidden = medicos.length > 0;
 }
+
+// Plantonistas da Emergência
+function renderPlantonistas() {
+  const lista = [...DADOS.medicosEmergencia].sort((a, b) =>
+    (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome));
+  $('#tabela-plantonistas').innerHTML = lista.map((m) => `
+    <tr class="${m.ativo === false ? 'fora-plantao' : ''}">
+      <td>${esc(m.nome)}</td>
+      <td>${esc(m.crm)}</td>
+      <td>${esc(m.especialidade)}</td>
+      <td>
+        <label class="chave" title="Aparece na lista de médicos de plantão do Pronto Socorro">
+          <input type="checkbox" data-plantao="${esc(m.id)}" ${m.ativo !== false ? 'checked' : ''}>
+          <span class="trilho" aria-hidden="true"></span>${m.ativo !== false ? 'Sim' : 'Não'}
+        </label>
+      </td>
+      <td><button class="btn-acao" data-remover-plantonista="${esc(m.id)}">Remover</button></td>
+    </tr>`).join('');
+  $('#vazio-plantonistas').hidden = lista.length > 0;
+  $('#pill-plantonistas').textContent = `${plantonistasNoPlantao().length} no plantão`;
+}
+
+function atualizarListasDeMedicos() {
+  renderPlantonistas();
+  if (estado.modalidade === 'PRONTO_SOCORRO') carregarMedicosConsulta();
+}
+
+$('#pl-especialidade').innerHTML = '<option value="">Selecione</option>'
+  + DADOS.especialidadesPlantao.map((e) => `<option>${esc(e)}</option>`).join('');
+
+$('#form-plantonista').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nome = $('#pl-nome').value.trim();
+  const crm = $('#pl-crm').value.trim();
+  const especialidade = $('#pl-especialidade').value;
+  if (!nome || !crm || !especialidade) return;
+  if (DADOS.medicosEmergencia.some((m) => normalizar(m.crm) === normalizar(crm))) {
+    $('#status-plantonistas').textContent = `Já existe um médico com o ${crm}.`;
+    return;
+  }
+  const id = Math.max(100, ...DADOS.medicosEmergencia.map((m) => Number(m.id) || 0)) + 1;
+  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade, ativo: true });
+  salvarPlantonistas();
+  e.target.reset();
+  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}), já no plantão.`;
+  atualizarListasDeMedicos();
+  $('#pl-nome').focus();
+});
+
+document.addEventListener('change', (e) => {
+  const id = e.target.dataset?.plantao;
+  if (id === undefined) return;
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === id);
+  if (!m) return;
+  m.ativo = e.target.checked;
+  salvarPlantonistas();
+  $('#status-plantonistas').textContent = `${m.nome} ${m.ativo ? 'entrou no' : 'saiu do'} plantão.`;
+  atualizarListasDeMedicos();
+});
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-remover-plantonista]');
+  if (!b) return;
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === b.dataset.removerPlantonista);
+  if (!m || !(await confirmar(`Remover ${m.nome} da lista de plantonistas? Os atendimentos já feitos por ele não mudam.`, 'Remover'))) return;
+  DADOS.medicosEmergencia = DADOS.medicosEmergencia.filter((x) => x !== m);
+  salvarPlantonistas();
+  $('#status-plantonistas').textContent = `${m.nome} saiu da lista de plantonistas.`;
+  atualizarListasDeMedicos();
+});
+
+// Link "+ Cadastrar plantonista" no Atendimento: abre a tela Médicos no formulário
+$('#link-cadastrar-plantonista').addEventListener('click', () => setTimeout(() => $('#pl-nome').focus(), 50));
 
 // recebimentos: [{ data, paciente, tipo: 'CONSULTA' | 'EXAMES', medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]
 function renderFinanceiro(recebimentos) {
@@ -2011,7 +2145,8 @@ function carregarMedicosConsulta() {
   // Consulta: médicos da consulta particular. Pronto Socorro: médicos de plantão da Emergência.
   // (vêm de DADOS; troque por banco de dados quando tiver)
   const ps = estado.modalidade === 'PRONTO_SOCORRO';
-  preencherMedicosConsulta(ps ? DADOS.medicosEmergencia : DADOS.medicosConsulta);
+  preencherMedicosConsulta(ps ? plantonistasNoPlantao() : DADOS.medicosConsulta);
+  $('#link-cadastrar-plantonista').hidden = !ps;
 }
 
 function preencherMedicosConsulta(lista) {
@@ -2987,7 +3122,8 @@ $('#form-busca-paciente').addEventListener('submit', (e) => {
 
 // ---------- Tela: Médicos ----------
 function carregarMedicos() {
-  renderMedicos(todosMedicos());
+  renderMedicos(DADOS.medicosConsulta);
+  renderPlantonistas();
 }
 
 // ---------- Tela: Financeiro ----------

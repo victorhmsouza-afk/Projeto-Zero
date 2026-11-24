@@ -39,16 +39,38 @@ const DADOS = {
     { id: 4, nome: 'Dr. Paulo Nogueira', crm: 'CRM 1004', especialidade: 'Clínica geral', valorConsulta: 200 },
   ],
   // Médicos de plantão da Emergência (o valor vem do setor Emergência)
+  // (lista inicial; novos plantonistas são cadastrados na tela Médicos)
   medicosEmergencia: [
-    { id: 101, nome: 'Dr. Rafael Monteiro', crm: 'CRM 2001', especialidade: 'Clínica médica' },
-    { id: 102, nome: 'Dra. Camila Andrade', crm: 'CRM 2002', especialidade: 'Clínica médica' },
-    { id: 103, nome: 'Dr. Thiago Barbosa', crm: 'CRM 2003', especialidade: 'Pediatria' },
-    { id: 104, nome: 'Dra. Larissa Pinheiro', crm: 'CRM 2004', especialidade: 'Cirurgia geral' },
-    { id: 105, nome: 'Dr. Eduardo Farias', crm: 'CRM 2005', especialidade: 'Ortopedia' },
+    { id: 101, nome: 'Dr. Rafael Monteiro', crm: 'CRM 2001', especialidade: 'Emergencista', ativo: true },
+    { id: 102, nome: 'Dra. Camila Andrade', crm: 'CRM 2002', especialidade: 'Clínico geral', ativo: true },
+    { id: 103, nome: 'Dr. Thiago Barbosa', crm: 'CRM 2003', especialidade: 'Pediatra', ativo: true },
+    { id: 104, nome: 'Dra. Larissa Pinheiro', crm: 'CRM 2004', especialidade: 'Emergencista', ativo: true },
+    { id: 105, nome: 'Dr. Eduardo Farias', crm: 'CRM 2005', especialidade: 'Ortopedista', ativo: true },
   ],
+  // Especialidades dos plantonistas da Emergência
+  especialidadesPlantao: ['Emergencista', 'Clínico geral', 'Ortopedista', 'Pediatra'],
   horarios: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'],
 };
+
+// ---------- Plantonistas (cadastro na tela Médicos) ----------
+// Guardados neste navegador. TODO: quando tiver banco de dados, troque carregarPlantonistas()/salvarPlantonistas().
+const CHAVE_PLANTONISTAS = 'consultaParticular.plantonistas';
+
+function carregarPlantonistas() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_PLANTONISTAS));
+    if (Array.isArray(salvo)) DADOS.medicosEmergencia = salvo;
+  } catch (e) { /* sem armazenamento: usa a lista inicial */ }
+}
+
+function salvarPlantonistas() {
+  try { localStorage.setItem(CHAVE_PLANTONISTAS, JSON.stringify(DADOS.medicosEmergencia)); } catch (e) { /* ignora */ }
+}
+
+const plantonistasNoPlantao = () => DADOS.medicosEmergencia.filter((m) => m.ativo !== false);
+
+carregarPlantonistas();
 
 function todosMedicos() {
   const valorEmergencia = DADOS.setores.PRONTO_SOCORRO[0]?.valorConsulta || 0;
@@ -622,18 +644,90 @@ function renderPacientes(pacientes) {
   $('#vazio-pacientes').hidden = pacientes.length > 0;
 }
 
+// Médicos da consulta particular
 function renderMedicos(medicos) {
   $('#tabela-medicos').innerHTML = medicos.map((m) => `
     <tr>
       <td>${esc(m.nome)}</td>
       <td>${esc(m.crm)}</td>
       <td>${esc(m.especialidade)}</td>
-      <td>${esc(m.atende || '')}</td>
       <td>${formatarMoeda(m.valorConsulta)}</td>
-      <td><button class="btn-acao" data-id="${esc(m.id)}">Editar</button></td>
     </tr>`).join('');
   $('#vazio-medicos').hidden = medicos.length > 0;
 }
+
+// Plantonistas da Emergência
+function renderPlantonistas() {
+  const lista = [...DADOS.medicosEmergencia].sort((a, b) =>
+    (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome));
+  $('#tabela-plantonistas').innerHTML = lista.map((m) => `
+    <tr class="${m.ativo === false ? 'fora-plantao' : ''}">
+      <td>${esc(m.nome)}</td>
+      <td>${esc(m.crm)}</td>
+      <td>${esc(m.especialidade)}</td>
+      <td>
+        <label class="chave" title="Aparece na lista de médicos de plantão do Pronto Socorro">
+          <input type="checkbox" data-plantao="${esc(m.id)}" ${m.ativo !== false ? 'checked' : ''}>
+          <span class="trilho" aria-hidden="true"></span>${m.ativo !== false ? 'Sim' : 'Não'}
+        </label>
+      </td>
+      <td><button class="btn-acao" data-remover-plantonista="${esc(m.id)}">Remover</button></td>
+    </tr>`).join('');
+  $('#vazio-plantonistas').hidden = lista.length > 0;
+  $('#pill-plantonistas').textContent = `${plantonistasNoPlantao().length} no plantão`;
+}
+
+function atualizarListasDeMedicos() {
+  renderPlantonistas();
+  if (estado.modalidade === 'PRONTO_SOCORRO') carregarMedicosConsulta();
+}
+
+$('#pl-especialidade').innerHTML = '<option value="">Selecione</option>'
+  + DADOS.especialidadesPlantao.map((e) => `<option>${esc(e)}</option>`).join('');
+
+$('#form-plantonista').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nome = $('#pl-nome').value.trim();
+  const crm = $('#pl-crm').value.trim();
+  const especialidade = $('#pl-especialidade').value;
+  if (!nome || !crm || !especialidade) return;
+  if (DADOS.medicosEmergencia.some((m) => normalizar(m.crm) === normalizar(crm))) {
+    $('#status-plantonistas').textContent = `Já existe um médico com o ${crm}.`;
+    return;
+  }
+  const id = Math.max(100, ...DADOS.medicosEmergencia.map((m) => Number(m.id) || 0)) + 1;
+  DADOS.medicosEmergencia.push({ id, nome, crm, especialidade, ativo: true });
+  salvarPlantonistas();
+  e.target.reset();
+  $('#status-plantonistas').textContent = `Cadastro feito: ${nome} (${especialidade}), já no plantão.`;
+  atualizarListasDeMedicos();
+  $('#pl-nome').focus();
+});
+
+document.addEventListener('change', (e) => {
+  const id = e.target.dataset?.plantao;
+  if (id === undefined) return;
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === id);
+  if (!m) return;
+  m.ativo = e.target.checked;
+  salvarPlantonistas();
+  $('#status-plantonistas').textContent = `${m.nome} ${m.ativo ? 'entrou no' : 'saiu do'} plantão.`;
+  atualizarListasDeMedicos();
+});
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-remover-plantonista]');
+  if (!b) return;
+  const m = DADOS.medicosEmergencia.find((x) => String(x.id) === b.dataset.removerPlantonista);
+  if (!m || !(await confirmar(`Remover ${m.nome} da lista de plantonistas? Os atendimentos já feitos por ele não mudam.`, 'Remover'))) return;
+  DADOS.medicosEmergencia = DADOS.medicosEmergencia.filter((x) => x !== m);
+  salvarPlantonistas();
+  $('#status-plantonistas').textContent = `${m.nome} saiu da lista de plantonistas.`;
+  atualizarListasDeMedicos();
+});
+
+// Link "+ Cadastrar plantonista" no Atendimento: abre a tela Médicos no formulário
+$('#link-cadastrar-plantonista').addEventListener('click', () => setTimeout(() => $('#pl-nome').focus(), 50));
 
 // recebimentos: [{ data, paciente, tipo: 'CONSULTA' | 'EXAMES', medico, formaPagamento: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO', valor }]
 function renderFinanceiro(recebimentos) {
@@ -842,7 +936,8 @@ function carregarMedicosConsulta() {
   // Consulta: médicos da consulta particular. Pronto Socorro: médicos de plantão da Emergência.
   // (vêm de DADOS; troque por banco de dados quando tiver)
   const ps = estado.modalidade === 'PRONTO_SOCORRO';
-  preencherMedicosConsulta(ps ? DADOS.medicosEmergencia : DADOS.medicosConsulta);
+  preencherMedicosConsulta(ps ? plantonistasNoPlantao() : DADOS.medicosConsulta);
+  $('#link-cadastrar-plantonista').hidden = !ps;
 }
 
 function preencherMedicosConsulta(lista) {
@@ -1818,7 +1913,8 @@ $('#form-busca-paciente').addEventListener('submit', (e) => {
 
 // ---------- Tela: Médicos ----------
 function carregarMedicos() {
-  renderMedicos(todosMedicos());
+  renderMedicos(DADOS.medicosConsulta);
+  renderPlantonistas();
 }
 
 // ---------- Tela: Financeiro ----------

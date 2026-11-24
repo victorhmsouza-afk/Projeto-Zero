@@ -169,6 +169,7 @@
                 <select id="atend-medico"><option value="">Selecione o médico</option></select>
               </div>
               <span class="unidade" id="atend-valor-consulta-linha">Valor da consulta: <strong id="atend-valor-consulta">—</strong></span>
+              <a class="link-cadastro" id="link-cadastrar-plantonista" href="#medicos" hidden>+ Cadastrar plantonista</a>
             </div>
 
             <div class="card linha">
@@ -513,11 +514,36 @@
 
       <!-- ===================== MÉDICOS ===================== -->
       <section class="tela" id="tela-medicos">
-        <div class="cabecalho"><h1>Médicos</h1><p class="sub">Profissionais que atendem particular e seus valores.</p></div>
+        <div class="cabecalho"><h1>Médicos</h1><p class="sub">Plantonistas da Emergência e médicos da consulta particular.</p></div>
+
+        <!-- Plantonistas da Emergência -->
         <div class="card tabela-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo"><svg class="i verde"><use href="#i-heart"/></svg>Médicos plantonistas · Emergência</h2>
+            <span class="pill" id="pill-plantonistas">0 no plantão</span>
+          </div>
+          <form class="form-preco" id="form-plantonista" autocomplete="off">
+            <div class="grow"><label for="pl-nome">Nome do médico *</label><input id="pl-nome" maxlength="100" required placeholder="Ex.: Dra. Ana Lima"></div>
+            <div><label for="pl-crm">CRM *</label><input id="pl-crm" maxlength="20" required placeholder="Ex.: CRM-AM 12345"></div>
+            <div><label for="pl-especialidade">Especialidade *</label><select id="pl-especialidade" required></select></div>
+            <button type="submit" class="btn-primario"><svg class="i"><use href="#i-user-plus"/></svg>Cadastrar plantonista</button>
+          </form>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Atende</th><th>Valor da consulta</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>No plantão</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-plantonistas"></tbody>
+            </table>
+          </div>
+          <p class="vazio centro" id="vazio-plantonistas">Nenhum plantonista cadastrado.</p>
+          <p class="status padrao" id="status-plantonistas" role="status" aria-live="polite"></p>
+        </div>
+
+        <!-- Médicos da consulta particular -->
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo"><svg class="i verde"><use href="#i-steth"/></svg>Médicos da consulta particular</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médico</th><th>CRM</th><th>Especialidade</th><th>Valor da consulta</th></tr></thead>
               <tbody id="tabela-medicos"></tbody>
             </table>
           </div>

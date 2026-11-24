@@ -220,3 +220,16 @@ Quando o tipo do exame é **Tomografia**, aparece a opção **Com contraste (+ R
 soma o adicional (ex.: TC de crânio com contraste = R$ 1.000,00) e o nome fica "TC de crânio com contraste"
 (na lista, na janela de pagamento e no recibo). O adicional pode ser mudado na tela **Tabela de preços**
 ("Adicional de contraste na tomografia"). No código: `precos.adicionais.contrasteTomografia`.
+
+## Cadastro de médicos plantonistas
+
+Na tela **Médicos**, quadro **Médicos plantonistas · Emergência**:
+
+- **Cadastrar plantonista:** nome, CRM e especialidade (**Emergencista, Clínico geral, Ortopedista ou Pediatra**).
+  Não deixa cadastrar dois médicos com o mesmo CRM. O médico novo já entra no plantão.
+- **No plantão (Sim/Não):** só quem está **Sim** aparece em *Médico de plantão* no Pronto Socorro. Use para a troca de plantão.
+- **Remover:** tira o médico da lista (com confirmação). Atendimentos já feitos não mudam.
+- No Atendimento (aba Pronto Socorro) há o atalho **+ Cadastrar plantonista**.
+
+Os plantonistas ficam salvos **neste navegador**. Quando tiver banco de dados, troque `carregarPlantonistas()` e
+`salvarPlantonistas()` em `js/app.js`. As especialidades ficam em `DADOS.especialidadesPlantao`.
