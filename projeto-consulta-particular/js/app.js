@@ -1220,7 +1220,7 @@ document.addEventListener('focusout', (e) => {
 });
 
 // ---------- Tabela de preços ----------
-// Valores e códigos de EXEMPLO: ajuste para a tabela real.
+// Valores da tabela de referência aprovada. Os CÓDIGOS laboratoriais ainda são exemplos: confira.
 // TODO: quando tiver API, buscar a tabela de lá em vez do navegador.
 
 const CATEGORIAS_EXAME = ['Ultrassonografia', 'Tomografia', 'Ressonância magnética', 'Raio-X', 'Mamografia',

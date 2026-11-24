@@ -849,7 +849,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           <div><h1>Tabela de preços</h1><p class="sub">Valor particular de cada exame. É usado para preencher o valor na requisição.</p></div>
           <button type="button" class="btn" id="btn-restaurar-precos"><svg class="i"><use href="#i-refresh"/></svg>Restaurar exemplos</button>
         </div>
-        <p class="aviso">Os valores e códigos que vêm preenchidos são <strong>exemplos</strong>. Ajuste para os valores reais. As alterações ficam salvas neste navegador.</p>
+        <p class="aviso">Tabela de referência aprovada (ex.: tomografia R$ 750,00, raio-X R$ 90,00, consulta de emergência R$ 250,00). Os <strong>códigos laboratoriais</strong> ainda são exemplos: confira. As alterações ficam salvas neste navegador.</p>
 
         <div class="card tabela-card">
           <div class="tabela-topo">
@@ -2369,7 +2369,7 @@ document.addEventListener('focusout', (e) => {
 });
 
 // ---------- Tabela de preços ----------
-// Valores e códigos de EXEMPLO: ajuste para a tabela real.
+// Valores da tabela de referência aprovada. Os CÓDIGOS laboratoriais ainda são exemplos: confira.
 // TODO: quando tiver API, buscar a tabela de lá em vez do navegador.
 
 const CATEGORIAS_EXAME = ['Ultrassonografia', 'Tomografia', 'Ressonância magnética', 'Raio-X', 'Mamografia',

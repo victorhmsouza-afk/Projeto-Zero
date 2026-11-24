@@ -45,7 +45,24 @@ e os formulários já têm o `submit` capturado. Para exibir dados nas tabelas, 
 
 ## Tabela de preços
 
-Os valores e códigos que vêm preenchidos são **exemplos**. Ajuste na tela *Tabela de preços*.
+Os valores que vêm preenchidos são a **tabela de referência aprovada**:
+
+| Exame / serviço | Valor |
+|---|---|
+| Tomografia (qualquer região) | R$ 750,00 |
+| Raio-X (qualquer osso) | R$ 90,00 |
+| Ultrassonografia (USG) | R$ 140,00 a R$ 180,00 |
+| Ressonância magnética | R$ 750,00 a R$ 850,00 |
+| Eletrocardiograma (ECG) | R$ 60,00 |
+| Ecocardiograma | R$ 250,00 |
+| Endoscopia digestiva alta | R$ 350,00 |
+| Colonoscopia | R$ 700,00 |
+| Mamografia | R$ 150,00 |
+| Consulta de emergência (PS) | R$ 250,00 |
+| Consultas com especialista | R$ 200,00 a R$ 350,00 |
+
+Os **códigos laboratoriais** (40304361, 40302040, 40301630) ainda são exemplos: confira antes de usar.
+Para mudar um valor, use a tela *Tabela de preços* (ou o objeto `PRECOS_EXEMPLO` / `DADOS` em `js/app.js`).
 As alterações ficam salvas no navegador (`localStorage`). Quando tiver API, troque `carregarTabelaPrecos()`
 e `salvarTabelaPrecos()` em `js/app.js`.
 
