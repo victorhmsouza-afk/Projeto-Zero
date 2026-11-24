@@ -2386,19 +2386,38 @@ const PRECOS_EXEMPLO = {
     { categoria: 'Ultrassonografia', nome: 'USG de rins e vias urinárias', valor: 150 },
     { categoria: 'Ultrassonografia', nome: 'USG de próstata', valor: 150 },
     { categoria: 'Ultrassonografia', nome: 'USG obstétrica', valor: 160 },
+    // Tomografia por região: cabeça e pescoço, tronco, coluna, braço e perna
     { categoria: 'Tomografia', nome: 'TC de crânio', valor: 350 },
-    { categoria: 'Tomografia', nome: 'TC de tórax', valor: 420 },
-    { categoria: 'Tomografia', nome: 'TC de abdome total', valor: 650 },
+    { categoria: 'Tomografia', nome: 'TC de face', valor: 330 },
     { categoria: 'Tomografia', nome: 'TC de seios da face', valor: 330 },
+    { categoria: 'Tomografia', nome: 'TC de órbitas', valor: 350 },
+    { categoria: 'Tomografia', nome: 'TC de ouvidos (mastoides)', valor: 350 },
+    { categoria: 'Tomografia', nome: 'TC de pescoço', valor: 400 },
+    { categoria: 'Tomografia', nome: 'TC de tórax', valor: 420 },
+    { categoria: 'Tomografia', nome: 'TC de abdome superior', valor: 450 },
+    { categoria: 'Tomografia', nome: 'TC de abdome total', valor: 650 },
+    { categoria: 'Tomografia', nome: 'TC de pelve', valor: 450 },
+    { categoria: 'Tomografia', nome: 'TC de coluna cervical', valor: 450 },
+    { categoria: 'Tomografia', nome: 'TC de coluna torácica', valor: 450 },
     { categoria: 'Tomografia', nome: 'TC de coluna lombar', valor: 450 },
+    { categoria: 'Tomografia', nome: 'TC de ombro', valor: 400 },
+    { categoria: 'Tomografia', nome: 'TC de braço', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de cotovelo', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de antebraço', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de punho', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de mão', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de quadril', valor: 420 },
+    { categoria: 'Tomografia', nome: 'TC de coxa', valor: 400 },
+    { categoria: 'Tomografia', nome: 'TC de joelho', valor: 400 },
+    { categoria: 'Tomografia', nome: 'TC de perna', valor: 400 },
+    { categoria: 'Tomografia', nome: 'TC de tornozelo', valor: 380 },
+    { categoria: 'Tomografia', nome: 'TC de pé', valor: 380 },
     { categoria: 'Ressonância magnética', nome: 'RM de crânio', valor: 800 },
     { categoria: 'Ressonância magnética', nome: 'RM de coluna lombar', valor: 850 },
     { categoria: 'Ressonância magnética', nome: 'RM de joelho', valor: 750 },
     { categoria: 'Ressonância magnética', nome: 'RM de ombro', valor: 750 },
-    { categoria: 'Raio-X', nome: 'RX de tórax PA e perfil', valor: 90 },
-    { categoria: 'Raio-X', nome: 'RX de coluna lombar', valor: 100 },
-    { categoria: 'Raio-X', nome: 'RX de joelho', valor: 80 },
-    { categoria: 'Raio-X', nome: 'RX de seios da face', valor: 80 },
+    // Raio-X: um item só, vale para qualquer osso ou região
+    { categoria: 'Raio-X', nome: 'Raio-X', valor: 90 },
     { categoria: 'Mamografia', nome: 'Mamografia bilateral', valor: 150 },
     { categoria: 'Densitometria', nome: 'Densitometria óssea', valor: 160 },
     { categoria: 'Eletrocardiograma', nome: 'Eletrocardiograma (ECG)', valor: 60 },
@@ -2413,6 +2432,7 @@ const PRECOS_EXEMPLO = {
   ],
 };
 
+const normalizar = (t) => String(t || '').trim().toLowerCase();
 const CHAVE_PRECOS = 'consultaParticular.tabelaPrecos';
 let precos = carregarTabelaPrecos();
 
@@ -2423,7 +2443,12 @@ function copiarExemplos() {
 function carregarTabelaPrecos() {
   try {
     const salvo = JSON.parse(localStorage.getItem(CHAVE_PRECOS));
-    if (salvo && Array.isArray(salvo.imagem) && Array.isArray(salvo.laboratorial)) return salvo;
+    if (salvo && Array.isArray(salvo.imagem) && Array.isArray(salvo.laboratorial)) {
+      // acrescenta exames novos da lista de exemplo que ainda não estão na tabela salva
+      const nomes = new Set(salvo.imagem.map((p) => normalizar(p.nome)));
+      copiarExemplos().imagem.forEach((p) => { if (!nomes.has(normalizar(p.nome))) salvo.imagem.push(p); });
+      return salvo;
+    }
   } catch (e) { /* navegador sem armazenamento: usa os exemplos */ }
   return copiarExemplos();
 }
@@ -2432,8 +2457,9 @@ function salvarTabelaPrecos() {
   try { localStorage.setItem(CHAVE_PRECOS, JSON.stringify(precos)); } catch (e) { /* ignora */ }
 }
 
-const normalizar = (t) => String(t || '').trim().toLowerCase();
-const precoImagem = (nome) => precos.imagem.find((p) => normalizar(p.nome) === normalizar(nome));
+const precoImagem = (nome) => precos.imagem.find((p) => normalizar(p.nome) === normalizar(nome))
+  // Raio-X vale para qualquer osso: "Raio-X de joelho", "RX de tórax" etc. usam o valor do Raio-X
+  || (/^(raio[\s-]?x|rx)\b/.test(normalizar(nome)) ? precos.imagem.find((p) => p.categoria === 'Raio-X') : undefined);
 const precoLab = (codigo) => precos.laboratorial.find((p) => normalizar(p.codigo) === normalizar(codigo));
 
 // Preenche todos os <select> de tipo de exame
