@@ -261,6 +261,8 @@ input[type="date"] { width: auto; }
 
 /* Formulário de novo atendimento (dentro da comanda) */
 .novo-form { display: flex; flex-direction: column; gap: 12px; }
+.servico-ps { padding: 7px 11px; border: 1px solid var(--linha); border-left: 3px solid var(--ouro); border-radius: 4px; background: var(--superficie-2); display: flex; flex-direction: column; }
+.servico-ps small { color: var(--apagado); font-size: 11.5px; }
 .modo-paciente { display: grid; grid-template-columns: 1fr 1fr; }
 .modo-paciente label span { display: block; text-align: center; }
 .cadastro-novo { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--linha); border-top: 2px solid var(--ouro); border-radius: 4px; background: var(--superficie-2); }
@@ -646,13 +648,13 @@ const CONFIG = {
     endereco: 'Endereço da unidade',
     telefone: '(00) 0000-0000',
   },
-  // Médicos (lista fixa, sem tela de cadastro). Valor = consulta eletiva.
+  // Médicos da CONSULTA ELETIVA (lista fixa, sem tela de cadastro). Valor = consulta eletiva.
+  // O Pronto Socorro não tem médico escolhido: é só o serviço (o plantonista muda sempre).
   medicos: [
     { id: 1, nome: 'Dra. Fernanda Costa', especialidade: 'Cardiologia', valorConsulta: 350 },
     { id: 2, nome: 'Dr. Ricardo Mendes', especialidade: 'Ortopedia', valorConsulta: 300 },
     { id: 3, nome: 'Dra. Juliana Rocha', especialidade: 'Ginecologia', valorConsulta: 320 },
     { id: 4, nome: 'Dr. Paulo Nogueira', especialidade: 'Clínica geral', valorConsulta: 200 },
-    { id: 5, nome: 'Dr. Rafael Monteiro', especialidade: 'Emergência', valorConsulta: 250 },
     { id: 6, nome: 'Dra. Camila Andrade', especialidade: 'Pediatria', valorConsulta: 250 },
   ],
 };
@@ -661,6 +663,12 @@ const TIPOS = {
   CONSULTA: { nome: 'Consulta', descricao: 'Consulta eletiva' },
   PRONTO_SOCORRO: { nome: 'Pronto Socorro', descricao: 'Consulta de emergência' },
 };
+
+// Nome do serviço: "Consulta · Dr(a). X" ou só "Pronto Socorro" (sem médico).
+function nomeServico(tipo, medicoNome) {
+  if (tipo === 'PRONTO_SOCORRO' || !medicoNome) return TIPOS[tipo]?.nome || 'Consulta';
+  return `${TIPOS[tipo].nome} · ${medicoNome}`;
+}
 
 // ---------- Tabela de preços padrão (pode ser alterada na tela Preços) ----------
 // Valores de laboratório são EXEMPLOS: troque pela tabela do hospital.
@@ -1022,7 +1030,7 @@ function renderComanda() {
     <div class="comanda-cabeca">
       <div>
         <h2>${esc(a.pacienteNome)}</h2>
-        <p>${TIPOS[a.tipo].descricao} · ${esc(a.medicoNome)} · ${dataBR(a.abertoEm)} ${horaBR(a.abertoEm)}</p>
+        <p>${a.tipo === 'PRONTO_SOCORRO' ? 'Pronto Socorro' : `${TIPOS[a.tipo].descricao} · ${esc(a.medicoNome)}`} · ${dataBR(a.abertoEm)} ${horaBR(a.abertoEm)}</p>
         <p>${[a.cpf && `CPF ${esc(a.cpf)}`, a.telefone && `Tel. ${esc(a.telefone)}`].filter(Boolean).join(' · ') || 'Sem CPF/telefone'}</p>
       </div>
       <div class="comanda-num">ATENDIMENTO<b>Nº ${a.numero}</b>pago ${moeda(totalPago)}</div>
@@ -1038,7 +1046,7 @@ function renderComanda() {
         <div class="cupom-titulo"><span>Consulta</span><span>${pgCons ? `${NOMES_FORMA[pgCons.forma]} · ${horaBR(pgCons.dataHora)}` : ''}</span></div>
         <div class="item pago">
           <span></span>
-          <span class="descr"><strong>${TIPOS[a.tipo].nome} · ${esc(a.medicoNome)}</strong><small>${realizada ? `Realizada às ${horaBR(a.consultaRealizadaEm)}` : 'Aguardando o médico'}</small></span>
+          <span class="descr"><strong>${esc(nomeServico(a.tipo, a.medicoNome))}</strong><small>${realizada ? `Realizada às ${horaBR(a.consultaRealizadaEm)}` : 'Aguardando o médico'}</small></span>
           <span class="chip ${realizada ? 'realizado' : 'pago'}">${realizada ? 'Realizada' : 'Paga'}</span>
           <span class="preco">${moeda(a.valorConsulta)}</span>
         </div>
@@ -1209,7 +1217,8 @@ $('#btn-novo').addEventListener('click', () => {
 function renderNovo() {
   const r = estado.rascunho;
   const p = r.paciente;
-  const medico = CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
+  const ps = r.tipo === 'PRONTO_SOCORRO';
+  const medico = ps ? null : CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
   $('#comanda').innerHTML = `
     <div class="comanda-cabeca">
       <div><h2>Novo atendimento</h2><p>Preencha o paciente e a consulta. O valor aparece no total ao lado.</p></div>
@@ -1252,14 +1261,15 @@ function renderNovo() {
             <label><input type="radio" name="nv-tipo" value="PRONTO_SOCORRO" ${r.tipo === 'PRONTO_SOCORRO' ? 'checked' : ''}><span>Pronto Socorro</span></label>
           </div>
           <div class="grade-campos">
+            ${ps ? `<div class="campo"><label>Serviço</label><div class="servico-ps"><strong>Pronto Socorro</strong><small>Atendimento pelo médico de plantão</small></div></div>` : `
             <div class="campo"><label for="nv-medico">Médico *</label><select id="nv-medico">
               <option value="">Selecione</option>
               ${CONFIG.medicos.map((m) => `<option value="${m.id}" ${String(m.id) === String(r.medicoId) ? 'selected' : ''}>${esc(m.nome)} · ${esc(m.especialidade)}</option>`).join('')}
-            </select></div>
+            </select></div>`}
             <div class="campo"><label for="nv-valor">Valor (R$)</label><input id="nv-valor" class="valor" inputmode="decimal" value="${valorCampo(r.valor)}" placeholder="0,00"></div>
           </div>
         </div>
-        ${medico && r.valor ? `<div class="item"><span></span><span class="descr"><strong>${TIPOS[r.tipo].nome} · ${esc(medico.nome)}</strong><small>${TIPOS[r.tipo].descricao}</small></span><span class="chip pendente">A pagar</span><span class="preco">${moeda(r.valor)}</span></div>` : ''}
+        ${(ps || medico) && r.valor ? `<div class="item"><span></span><span class="descr"><strong>${esc(nomeServico(r.tipo, medico?.nome))}</strong><small>${TIPOS[r.tipo].descricao}</small></span><span class="chip pendente">A pagar</span><span class="preco">${moeda(r.valor)}</span></div>` : ''}
       </div>
       <p class="erro" id="nv-erro" role="alert"></p>
     </div>`;
@@ -1361,8 +1371,9 @@ async function salvarNovoPaciente({ silencioso = false } = {}) {
 function itensParaPagar() {
   if (estado.modo === 'novo') {
     const r = estado.rascunho;
-    const m = CONFIG.medicos.find((x) => String(x.id) === String(r.medicoId));
-    return m && r.valor ? [{ nome: `${TIPOS[r.tipo].nome} · ${m.nome}`, valor: r.valor }] : [];
+    const ps = r.tipo === 'PRONTO_SOCORRO';
+    const m = ps ? null : CONFIG.medicos.find((x) => String(x.id) === String(r.medicoId));
+    return (ps || m) && r.valor ? [{ nome: nomeServico(r.tipo, m?.nome), valor: r.valor }] : [];
   }
   if (estado.modo === 'atendimento' && estado.atual) {
     return (estado.atual.exames || []).filter((x) => x.status === 'PENDENTE' && estado.selecionados.has(x.id)).map((x) => ({ id: x.id, nome: x.nome, valor: x.valor }));
@@ -1385,7 +1396,7 @@ function renderPagamento() {
   $('#visor-rotulo').textContent = estado.modo === 'novo' ? 'CONSULTA · TOTAL A PAGAR' : estado.modo === 'atendimento' ? 'EXAMES · TOTAL A PAGAR' : 'TOTAL A PAGAR';
   $('#visor-total').textContent = moeda(total);
   $('#visor-detalhe').textContent = !itens.length
-    ? (estado.modo === 'atendimento' ? 'Marque os exames que o paciente vai pagar agora' : estado.modo === 'novo' ? 'Escolha o médico para ver o valor' : 'Nada a pagar')
+    ? (estado.modo === 'atendimento' ? 'Marque os exames que o paciente vai pagar agora' : estado.modo === 'novo' ? (estado.rascunho?.tipo === 'PRONTO_SOCORRO' ? 'Informe o valor do Pronto Socorro' : 'Escolha o médico para ver o valor') : 'Nada a pagar')
     : `${itens.length} item(ns)${desconto ? ` · subtotal ${moeda(subtotal)} · desconto ${moeda(desconto)}` : ''}`;
   ['credito', 'debito', 'pix', 'dinheiro'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
   const sel = $('#pg-parcelas'); const atual = sel.value || '1';
@@ -1425,17 +1436,18 @@ $('#btn-finalizar').addEventListener('click', async () => {
   if (estado.modo === 'novo') {
     const r = estado.rascunho;
     if (!r.paciente && r.modoPaciente !== 'novo') return erro('Escolha um paciente já cadastrado ou clique em "+ Novo paciente".');
-    const medico = CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
-    if (!medico) return erro('Escolha o médico.');
+    const ps = r.tipo === 'PRONTO_SOCORRO';
+    const medico = ps ? null : CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
+    if (!ps && !medico) return erro('Escolha o médico da consulta.');
     const pac = r.paciente || await salvarNovoPaciente({ silencioso: true });
     if (!pac) return erro('Confira o cadastro do paciente (mensagem na comanda).');
     let at = await Banco.salvarAtendimento({
       pacienteId: pac.id, pacienteNome: pac.nome, cpf: pac.cpf || '', telefone: pac.telefone || '',
-      tipo: r.tipo, medicoId: medico.id, medicoNome: medico.nome, valorConsulta: total, abertoEm: pg.dataHora,
+      tipo: r.tipo, medicoId: medico?.id ?? null, medicoNome: medico?.nome || '', valorConsulta: total, abertoEm: pg.dataHora,
       consultaRealizadaEm: null, exames: [],
     });
     const salvo = await Banco.registrarPagamento({ ...pg, referente: 'CONSULTA', atendimentoId: at.id, atendimentoNumero: at.numero,
-      pacienteNome: pac.nome, cpf: pac.cpf || '', medicoNome: medico.nome, tipoConsulta: r.tipo });
+      pacienteNome: pac.nome, cpf: pac.cpf || '', medicoNome: medico?.nome || '', tipoConsulta: r.tipo });
     at.pagamentoConsultaId = salvo.id;
     at = await Banco.salvarAtendimento(at);
     estado.data = dataLocal(new Date());
@@ -1451,7 +1463,7 @@ $('#btn-finalizar').addEventListener('click', async () => {
   const a = estado.atual;
   const ids = itens.map((i) => i.id);
   const salvo = await Banco.registrarPagamento({ ...pg, referente: 'EXAMES', atendimentoId: a.id, atendimentoNumero: a.numero,
-    pacienteNome: a.pacienteNome, cpf: a.cpf || '', medicoNome: a.medicoNome, tipoConsulta: a.tipo });
+    pacienteNome: a.pacienteNome, cpf: a.cpf || '', medicoNome: a.tipo === 'PRONTO_SOCORRO' ? '' : a.medicoNome, tipoConsulta: a.tipo });
   a.exames.forEach((x) => { if (ids.includes(x.id)) Object.assign(x, { status: 'PAGO', pagoEm: salvo.dataHora, pagamentoId: salvo.id }); });
   await Banco.salvarAtendimento(a);
   estado.selecionados = new Set();
@@ -1501,7 +1513,7 @@ function mostrarRecibo(p) {
     p.idTransacao && ['ID da transação Pix', p.idTransacao],
     p.forma === 'DINHEIRO' && ['Valor recebido', moeda(p.recebido)],
     p.forma === 'DINHEIRO' && ['Troco', moeda(p.troco || 0)],
-    ['Médico', p.medicoNome],
+    p.tipoConsulta === 'PRONTO_SOCORRO' ? ['Serviço', 'Pronto Socorro'] : p.medicoNome && ['Médico', p.medicoNome],
     ['Atendimento', `nº ${p.atendimentoNumero}`],
   ].filter(Boolean);
   $('#recibo').innerHTML = `
@@ -1813,12 +1825,12 @@ function gerarExemplos() {
       let r = rnd() * somaP, h = 0; while (r > pesos[h]) { r -= pesos[h]; h++; }
       const ab = new Date(dia); ab.setHours(h, Math.floor(rnd() * 60), 0, 0);
       const ps = rnd() < (fds || h >= 19 || h < 7 ? 0.7 : 0.35);
-      const medico = ps ? CONFIG.medicos[4] : CONFIG.medicos[Math.floor(rnd() * 4)];
+      const medico = ps ? null : CONFIG.medicos[Math.floor(rnd() * CONFIG.medicos.length)];
       const valor = ps ? PRECOS_PADRAO.prontoSocorro : medico.valorConsulta;
       const id = `X${dd}-${k}`; num++;
       const paciente = `${nomes[Math.floor(rnd() * nomes.length)]} ${sobren[Math.floor(rnd() * sobren.length)]} (exemplo)`;
       const pgC = { id: `XG${dd}-${k}`, numeroRecibo: `EX-${++rec}`, exemplo: true, referente: 'CONSULTA', atendimentoId: id, atendimentoNumero: num,
-        pacienteNome: paciente, cpf: '', medicoNome: medico.nome, tipoConsulta: ps ? 'PRONTO_SOCORRO' : 'CONSULTA',
+        pacienteNome: paciente, cpf: '', medicoNome: medico?.nome || '', tipoConsulta: ps ? 'PRONTO_SOCORRO' : 'CONSULTA',
         forma: formas[Math.floor(rnd() * formas.length)], valor, subtotal: valor, desconto: 0, itens: [{ nome: 'Consulta', valor }], dataHora: iso(ab) };
       pags.push(pgC);
       const realizada = new Date(ab.getTime() + (20 + rnd() * 60) * 60000);
@@ -1833,14 +1845,14 @@ function gerarExemplos() {
         if (rnd() < 0.85) {
           const t = new Date(realizada.getTime() + (5 + e * (rnd() < 0.3 ? 240 : 3)) * 60000);
           const pg = { id: `XP${dd}-${k}-${e}`, numeroRecibo: `EX-${++rec}`, exemplo: true, referente: 'EXAMES', atendimentoId: id, atendimentoNumero: num,
-            pacienteNome: paciente, cpf: '', medicoNome: medico.nome, tipoConsulta: pgC.tipoConsulta,
+            pacienteNome: paciente, cpf: '', medicoNome: medico?.nome || '', tipoConsulta: pgC.tipoConsulta,
             forma: formas[Math.floor(rnd() * formas.length)], valor: x.valor, subtotal: x.valor, desconto: 0, itens: [{ nome: x.nome, valor: x.valor }], dataHora: iso(t) };
           pags.push(pg);
           Object.assign(x, { status: rnd() < 0.8 ? 'REALIZADO' : 'PAGO', pagoEm: pg.dataHora, pagamentoId: pg.id, realizadoEm: pg.dataHora });
         }
       });
       atend.push({ id, numero: num, exemplo: true, pacienteId: '', pacienteNome: paciente, cpf: '', telefone: '', tipo: pgC.tipoConsulta,
-        medicoId: medico.id, medicoNome: medico.nome, valorConsulta: valor, abertoEm: pgC.dataHora, pagamentoConsultaId: pgC.id,
+        medicoId: medico?.id ?? null, medicoNome: medico?.nome || '', valorConsulta: valor, abertoEm: pgC.dataHora, pagamentoConsultaId: pgC.id,
         consultaRealizadaEm: iso(realizada), exames: lista });
     }
   }

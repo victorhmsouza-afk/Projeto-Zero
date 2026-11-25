@@ -33,7 +33,8 @@ números em Inter, cantos retos e tema claro/escuro automático.
      **Salvar paciente** grava na hora; se esquecer, o cadastro é salvo ao finalizar o pagamento.
 
    Depois,
-   **Consulta** ou **Pronto Socorro**, médico e valor. O valor vai direto para o **visor do total**.
+   **Consulta** (escolhe o médico; valor do médico) ou **Pronto Socorro** (só o serviço, sem nome de médico,
+   porque o plantonista muda sempre; valor da tabela). O valor vai direto para o **visor do total**.
    Escolha **PIX, CRÉDITO (até 6x), DÉBITO ou DINHEIRO (com troco)**, desconto opcional, e **FINALIZAR PAGAMENTO** → recibo.
 2. **Consulta realizada** — botão na comanda. Só depois disso os exames podem ser lançados.
 3. **Lançar exames pedidos pelo médico** — pelo nome (imagem e laboratório), com o preço da tabela.
@@ -51,7 +52,7 @@ Não existe cancelamento nem estorno de pagamento.
 |---|---|
 | **Caixa** | Fila do dia (com busca, outros dias e resumo), comanda do paciente e painel de pagamento com visor do total. |
 | **Estatísticas** | Consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, recebido em consultas e em exames); gráfico com dica ao passar o mouse e tabela com os mesmos números. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
-| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos e o valor da consulta de cada um ficam na parte **DADOS** do `index.html` (lista `CONFIG.medicos`). |
+| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos (só da consulta eletiva) e o valor da consulta de cada um ficam na parte **DADOS** do `index.html` (lista `CONFIG.medicos`). |
 
 ## Arquivos
 
@@ -74,7 +75,7 @@ Para ligar ao banco de dados / API do hospital, troque **só as funções do obj
 | Função | O que faz |
 |---|---|
 | `buscarPacientes(texto)` / `salvarPaciente(p)` | pacientes `{ id, nome, cpf, nascimento, telefone, email, cadastradoEm }` |
-| `listarAtendimentos({ inicio, fim })` / `obterAtendimento(id)` / `salvarAtendimento(a)` | atendimento `{ id, numero, pacienteId, pacienteNome, cpf, telefone, tipo: 'CONSULTA' \| 'PRONTO_SOCORRO', medicoId, medicoNome, valorConsulta, abertoEm, pagamentoConsultaId, consultaRealizadaEm, exames: [{ id, nome, categoria, valor, status: 'PENDENTE' \| 'PAGO' \| 'REALIZADO', pedidoEm, pagoEm, pagamentoId, realizadoEm }] }` |
+| `listarAtendimentos({ inicio, fim })` / `obterAtendimento(id)` / `salvarAtendimento(a)` | atendimento `{ id, numero, pacienteId, pacienteNome, cpf, telefone, tipo: 'CONSULTA' \| 'PRONTO_SOCORRO', medicoId, medicoNome (vazio no Pronto Socorro), valorConsulta, abertoEm, pagamentoConsultaId, consultaRealizadaEm, exames: [{ id, nome, categoria, valor, status: 'PENDENTE' \| 'PAGO' \| 'REALIZADO', pedidoEm, pagoEm, pagamentoId, realizadoEm }] }` |
 | `registrarPagamento(pg)` / `listarPagamentos({ inicio, fim, atendimentoId })` | pagamento `{ id, numeroRecibo, referente: 'CONSULTA' \| 'EXAMES', atendimentoId, atendimentoNumero, pacienteNome, cpf, medicoNome, tipoConsulta, forma, valor, subtotal, desconto, itens, parcelas?, autorizacao?, idTransacao?, recebido?, troco?, dataHora }` |
 | `lerPrecos()` / `salvarPrecos(p)` / `restaurarPrecos()` | `{ prontoSocorro, adicionalContraste, exames: [{ categoria, nome, valor }] }` |
 
