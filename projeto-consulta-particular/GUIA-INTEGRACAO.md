@@ -1,7 +1,7 @@
 # Guia de integração · Consulta Particular
 
 > **Rascunho.** Este guia acompanha o projeto e será atualizado conforme o sistema mudar.
-> Última revisão: 24/11/2026 (inclui pedido do médico por código e exames de laboratório). Pendências em aberto estão no fim do documento.
+> Última revisão: 25/11/2026 (inclui retorno da consulta eletiva). Pendências em aberto estão no fim do documento.
 
 Este guia é para a equipe de TI que vai ligar o **Consulta Particular** (front-end, nesta pasta) ao sistema do hospital.
 Ele lista cada ponto de integração, os dados que vão e voltam e uma sugestão de rota na API.
@@ -61,7 +61,7 @@ os dados do particular ficam em tabela própria.
 | `carregarSetores()` → `preencherSetores(lista)` | Troca de aba | `[{ id, nome, valorConsulta? }]` (no PS, `valorConsulta` = consulta de emergência) | `GET /api/particular/setores?modalidade=` |
 | `carregarMedicosConsulta()` → `preencherMedicosConsulta(lista)` | Troca de aba | Consulta: `[{ id, nome, especialidade, valorConsulta }]`; PS: plantonistas **com ponto de entrada aberto** | `GET /api/particular/medicos?modalidade=` |
 | `carregarAtendimentosAnteriores()` → `renderAnteriores(lista)` | Ao escolher paciente / trocar aba | `[{ numero, tipo: 'CONSULTA'\|'PRONTO_SOCORRO', senha, status, entrada, alta, medico, valor, pago, pagamento, exames, risco, riscoOrigem, triagemEnfermagem, historicoRisco }]` | `GET /api/particular/atendimentos?pacienteId=&modalidade=` |
-| `registrarAtendimento(dados)` | Depois do **pagamento confirmado** | `{ paciente, setor, modalidade, medico, valor, pagamento, risco?, riscoOrigem?, historicoRisco? }` → gravar com status `AGUARDANDO` (Liberado para consulta) | `POST /api/particular/atendimentos` |
+| `registrarAtendimento(dados)` | Depois do **pagamento confirmado** (ou no **retorno** da consulta eletiva) | `{ paciente, setor, modalidade, medico, valor, pagamento, risco?, riscoOrigem?, historicoRisco?, retorno?, consultaOrigem? }` → gravar com status `AGUARDANDO` (Liberado para consulta). No retorno: `retorno: true`, `valor: 0`, `pagamento: null` | `POST /api/particular/atendimentos` |
 | `registrarTriagem(atendimento, triagem)` | Enfermagem faz a triagem (PS) | `triagem = { risco, observacoes, por: 'ENFERMAGEM', dataHora }` → atendimento fica `risco`, `riscoOrigem: 'ENFERMAGEM'`, `triagemEnfermagem: true`, `status: 'TRIADO'` e mais um item em `historicoRisco` | `POST /api/particular/atendimentos/:numero/triagem` |
 | `registrarConclusaoConsulta(atendimento)` | Botão Concluir consulta | status `ATENDIDA` | `POST /api/particular/atendimentos/:numero/concluir` |
 | `carregarFila()` → `renderFila(lista)` | Tela Fila da emergência (atualiza a cada minuto) | atendimentos de PS do dia sem consulta concluída: `[{ numero, paciente, particular, risco, entrada, status, medico, pago, triagemEnfermagem, riscoOrigem, historicoRisco }]` | `GET /api/particular/fila` |
@@ -151,6 +151,8 @@ Prefixo sugerido `PARTICULAR_` (ajustar ao padrão do banco):
 ## 4. Regras de negócio que a API também deve garantir
 
 1. **Pagamento antes:** consulta, consulta de emergência, exames e agendamento só são gravados com pagamento confirmado.
+   Exceção: **retorno da consulta eletiva** (mesmo médico, até 30 dias, um por consulta) é sem cobrança.
+   **Pronto Socorro não tem retorno.**
 2. **Pronto Socorro:** pré-classificação de risco (recepção) obrigatória antes do pagamento; consulta só pode ser
    concluída depois da **triagem de enfermagem**; "Pedir exames" só depois da consulta concluída.
 3. **Particular:** paciente sem convênio, paga por serviço (selo ✱).
@@ -182,7 +184,7 @@ curl -X GET "http://localhost:3000/api/particular/fila" \
 ## 6. Pontos em aberto (antes de implantar)
 
 - [ ] **Exames de laboratório:** trocar códigos `LAB-xxx` e valores de exemplo pela tabela do laboratório.
-- [ ] **Retorno de consulta**: existe retorno sem cobrança? Em quantos dias?
+- [x] **Retorno de consulta**: só na eletiva, sem cobrança, mesmo médico, até 30 dias (confirmar o prazo). Emergência não tem retorno.
 - [ ] **Médicos e valores reais** da consulta particular (hoje fictícios).
 - [ ] **Jurídico:** cobrança antes do atendimento de **vermelho/laranja** (art. 135-A do Código Penal).
 - [ ] **LGPD:** prazo de guarda das fotos do ponto e quem pode ver a auditoria.

@@ -285,3 +285,13 @@ Tela **Ponto do plantão** (menu):
   TGO/TGP, colesterol, triglicerídeos, HbA1c, TSH, T4 livre, PCR, VHS, urina tipo I, urocultura, beta-HCG, coagulograma,
   troponina, CK-MB, amilase, lipase, gasometria, dengue NS1, tipagem sanguínea). **Valores de exemplo**; códigos `LAB-xxx` são internos.
 - Pedidos ficam neste navegador. Na integração: `salvarPedidoMedico`, `buscarPedidoMedico`, `marcarPedidoPago`.
+
+## Retorno de consulta (só eletiva)
+
+- **Só existe retorno na consulta eletiva** (aba **Consulta**). **Consulta de emergência (Pronto Socorro) não tem retorno**: é sempre cobrada.
+- Aparece **"Retorno disponível"** quando o paciente teve consulta **paga e concluída** com o **mesmo médico** há até
+  **30 dias** (`DADOS.diasRetorno`) e ela ainda não teve retorno. O botão **Registrar retorno (sem cobrança)** abre o
+  atendimento sem pagamento; ele aparece na lista como **Retorno · sem cobrança** e segue o fluxo normal
+  (concluir consulta → pedido de exames, que são pagos).
+- Se for um problema novo, a recepção usa o pagamento normal.
+- `registrarAtendimento(dados)` recebe `retorno: true`, `valor: 0`, `pagamento: null` e `consultaOrigem` (número da consulta).

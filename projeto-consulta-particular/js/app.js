@@ -49,6 +49,9 @@ const DADOS = {
   ],
   // Especialidades dos plantonistas da Emergência
   especialidadesPlantao: ['Emergencista', 'Clínico geral', 'Ortopedista', 'Pediatra'],
+  // Retorno da consulta ELETIVA sem cobrança: mesmo médico, até X dias depois da consulta paga e concluída.
+  // Consulta de emergência (Pronto Socorro) NÃO tem retorno.
+  diasRetorno: 30,
   horarios: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'],
 };
@@ -354,9 +357,9 @@ function renderCartaoPaciente() {
 
 // Já pode sair da tela: pagou e, no Pronto Socorro, já passou pela triagem (classificação concluída)
 function podeRetirar(a) {
-  if (!a || !a.pago) return false;
+  if (!a || !(a.pago || a.retorno)) return false;
   const ps = (a.tipo || estado.modalidade) === 'PRONTO_SOCORRO';
-  return !!a.pago && (!ps || !!a.triagemEnfermagem);
+  return !ps || !!a.triagemEnfermagem;
 }
 
 // ✕ do cartão: limpa a tela para o próximo paciente (não apaga nada)
@@ -903,12 +906,15 @@ function renderAnteriores(atendimentos) {
       <td>${formatarDataHora(a.entrada)}</td>
       <td>${formatarDataHora(a.alta)}</td>
       <td>${esc(a.medico)}</td>
-      <td>${a.valor
-        ? `<span class="valor-pago">${formatarMoeda(a.valor)} ${tagStatus(a.pago ? 'PAGO' : 'PENDENTE')}</span>`
-        : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${a.retorno
+        ? `<span class="tag tag-retorno" title="Retorno da consulta ${esc(a.consultaOrigem || '')}, sem cobrança">Retorno · sem cobrança</span>`
+        : a.valor
+          ? `<span class="valor-pago">${formatarMoeda(a.valor)} ${tagStatus(a.pago ? 'PAGO' : 'PENDENTE')}</span>`
+          : '<span style="color:var(--muted)">—</span>'}</td>
       <td><div class="acoes-linha">${acoesAtendimento(a)}</div></td>
     </tr>`).join('');
   renderEtapas();
+  if (typeof atualizarRetorno === 'function') atualizarRetorno();
   $('#vazio-anteriores').hidden = atendimentos.length > 0;
   $('#vazio-anteriores').textContent = estado.paciente
     ? `Nenhum atendimento de ${MODALIDADES[estado.modalidade].nome} para este paciente.`
@@ -939,7 +945,7 @@ function precisaTriagem(a) {
 
 function acaoFluxo(a, n, botaoExames) {
   if (!consultaConcluida(a)) {
-    if (!a.pago) return `<span class="dica">Aguardando pagamento</span>`;
+    if (!a.pago && !a.retorno) return `<span class="dica">Aguardando pagamento</span>`;
     if (precisaTriagem(a)) return `<button class="btn-acao destaque" data-triagem="${n}">Triagem enfermagem</button>`;
     const reclass = (a.tipo || estado.modalidade) === 'PRONTO_SOCORRO'
       ? `<button class="btn-acao" data-triagem="${n}" title="Mudar a cor da prioridade">Reclassificar</button>` : '';
@@ -952,7 +958,7 @@ function acaoFluxo(a, n, botaoExames) {
 const ETAPAS = {
   CONSULTA: [
     { titulo: 'Paciente', dica: 'Buscar ou cadastrar' },
-    { titulo: 'Pagamento', dica: 'Paga antes da consulta' },
+    { titulo: 'Pagamento', dica: 'Paga antes (retorno em até 30 dias é sem cobrança)' },
     { titulo: 'Consulta', dica: 'Médico atende' },
     { titulo: 'Exames', dica: 'Médico gera o pedido; recepção cobra pelo código' },
   ],
@@ -973,7 +979,7 @@ function atendimentoDeHoje() {
 
 function renderEtapas() {
   const a = estado.paciente ? atendimentoDeHoje() : null;
-  let feitas = [!!estado.paciente, !!a?.pago, !!a && consultaConcluida(a), !!a?.exames];
+  let feitas = [!!estado.paciente, !!(a?.pago || a?.retorno), !!a && consultaConcluida(a), !!a?.exames];
   if (estado.modalidade === 'PRONTO_SOCORRO') {
     feitas = [!!estado.paciente, !!(estado.risco || a?.risco), !!a?.pago, !!a?.triagemEnfermagem,
       !!a && consultaConcluida(a), !!a?.exames];
@@ -1208,6 +1214,7 @@ function trocarModalidade(modalidade) {
   $('#atend-abrir-btn-icone').setAttribute('href', m.botaoIcone);
   $('#linha-valor-ps').hidden = modalidade !== 'PRONTO_SOCORRO';
   $('#card-risco').hidden = modalidade !== 'PRONTO_SOCORRO';
+  $('#card-retorno').hidden = true; // Pronto Socorro não tem retorno
   renderCartaoPaciente();
   estado.setor = '';
   carregarSetores();
@@ -1337,6 +1344,44 @@ $('#atend-medico').addEventListener('change', () => {
   const m = medicoConsultaSelecionado();
   $('#atend-valor-consulta').textContent = m ? formatarMoeda(m.valorConsulta) : '—';
   atualizarBotaoAbrir();
+  atualizarRetorno();
+});
+
+// ---------- Retorno da consulta eletiva ----------
+// Só na aba Consulta: consulta paga e concluída, com o MESMO médico, há no máximo DADOS.diasRetorno dias,
+// e que ainda não teve retorno. Pronto Socorro não tem retorno.
+function consultaParaRetorno() {
+  if (estado.modalidade !== 'CONSULTA' || !estado.paciente) return null;
+  const m = medicoConsultaSelecionado();
+  if (!m) return null;
+  const limite = Date.now() - DADOS.diasRetorno * 86400000;
+  const lista = estado.anteriores || [];
+  return lista
+    .filter((a) => (a.tipo || 'CONSULTA') === 'CONSULTA' && !a.retorno && a.pago && consultaConcluida(a)
+      && a.medico === m.nome && new Date(a.entrada).getTime() >= limite
+      && !lista.some((x) => x.retorno && String(x.consultaOrigem) === String(a.numero)))
+    .sort((x, y) => String(y.entrada).localeCompare(String(x.entrada)))[0] || null;
+}
+
+function atualizarRetorno() {
+  const c = consultaParaRetorno();
+  $('#card-retorno').hidden = !c || !estado.setor;
+  if (!c) return;
+  const ate = new Date(new Date(c.entrada).getTime() + DADOS.diasRetorno * 86400000);
+  $('#retorno-info').textContent = `Consulta ${c.numero} de ${formatarData(c.entrada)} com ${c.medico}. `
+    + `Retorno sem cobrança até ${ate.toLocaleDateString('pt-BR')}. Se for um problema novo, use o pagamento normal.`;
+}
+
+$('#btn-registrar-retorno').addEventListener('click', async () => {
+  const c = consultaParaRetorno();
+  if (!c) return;
+  if (!(await confirmar(`Registrar retorno da consulta ${c.numero} com ${c.medico}, sem cobrança?`, 'Registrar retorno'))) return;
+  await registrarAtendimento({
+    paciente: estado.paciente, setor: estado.setor, modalidade: 'CONSULTA',
+    medico: medicoConsultaSelecionado(), valor: 0, pagamento: null,
+    retorno: true, consultaOrigem: c.numero,
+  });
+  carregarAtendimentosAnteriores();
 });
 
 // ---------- Abrir atendimento ----------
@@ -1388,8 +1433,9 @@ $('#btn-abrir-atendimento').addEventListener('click', async () => {
 
 async function registrarAtendimento(dados) {
   // TODO: salvar o atendimento (consulta ou pronto socorro).
-  //   dados = { paciente, setor, modalidade, medico?, valor, pagamento }
-  //   dados.pagamento sempre existe (já foi confirmado). Grave com status AGUARDANDO (liberado para consulta).
+  //   dados = { paciente, setor, modalidade, medico?, valor, pagamento, retorno?, consultaOrigem? }
+  //   dados.pagamento sempre existe (já foi confirmado), EXCETO no retorno da consulta eletiva
+  //   (retorno: true, valor 0, consultaOrigem = número da consulta). Grave com status AGUARDANDO (liberado para consulta).
   console.log('Abrir atendimento', dados);
 }
 

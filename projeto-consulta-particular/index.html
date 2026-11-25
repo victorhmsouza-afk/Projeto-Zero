@@ -181,6 +181,13 @@
               <span class="legenda-particular"><span class="selo-particular" title="Particular: sem convênio, paga por serviço"><span class="ast">✱</span>Particular</span>sem convênio · paga por serviço</span>
             </div>
 
+            <!-- Retorno: só na consulta eletiva (aba Consulta). Pronto Socorro não tem retorno. -->
+            <div class="card linha card-retorno" id="card-retorno" hidden>
+              <svg class="i verde"><use href="#i-history"/></svg>
+              <div class="retorno-texto"><strong>Retorno disponível</strong><span id="retorno-info"></span></div>
+              <button type="button" class="btn-primario" id="btn-registrar-retorno"><svg class="i"><use href="#i-history"/></svg>Registrar retorno (sem cobrança)</button>
+            </div>
+
             <div class="card linha tracejado">
               <svg class="i verde"><use href="#i-steth" id="atend-abrir-icone"/></svg>
               <strong id="atend-abrir-titulo">Abrir consulta particular</strong>
