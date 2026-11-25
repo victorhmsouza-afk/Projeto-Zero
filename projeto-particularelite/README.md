@@ -57,9 +57,10 @@ Não existe cancelamento nem estorno de pagamento.
 
 | Tela | O que tem |
 |---|---|
-| **Caixa** | Fila do dia (com busca, outros dias e resumo), comanda do paciente e painel de pagamento com visor do total. |
-| **Estatísticas** | Consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, recebido em consultas e em exames); gráfico com dica ao passar o mouse e tabela com os mesmos números. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
-| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos (só da consulta eletiva) e o valor da consulta de cada um ficam na parte **DADOS** do `index.html` (lista `CONFIG.medicos`). |
+| **Caixa** | Fila do dia **sem valores em dinheiro**: mostra os atendimentos **em andamento** e só o **último atendido** (concluído = consulta realizada e nenhum exame esperando pagamento). Os outros concluídos do dia aparecem pela busca (nome ou nº). Comanda do paciente e painel de pagamento com visor do total. |
+| **Estatísticas** | Só **quantidades**: consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, nº de cortesias); gráfico e tabela. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
+| **Contábil** | **Único lugar com os valores**: total recebido, consultas, exames, ticket médio, descontos e cortesias; tabela **por forma de pagamento** (Pix, crédito, débito, dinheiro, cortesia), tabela **por dia** e lista de **recibos emitidos** (clique para reabrir). Filtro de período e **Exportar planilha (CSV)** para o Excel. |
+| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Lista da diretoria que autoriza cortesias. Os médicos e o valor da consulta de cada um ficam no `index.html`, parte DADOS. |
 
 ## Arquivos
 
@@ -72,6 +73,7 @@ Dentro do `<script>` ele é dividido em três partes, marcadas com comentários:
 | **DADOS** | `CONFIG` (hospital, médicos), tabela de preços padrão e o objeto `Banco` (onde os dados são salvos) |
 | **CAIXA** | fila, comanda, pagamento, recibo e preços |
 | **ESTATÍSTICAS** | gráficos, tabela e dados de exemplo |
+| **CONTÁBIL** | valores recebidos, por forma e por dia, recibos e exportação CSV |
 
 ## Onde os dados ficam
 

@@ -208,6 +208,7 @@ input[type="date"] { width: auto; }
 .fila-resumo strong { font-family: var(--fonte-num); font-size: 15px; }
 .fila-lista { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
 .fila-lista li + li { border-top: 1px solid var(--linha); }
+.fila-lista .fila-sep { padding: 7px 12px 5px; font-size: 10.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ouro-forte); background: var(--superficie-2); }
 .fila-lista button { width: 100%; text-align: left; background: none; border: 0; padding: 10px 12px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
 .fila-lista button:hover { background: var(--superficie-2); }
 .fila-lista button.selecionado { background: var(--ouro-claro); box-shadow: inset 3px 0 0 var(--ouro); }
@@ -311,6 +312,14 @@ input[type="date"] { width: auto; }
 .pagamento-nota { margin: 0; text-align: center; }
 
 /* ---------- Estatísticas ---------- */
+.contabil-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; margin-bottom: 12px; }
+@media (max-width: 900px) { .contabil-grade { grid-template-columns: 1fr; } }
+.contabil-grade .cartao { margin: 0; }
+.ct-rolagem { max-height: 360px; overflow-y: auto; }
+.ct-mais { display: flex; justify-content: center; margin-top: 10px; }
+.ct-mais:has([hidden]) { display: none; }
+#ct-recibos tr { cursor: pointer; }
+#ct-recibos tr:hover td { background: var(--superficie-2); }
 .filtros { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; margin-bottom: 12px; }
 .atalhos { display: flex; gap: 6px; flex-wrap: wrap; }
 .filtros .segmentos { flex-basis: 100%; }
@@ -429,6 +438,7 @@ input[type="date"] { width: auto; }
       <nav class="abas" aria-label="Seções">
         <a href="#caixa" data-tela="caixa">Caixa</a>
         <a href="#estatisticas" data-tela="estatisticas">Estatísticas</a>
+        <a href="#contabil" data-tela="contabil">Contábil</a>
         <a href="#precos" data-tela="precos">Preços</a>
       </nav>
       <div class="cores" role="group" aria-label="Cor do sistema">
@@ -452,7 +462,7 @@ input[type="date"] { width: auto; }
             <label class="sr" for="at-data">Dia</label>
             <input type="date" id="at-data">
             <label class="sr" for="at-busca">Buscar</label>
-            <input type="search" id="at-busca" placeholder="Buscar nome ou nº">
+            <input type="search" id="at-busca" placeholder="Buscar paciente (nome ou nº)">
           </div>
           <div class="fila-resumo" id="resumo-dia"></div>
           <ul class="fila-lista" id="lista-atend"></ul>
@@ -516,7 +526,7 @@ input[type="date"] { width: auto; }
       <div class="cabecalho">
         <div>
           <h1>Estatísticas de consultas</h1>
-          <p class="sub">Consultas por mês, dia, hora e minuto, com o valor recebido em consultas e exames.</p>
+          <p class="sub">Quantidade de consultas por mês, dia, hora e minuto. Os valores ficam na aba Contábil.</p>
         </div>
       </div>
 
@@ -555,7 +565,7 @@ input[type="date"] { width: auto; }
         <div class="cartao-topo"><h2>Tabela</h2><span class="nota">Os mesmos números do gráfico</span></div>
         <div class="tabela-rolagem">
           <table class="tabela">
-            <thead><tr><th id="est-col">Dia</th><th class="num">Consulta</th><th class="num">Pronto Socorro</th><th class="num">Total</th><th class="num">Recebido consultas</th><th class="num">Recebido exames</th></tr></thead>
+            <thead><tr><th id="est-col">Dia</th><th class="num">Consulta</th><th class="num">Pronto Socorro</th><th class="num">Total</th></tr></thead>
             <tbody id="est-tabela"></tbody>
             <tfoot id="est-rodape"></tfoot>
           </table>
@@ -575,6 +585,63 @@ input[type="date"] { width: auto; }
     </section>
 
     <!-- ===================== PREÇOS ===================== -->
+    <section class="tela" id="tela-contabil">
+      <div class="cabecalho">
+        <div>
+          <h1>Contábil</h1>
+          <p class="sub">Valores recebidos no caixa: por forma de pagamento, por dia e cada recibo emitido. Cortesias e descontos à parte.</p>
+        </div>
+        <div class="cabecalho-acoes"><button type="button" class="botao" id="ct-exportar">Exportar planilha (CSV)</button></div>
+      </div>
+
+      <div class="cartao filtros">
+        <div class="campo"><label for="ct-inicio">De</label><input type="date" id="ct-inicio"></div>
+        <div class="campo"><label for="ct-fim">Até</label><input type="date" id="ct-fim"></div>
+        <div class="atalhos" role="group" aria-label="Períodos prontos">
+          <button type="button" class="botao pequeno" data-ct-periodo="hoje">Hoje</button>
+          <button type="button" class="botao pequeno" data-ct-periodo="7">7 dias</button>
+          <button type="button" class="botao pequeno" data-ct-periodo="30">30 dias</button>
+          <button type="button" class="botao pequeno" data-ct-periodo="mes">Este mês</button>
+          <button type="button" class="botao pequeno" data-ct-periodo="365">12 meses</button>
+        </div>
+      </div>
+
+      <div class="indicadores" id="ct-indicadores"></div>
+
+      <div class="contabil-grade">
+        <div class="cartao">
+          <div class="cartao-topo"><h2>Por forma de pagamento</h2></div>
+          <div class="tabela-rolagem">
+            <table class="tabela">
+              <thead><tr><th>Forma</th><th class="num">Lançamentos</th><th class="num">Valor</th><th class="num">% do recebido</th></tr></thead>
+              <tbody id="ct-formas"></tbody>
+              <tfoot id="ct-formas-total"></tfoot>
+            </table>
+          </div>
+        </div>
+        <div class="cartao">
+          <div class="cartao-topo"><h2>Por dia</h2></div>
+          <div class="tabela-rolagem ct-rolagem">
+            <table class="tabela">
+              <thead><tr><th>Dia</th><th class="num">Consultas</th><th class="num">Exames</th><th class="num">Descontos</th><th class="num">Cortesias</th><th class="num">Recebido</th></tr></thead>
+              <tbody id="ct-dias"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <div class="cartao-topo"><h2>Recibos emitidos</h2><span class="nota" id="ct-qtd-recibos"></span></div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Data e hora</th><th>Recibo</th><th>Paciente</th><th>Referente</th><th>Forma</th><th class="num">Valor</th></tr></thead>
+            <tbody id="ct-recibos"></tbody>
+          </table>
+        </div>
+        <div class="ct-mais"><button type="button" class="botao" id="ct-mais" hidden>Mostrar mais</button></div>
+      </div>
+    </section>
+
     <section class="tela" id="tela-precos">
       <div class="cabecalho">
         <div>
@@ -994,28 +1061,50 @@ async function carregarCaixa() {
   $('#at-data').value = estado.data;
   estado.atendimentos = (await Banco.listarAtendimentos({ inicio: estado.data, fim: estado.data }))
     .sort((a, b) => b.abertoEm.localeCompare(a.abertoEm));
-  const pagamentosDia = await Banco.listarPagamentos({ inicio: estado.data, fim: estado.data });
   $('#resumo-dia').innerHTML = `
     <div><span>Atendimentos</span><strong>${estado.atendimentos.length}</strong></div>
-    <div><span>Recebido</span><strong>${moeda(pagamentosDia.reduce((t, p) => t + p.valor, 0))}</strong></div>`;
+    <div><span>Em andamento</span><strong>${estado.atendimentos.filter((a) => !concluido(a)).length}</strong></div>`;
   renderFila();
   if (estado.modo === 'atendimento' && estado.selecionadoId) await abrirAtendimento(estado.selecionadoId, false);
   else renderComanda();
 }
 
+// Concluído = consulta realizada e nenhum exame esperando pagamento.
+function concluido(a) {
+  return !!a.consultaRealizadaEm && !(a.exames || []).some((x) => x.status === 'PENDENTE');
+}
+// Momento em que o atendimento foi concluído (último pagamento de exame ou a consulta realizada).
+function concluidoEm(a) {
+  return [a.consultaRealizadaEm, ...(a.exames || []).map((x) => x.pagoEm)].filter(Boolean).sort().pop() || a.abertoEm;
+}
+
+// Na fila aparecem os atendimentos em andamento e só o ÚLTIMO concluído.
+// Os demais concluídos do dia continuam acessíveis pela busca.
 function renderFila() {
   const busca = $('#at-busca').value.trim().toLowerCase();
-  const lista = estado.atendimentos.filter((a) => !busca || a.pacienteNome.toLowerCase().includes(busca) || String(a.numero).includes(busca));
-  $('#lista-atend').innerHTML = lista.map((a) => {
+  let lista;
+  if (busca) {
+    lista = estado.atendimentos.filter((a) => a.pacienteNome.toLowerCase().includes(busca) || String(a.numero).includes(busca));
+  } else {
+    const andamento = estado.atendimentos.filter((a) => !concluido(a));
+    const ultimo = estado.atendimentos.filter(concluido).sort((a, b) => concluidoEm(b).localeCompare(concluidoEm(a)))[0];
+    lista = [...andamento];
+    if (ultimo) lista.push({ ...ultimo, _ultimo: true });
+    const aberto = estado.modo === 'atendimento' && estado.atendimentos.find((a) => a.id === estado.selecionadoId);
+    if (aberto && !lista.some((a) => a.id === aberto.id)) lista.push(aberto);
+  }
+  $('#lista-atend').innerHTML = lista.map((a, i) => {
     const s = situacao(a);
-    return `<li><button type="button" data-atend="${esc(a.id)}" class="${estado.modo === 'atendimento' && a.id === estado.selecionadoId ? 'selecionado' : ''}">
+    const titulo = !busca && a._ultimo ? '<li class="fila-sep">Último atendido</li>'
+      : !busca && i === 0 && !concluido(a) ? '<li class="fila-sep">Em andamento</li>' : '';
+    return `${titulo}<li><button type="button" data-atend="${esc(a.id)}" class="${estado.modo === 'atendimento' && a.id === estado.selecionadoId ? 'selecionado' : ''}">
       <strong>${esc(a.pacienteNome)}</strong><span class="hora">${horaBR(a.abertoEm)}</span>
       <span class="meta">${TIPOS[a.tipo].nome} · nº ${a.numero}</span>
       <span class="situacao"><span class="chip ${s.classe}">${s.texto}</span></span>
     </button></li>`;
   }).join('');
   $('#lista-vazia').hidden = lista.length > 0;
-  $('#lista-vazia').textContent = estado.atendimentos.length ? 'Nenhum atendimento encontrado.' : 'Nenhum atendimento neste dia.';
+  $('#lista-vazia').textContent = busca ? 'Nenhum atendimento encontrado.' : 'Nenhum atendimento neste dia.';
 }
 
 $('#lista-atend').addEventListener('click', (e) => {
@@ -1751,15 +1840,11 @@ async function carregarEstatisticas() {
 
 function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
   const modo = agrupamento();
-  const grupos = montarGrupos(modo, ini, fim).map((g) => ({ ...g, consulta: 0, ps: 0, recCons: 0, recExames: 0 }));
+  const grupos = montarGrupos(modo, ini, fim).map((g) => ({ ...g, consulta: 0, ps: 0 }));
   const mapa = new Map(grupos.map((g) => [g.chave, g]));
   atendimentos.forEach((a) => {
     const g = mapa.get(chaveDe(modo, a.abertoEm));
     if (g) g[a.tipo === 'PRONTO_SOCORRO' ? 'ps' : 'consulta']++;
-  });
-  pagamentos.forEach((p) => {
-    const g = mapa.get(chaveDe(modo, p.dataHora));
-    if (g) g[p.referente === 'CONSULTA' ? 'recCons' : 'recExames'] += p.valor;
   });
   grupos.forEach((g) => { g.total = g.consulta + g.ps; });
 
@@ -1775,10 +1860,7 @@ function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
   const nCons = atendimentos.filter((a) => a.tipo !== 'PRONTO_SOCORRO').length;
   const nPs = atendimentos.length - nCons;
   const total = atendimentos.length;
-  const recCons = pagamentos.filter((p) => p.referente === 'CONSULTA').reduce((t, p) => t + p.valor, 0);
-  const recEx = pagamentos.filter((p) => p.referente !== 'CONSULTA').reduce((t, p) => t + p.valor, 0);
-  const cortesias = pagamentos.filter((p) => p.cortesia);
-  const valCortesia = cortesias.reduce((t, p) => t + Number(p.cortesia.valor || 0), 0);
+  const cortesias = pagamentos.filter((p) => p.cortesia && p.referente === 'CONSULTA');
   const dias = Math.max(1, Math.round((new Date(`${fim}T00:00`) - new Date(`${ini}T00:00`)) / 86400000) + 1);
   const porHora = new Array(24).fill(0); atendimentos.forEach((a) => { porHora[Number(a.abertoEm.slice(11, 13))]++; });
   const pico = porHora.indexOf(Math.max(...porHora));
@@ -1791,9 +1873,7 @@ function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
     ['Consulta', nCons, `eletiva${pct(nCons)}`],
     ['Pronto Socorro', nPs, `emergência${pct(nPs)}`],
     ['Horário de pico', total ? `${String(pico).padStart(2, '0')}h` : '—', pico15 ? `faixa mais cheia: ${fmt15(Number(pico15[0]))} (${pico15[1]})` : 'sem movimento'],
-    ['Recebido em consultas', moeda(recCons), ''],
-    ['Recebido em exames', moeda(recEx), total ? `média ${moeda((recCons + recEx) / total)} por atendimento` : ''],
-    ['Cortesias (diretoria)', cortesias.length, cortesias.length ? `${moeda(valCortesia)} sem cobrança` : 'nenhuma no período'],
+    ['Cortesias (diretoria)', cortesias.length, cortesias.length ? `${Math.round((cortesias.length / Math.max(1, total)) * 1000) / 10}% dos atendimentos` : 'nenhuma no período'],
   ].map(([t, v, s]) => `<article><span>${t}</span><strong>${v}</strong><small>${s}</small></article>`).join('');
 
   const nome = { mes: 'mês', dia: 'dia', hora: 'hora do dia', minuto: 'minuto (faixas de 15 min)' }[modo];
@@ -1803,12 +1883,11 @@ function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
   $('#est-vazio').hidden = total > 0;
   desenharGrafico(visiveis, total > 0);
 
-  const linhas = modo === 'minuto' || modo === 'hora' ? visiveis.filter((g) => g.total || g.recExames) : visiveis;
+  const linhas = modo === 'minuto' || modo === 'hora' ? visiveis.filter((g) => g.total) : visiveis;
   $('#est-tabela').innerHTML = linhas.map((g) => `
-    <tr><td>${esc(g.longo)}</td><td class="num">${g.consulta}</td><td class="num">${g.ps}</td><td class="num"><strong>${g.total}</strong></td>
-    <td class="num">${moeda(g.recCons)}</td><td class="num">${moeda(g.recExames)}</td></tr>`).join('')
-    || '<tr><td colspan="6" class="vazio">Nenhuma consulta no período.</td></tr>';
-  $('#est-rodape').innerHTML = `<tr><td>Total do período</td><td class="num">${nCons}</td><td class="num">${nPs}</td><td class="num">${total}</td><td class="num">${moeda(recCons)}</td><td class="num">${moeda(recEx)}</td></tr>`;
+    <tr><td>${esc(g.longo)}</td><td class="num">${g.consulta}</td><td class="num">${g.ps}</td><td class="num"><strong>${g.total}</strong></td></tr>`).join('')
+    || '<tr><td colspan="4" class="vazio">Nenhuma consulta no período.</td></tr>';
+  $('#est-rodape').innerHTML = `<tr><td>Total do período</td><td class="num">${nCons}</td><td class="num">${nPs}</td><td class="num">${total}</td></tr>`;
 }
 
 // Barras empilhadas em SVG (Consulta + Pronto Socorro), com dica ao passar o mouse
@@ -1860,8 +1939,7 @@ $('#est-grafico').addEventListener('mousemove', (e) => {
   const g = $('#est-grafico')._grupos[Number(alvo.dataset.i)];
   dica.innerHTML = `<strong>${esc(g.longo)}</strong>`
     + SERIES.map((sr) => `<div><span><i style="background:${sr.cor}"></i>${sr.nome}</span><span>${g[sr.chave]}</span></div>`).join('')
-    + `<div class="total"><span>Total de consultas</span><span>${g.total}</span></div>`
-    + `<div><span>Recebido consultas</span><span>${moeda(g.recCons)}</span></div><div><span>Recebido exames</span><span>${moeda(g.recExames)}</span></div>`;
+    + `<div class="total"><span>Total de consultas</span><span>${g.total}</span></div>`;
   dica.hidden = false;
   const c = $('#est-grafico').closest('.cartao').getBoundingClientRect();
   let x = e.clientX - c.left + 14;
@@ -1945,6 +2023,104 @@ $('#btn-remover-exemplo').addEventListener('click', async () => {
   carregarEstatisticas();
 });
 
+
+/* ======================================================================
+   CONTÁBIL — valores recebidos (só aqui aparecem os totais em dinheiro)
+   ====================================================================== */
+const contabil = { pagamentos: [], limite: 100 };
+
+function ctPeriodo(tipo) {
+  const hoje = new Date();
+  let ini = new Date(hoje);
+  if (tipo === 'mes') ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  else if (tipo !== 'hoje') ini.setDate(hoje.getDate() - Number(tipo) + 1);
+  $('#ct-inicio').value = dataLocal(ini);
+  $('#ct-fim').value = dataLocal(hoje);
+  $$('[data-ct-periodo]').forEach((b) => b.classList.toggle('ativo', b.dataset.ctPeriodo === tipo));
+}
+
+async function carregarContabil() {
+  if (!$('#ct-inicio').value) ctPeriodo('hoje');
+  const ini = $('#ct-inicio').value, fim = $('#ct-fim').value;
+  const [pags, atends] = await Promise.all([Banco.listarPagamentos({ inicio: ini, fim }), Banco.listarAtendimentos({ inicio: ini, fim })]);
+  contabil.pagamentos = pags.sort((a, b) => b.dataHora.localeCompare(a.dataHora));
+  contabil.limite = 100;
+  renderContabil(atends.length);
+}
+
+function renderContabil(nAtend) {
+  const pags = contabil.pagamentos;
+  const soma = (l, f) => l.reduce((t, p) => t + Number(f(p) || 0), 0);
+  const recebido = soma(pags, (p) => p.valor);
+  const recCons = soma(pags.filter((p) => p.referente === 'CONSULTA'), (p) => p.valor);
+  const recEx = recebido - recCons;
+  const descontos = soma(pags, (p) => p.desconto);
+  const cortesias = pags.filter((p) => p.cortesia);
+  const valCort = soma(cortesias, (p) => p.cortesia.valor);
+  $('#ct-indicadores').innerHTML = [
+    ['Total recebido', moeda(recebido), `${pags.filter((p) => !p.cortesia).length} recibos pagos`],
+    ['Consultas', moeda(recCons), 'consulta eletiva e Pronto Socorro'],
+    ['Exames', moeda(recEx), ''],
+    ['Ticket médio', nAtend ? moeda(recebido / nAtend) : '—', `${nAtend} atendimento(s) no período`],
+    ['Descontos concedidos', moeda(descontos), ''],
+    ['Cortesias (diretoria)', moeda(valCort), `${cortesias.length} cortesia(s) · sem cobrança`],
+  ].map(([t, v, s]) => `<article><span>${t}</span><strong>${v}</strong><small>${s}</small></article>`).join('');
+
+  const formas = ['PIX', 'CREDITO', 'DEBITO', 'DINHEIRO', 'CORTESIA'].map((f) => {
+    const l = pags.filter((p) => p.forma === f);
+    return { f, qtd: l.length, valor: f === 'CORTESIA' ? soma(l, (p) => p.cortesia?.valor) : soma(l, (p) => p.valor) };
+  });
+  $('#ct-formas').innerHTML = formas.map((x) => `<tr><td>${NOMES_FORMA[x.f]}</td><td class="num">${x.qtd}</td>
+    <td class="num">${x.f === 'CORTESIA' ? `<span class="nota">isento</span> ${moeda(x.valor)}` : moeda(x.valor)}</td>
+    <td class="num">${x.f === 'CORTESIA' ? '—' : recebido ? `${(x.valor / recebido * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : '0%'}</td></tr>`).join('');
+  $('#ct-formas-total').innerHTML = `<tr><td>Total recebido</td><td class="num">${pags.filter((p) => !p.cortesia).length}</td><td class="num">${moeda(recebido)}</td><td class="num">100%</td></tr>`;
+
+  const dias = new Map();
+  pags.forEach((p) => {
+    const d = p.dataHora.slice(0, 10);
+    const g = dias.get(d) || { cons: 0, ex: 0, desc: 0, cort: 0 };
+    g[p.referente === 'CONSULTA' ? 'cons' : 'ex'] += p.valor;
+    g.desc += Number(p.desconto || 0);
+    g.cort += Number(p.cortesia?.valor || 0);
+    dias.set(d, g);
+  });
+  $('#ct-dias').innerHTML = [...dias.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([d, g]) => `
+    <tr><td>${DIAS[new Date(`${d}T00:00`).getDay()]}, ${d.split('-').reverse().join('/')}</td><td class="num">${moeda(g.cons)}</td><td class="num">${moeda(g.ex)}</td>
+    <td class="num">${g.desc ? moeda(g.desc) : '—'}</td><td class="num">${g.cort ? moeda(g.cort) : '—'}</td><td class="num"><strong>${moeda(g.cons + g.ex)}</strong></td></tr>`).join('')
+    || '<tr><td colspan="6" class="vazio">Nenhum recebimento no período.</td></tr>';
+
+  const mostrar = pags.slice(0, contabil.limite);
+  $('#ct-recibos').innerHTML = mostrar.map((p) => `
+    <tr data-ct-recibo="${esc(p.id)}"><td>${dataBR(p.dataHora)} ${horaBR(p.dataHora)}</td><td>${esc(p.numeroRecibo)}</td><td>${esc(p.pacienteNome)}</td>
+    <td>${p.referente === 'CONSULTA' ? esc(TIPOS[p.tipoConsulta]?.nome || 'Consulta') : `Exames (${p.itens.length})`}</td>
+    <td>${NOMES_FORMA[p.forma]}${p.parcelas > 1 ? ` ${p.parcelas}x` : ''}</td>
+    <td class="num">${p.cortesia ? `<span class="nota">cortesia</span> ${moeda(p.cortesia.valor)}` : moeda(p.valor)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="vazio">Nenhum recibo no período.</td></tr>';
+  $('#ct-qtd-recibos').textContent = pags.length ? `${Math.min(pags.length, contabil.limite)} de ${pags.length} · clique para abrir o recibo` : '';
+  $('#ct-mais').hidden = pags.length <= contabil.limite;
+}
+
+$$('[data-ct-periodo]').forEach((b) => b.addEventListener('click', () => { ctPeriodo(b.dataset.ctPeriodo); carregarContabil(); }));
+['#ct-inicio', '#ct-fim'].forEach((s) => $(s).addEventListener('change', () => { $$('[data-ct-periodo]').forEach((b) => b.classList.remove('ativo')); carregarContabil(); }));
+$('#ct-mais').addEventListener('click', async () => { contabil.limite += 200; renderContabil((await Banco.listarAtendimentos({ inicio: $('#ct-inicio').value, fim: $('#ct-fim').value })).length); });
+$('#ct-recibos').addEventListener('click', (e) => {
+  const tr = e.target.closest('[data-ct-recibo]');
+  if (tr) mostrarRecibo(contabil.pagamentos.find((p) => p.id === tr.dataset.ctRecibo));
+});
+$('#ct-exportar').addEventListener('click', () => {
+  const cab = ['Data', 'Hora', 'Recibo', 'Paciente', 'CPF', 'Referente', 'Serviço', 'Forma', 'Parcelas', 'Subtotal', 'Desconto', 'Cortesia', 'Valor recebido', 'Autorizado por', 'Observação'];
+  const num = (v) => Number(v || 0).toFixed(2).replace('.', ',');
+  const linhas = contabil.pagamentos.map((p) => [dataBR(p.dataHora), horaBR(p.dataHora), p.numeroRecibo, p.pacienteNome, p.cpf || '',
+    p.referente === 'CONSULTA' ? 'Consulta' : 'Exames', nomeServico(p.tipoConsulta, p.medicoNome), NOMES_FORMA[p.forma], p.parcelas || '',
+    num(p.subtotal), num(p.desconto), num(p.cortesia?.valor), num(p.valor), p.cortesia?.autorizadoPor || '', p.cortesia?.observacao || p.cortesia?.motivo || '']);
+  const csv = [cab, ...linhas].map((l) => l.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `contabil_${$('#ct-inicio').value}_a_${$('#ct-fim').value}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+carregadores.contabil = () => carregarContabil();
   </script>
 </body>
 </html>
