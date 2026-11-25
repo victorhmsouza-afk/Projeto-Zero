@@ -44,6 +44,13 @@ números em Inter, cantos retos e tema claro/escuro automático.
    Só exame ainda não pago pode ser removido.
 5. **Recibos** — cada pagamento gera um recibo (valor por extenso, itens, forma de pagamento), que pode ser reaberto e impresso.
 
+6. **Cortesia (diretoria)** — quinta opção do painel de pagamento. O paciente **não paga** (consulta e/ou exames marcados),
+   mas só é liberada com **quem autorizou na diretoria, a senha dessa pessoa e o motivo**. Gera um **comprovante de cortesia**
+   (valor do serviço, "sem cobrança", autorizado por, motivo, assinatura da diretoria) e aparece nas Estatísticas
+   (quantidade e valor das cortesias). A lista da diretoria fica em `CONFIG.diretoria`; senhas de demonstração:
+   Dr. Henrique Albuquerque `1234`, Dra. Lúcia Fontes `4321`, Marcos Vieira `2468`.
+   No sistema do hospital, a senha deve ser conferida no servidor (função `Banco.autorizarCortesia`).
+
 Não existe cancelamento nem estorno de pagamento.
 
 ## Telas
@@ -76,7 +83,8 @@ Para ligar ao banco de dados / API do hospital, troque **só as funções do obj
 |---|---|
 | `buscarPacientes(texto)` / `salvarPaciente(p)` | pacientes `{ id, nome, cpf, nascimento, telefone, email, cadastradoEm }` |
 | `listarAtendimentos({ inicio, fim })` / `obterAtendimento(id)` / `salvarAtendimento(a)` | atendimento `{ id, numero, pacienteId, pacienteNome, cpf, telefone, tipo: 'CONSULTA' \| 'PRONTO_SOCORRO', medicoId, medicoNome (vazio no Pronto Socorro), valorConsulta, abertoEm, pagamentoConsultaId, consultaRealizadaEm, exames: [{ id, nome, categoria, valor, status: 'PENDENTE' \| 'PAGO' \| 'REALIZADO', pedidoEm, pagoEm, pagamentoId, realizadoEm }] }` |
-| `registrarPagamento(pg)` / `listarPagamentos({ inicio, fim, atendimentoId })` | pagamento `{ id, numeroRecibo, referente: 'CONSULTA' \| 'EXAMES', atendimentoId, atendimentoNumero, pacienteNome, cpf, medicoNome, tipoConsulta, forma, valor, subtotal, desconto, itens, parcelas?, autorizacao?, idTransacao?, recebido?, troco?, dataHora }` |
+| `autorizarCortesia({ diretorId, senha })` | confere a autorização da diretoria → `{ ok, diretor }` |
+| `registrarPagamento(pg)` / `listarPagamentos({ inicio, fim, atendimentoId })` | pagamento `{ id, numeroRecibo, referente: 'CONSULTA' \| 'EXAMES', atendimentoId, atendimentoNumero, pacienteNome, cpf, medicoNome, tipoConsulta, forma: 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO' | 'CORTESIA', valor, subtotal, desconto, itens, parcelas?, autorizacao?, idTransacao?, recebido?, troco?, cortesia?: { valor, autorizadoPor, cargo, diretorId, motivo, autorizadoEm }, dataHora }` |
 | `lerPrecos()` / `salvarPrecos(p)` / `restaurarPrecos()` | `{ prontoSocorro, adicionalContraste, exames: [{ categoria, nome, valor }] }` |
 
 ## Observações

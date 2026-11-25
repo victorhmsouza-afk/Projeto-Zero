@@ -295,6 +295,13 @@ input[type="date"] { width: auto; }
 .forma input:focus-visible + span { outline: 2px solid var(--acento); outline-offset: 2px; }
 .forma input:disabled + span { opacity: .45; cursor: not-allowed; }
 .campos-forma { display: flex; flex-direction: column; gap: 10px; }
+.forma.cortesia { grid-column: 1 / -1; }
+.forma.cortesia span { min-height: 48px; border-style: dashed; border-color: var(--ouro); }
+.forma.cortesia b { color: var(--ouro-forte); }
+.forma.cortesia input:checked + span { border-style: solid; }
+.forma.cortesia input:checked + span b { color: #fff; }
+.cortesia-aviso { margin: 0; padding: 9px 11px; font-size: 12.5px; border-radius: 4px; background: var(--ouro-claro); border-left: 3px solid var(--ouro); }
+.visor.cortesia .visor-valor { text-decoration: none; }
 .valor.grande { font-size: 20px; padding: 10px 12px; }
 .troco { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 4px; background: var(--superficie-2); border: 1px solid var(--linha); }
 .troco span { font-size: 11.5px; font-weight: 700; letter-spacing: 1px; color: var(--texto-2); }
@@ -473,6 +480,7 @@ input[type="date"] { width: auto; }
             <label class="forma"><input type="radio" name="forma" value="CREDITO"><span><b>CRÉDITO</b><small>Até 6x</small></span></label>
             <label class="forma"><input type="radio" name="forma" value="DEBITO"><span><b>DÉBITO</b><small>À vista</small></span></label>
             <label class="forma"><input type="radio" name="forma" value="DINHEIRO"><span><b>DINHEIRO</b><small>Com troco</small></span></label>
+            <label class="forma cortesia"><input type="radio" name="forma" value="CORTESIA"><span><b>CORTESIA</b><small>Autorização da diretoria</small></span></label>
           </div>
 
           <div class="campos-forma" id="pg-campos-credito" hidden>
@@ -488,6 +496,12 @@ input[type="date"] { width: auto; }
           <div class="campos-forma" id="pg-campos-dinheiro" hidden>
             <div class="campo"><label for="pg-recebido">Valor recebido (R$)</label><input id="pg-recebido" class="valor grande" inputmode="decimal" placeholder="0,00"></div>
             <div class="troco"><span>TROCO</span><strong id="pg-troco">R$ 0,00</strong></div>
+          </div>
+          <div class="campos-forma" id="pg-campos-cortesia" hidden>
+            <p class="cortesia-aviso">O paciente <b>não paga</b>. A cortesia só é liberada com nome, senha e motivo de quem autorizou na diretoria.</p>
+            <div class="campo"><label for="pg-diretor">Autorizado por (diretoria) *</label><select id="pg-diretor"></select></div>
+            <div class="campo"><label for="pg-senha-diretor">Senha de autorização *</label><input type="password" id="pg-senha-diretor" maxlength="30" autocomplete="off"></div>
+            <div class="campo"><label for="pg-motivo">Motivo da cortesia *</label><input id="pg-motivo" maxlength="160" placeholder="Ex.: colaborador, convênio institucional…"></div>
           </div>
 
           <p class="erro" id="pg-erro" role="alert"></p>
@@ -586,6 +600,17 @@ input[type="date"] { width: auto; }
       </div>
 
       <div class="cartao">
+        <div class="cartao-topo"><h2>Diretoria · autoriza cortesias</h2></div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Nome</th><th>Cargo</th></tr></thead>
+            <tbody id="pr-diretoria"></tbody>
+          </table>
+        </div>
+        <p class="nota">Cortesia = o paciente não paga, com autorização (nome, senha e motivo) de alguém desta lista. Os nomes e as senhas ficam no próprio <code>index.html</code>, parte DADOS (lista <code>CONFIG.diretoria</code>).</p>
+      </div>
+
+      <div class="cartao">
         <div class="cartao-topo"><h2>Exames</h2><span class="nota" id="pr-qtd"></span></div>
         <form class="linha-form" id="form-novo-exame" autocomplete="off">
           <div class="campo"><label for="pr-cat">Categoria</label><input id="pr-cat" list="pr-categorias" required maxlength="40" placeholder="Ex.: Laboratório"><datalist id="pr-categorias"></datalist></div>
@@ -648,6 +673,13 @@ const CONFIG = {
     endereco: 'Endereço da unidade',
     telefone: '(00) 0000-0000',
   },
+  // Diretoria: quem pode autorizar CORTESIA. A senha aqui é só para demonstração;
+  // no sistema do hospital a conferência deve ser feita no servidor (Banco.autorizarCortesia).
+  diretoria: [
+    { id: 1, nome: 'Dr. Henrique Albuquerque', cargo: 'Diretor Geral', senha: '1234' },
+    { id: 2, nome: 'Dra. Lúcia Fontes', cargo: 'Diretora Clínica', senha: '4321' },
+    { id: 3, nome: 'Marcos Vieira', cargo: 'Diretor Administrativo', senha: '2468' },
+  ],
   // Médicos da CONSULTA ELETIVA (lista fixa, sem tela de cadastro). Valor = consulta eletiva.
   // O Pronto Socorro não tem médico escolhido: é só o serviço (o plantonista muda sempre).
   medicos: [
@@ -784,6 +816,14 @@ const Banco = (() => {
       if (!gravar(CHAVES.pagamentos, lista)) throw new Error('Não foi possível salvar o pagamento.');
       return salvo;
     },
+    // Confere a autorização da diretoria para uma cortesia. Devolve { ok, diretor } ou { ok: false, motivo }.
+    // Para ligar à API: troque por um fetch ao servidor (a senha não deve ficar no navegador).
+    async autorizarCortesia({ diretorId, senha }) {
+      const d = CONFIG.diretoria.find((x) => String(x.id) === String(diretorId));
+      if (!d) return { ok: false, motivo: 'Escolha quem da diretoria autorizou.' };
+      if (String(senha || '') !== String(d.senha)) return { ok: false, motivo: 'Senha da diretoria incorreta.' };
+      return { ok: true, diretor: { id: d.id, nome: d.nome, cargo: d.cargo } };
+    },
     async listarPagamentos({ inicio, fim, atendimentoId } = {}) {
       return ler(CHAVES.pagamentos, []).filter((p) => {
         const d = p.dataHora.slice(0, 10);
@@ -862,7 +902,7 @@ const dataLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const agoraIso = () => { const d = new Date(); return `${dataLocal(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`; };
 const horaBR = (iso) => String(iso || '').slice(11, 16);
 const dataBR = (iso) => { const [a, m, d] = String(iso || '').slice(0, 10).split('-'); return a ? `${d}/${m}/${a}` : ''; };
-const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
+const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro', CORTESIA: 'Cortesia (diretoria)' };
 
 document.addEventListener('focusout', (e) => {
   if (e.target.classList?.contains('valor') && e.target.value.trim()) e.target.value = valorCampo(lerMoeda(e.target.value));
@@ -1079,7 +1119,7 @@ function renderComanda() {
           <div class="recibos">
             ${estado.pagamentosAtual.map((p) => `<button type="button" data-recibo="${esc(p.id)}">
               <span>${p.referente === 'CONSULTA' ? 'Consulta' : `Exames (${p.itens.length})`} · ${NOMES_FORMA[p.forma]}${p.parcelas > 1 ? ` ${p.parcelas}x` : ''} · ${dataBR(p.dataHora)} ${horaBR(p.dataHora)} · nº ${esc(p.numeroRecibo)}</span>
-              <span class="dinheiro">${moeda(p.valor)}</span></button>`).join('')}
+              <span class="dinheiro">${p.cortesia ? `cortesia ${moeda(p.cortesia.valor)}` : moeda(p.valor)}</span></button>`).join('')}
           </div>
         </div>` : ''}
     </div>`;
@@ -1384,8 +1424,9 @@ function itensParaPagar() {
 function totais() {
   const itens = itensParaPagar();
   const subtotal = itens.reduce((t, i) => t + Number(i.valor || 0), 0);
+  if (formaEscolhida() === 'CORTESIA') return { itens, subtotal, desconto: 0, total: 0, cortesia: subtotal };
   const desconto = Math.min(lerMoeda($('#pg-desconto').value), subtotal);
-  return { itens, subtotal, desconto, total: Math.round((subtotal - desconto) * 100) / 100 };
+  return { itens, subtotal, desconto, total: Math.round((subtotal - desconto) * 100) / 100, cortesia: 0 };
 }
 
 const formaEscolhida = () => document.querySelector('input[name="forma"]:checked')?.value || '';
@@ -1393,24 +1434,31 @@ const formaEscolhida = () => document.querySelector('input[name="forma"]:checked
 function renderPagamento() {
   const { itens, subtotal, desconto, total } = totais();
   const forma = formaEscolhida();
-  $('#visor-rotulo').textContent = estado.modo === 'novo' ? 'CONSULTA · TOTAL A PAGAR' : estado.modo === 'atendimento' ? 'EXAMES · TOTAL A PAGAR' : 'TOTAL A PAGAR';
+  const ehCortesia = forma === 'CORTESIA';
+  $('#visor-rotulo').textContent = ehCortesia ? 'CORTESIA · AUTORIZAÇÃO DA DIRETORIA' : estado.modo === 'novo' ? 'CONSULTA · TOTAL A PAGAR' : estado.modo === 'atendimento' ? 'EXAMES · TOTAL A PAGAR' : 'TOTAL A PAGAR';
   $('#visor-total').textContent = moeda(total);
   $('#visor-detalhe').textContent = !itens.length
     ? (estado.modo === 'atendimento' ? 'Marque os exames que o paciente vai pagar agora' : estado.modo === 'novo' ? (estado.rascunho?.tipo === 'PRONTO_SOCORRO' ? 'Informe o valor do Pronto Socorro' : 'Escolha o médico para ver o valor') : 'Nada a pagar')
+    : ehCortesia ? `${itens.length} item(ns) · valor do serviço ${moeda(subtotal)} · isento`
     : `${itens.length} item(ns)${desconto ? ` · subtotal ${moeda(subtotal)} · desconto ${moeda(desconto)}` : ''}`;
-  ['credito', 'debito', 'pix', 'dinheiro'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
+  $('.visor').classList.toggle('cortesia', ehCortesia);
+  ['credito', 'debito', 'pix', 'dinheiro', 'cortesia'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
   const sel = $('#pg-parcelas'); const atual = sel.value || '1';
   sel.innerHTML = [1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}">${n}x de ${moeda(total / n)}${n === 1 ? ' (à vista)' : ''}</option>`).join('');
   sel.value = atual;
   const troco = lerMoeda($('#pg-recebido').value) - total;
   $('#pg-troco').textContent = moeda(troco > 0 ? troco : 0);
-  $('#btn-finalizar').disabled = !(itens.length && total && forma);
+  $('#btn-finalizar').disabled = !(itens.length && subtotal && forma && (total || ehCortesia));
+  $('#btn-finalizar').textContent = ehCortesia ? 'AUTORIZAR CORTESIA' : 'FINALIZAR PAGAMENTO';
   $$('input[name="forma"]').forEach((r) => { r.disabled = !itens.length; });
-  $('#pg-desconto').disabled = !itens.length;
+  $('#pg-desconto').disabled = !itens.length || ehCortesia;
+  const dir = $('#pg-diretor');
+  if (!dir.options.length) dir.innerHTML = '<option value="">Selecione</option>' + CONFIG.diretoria.map((d) => `<option value="${d.id}">${esc(d.nome)} · ${esc(d.cargo)}</option>`).join('');
 }
 
 function limparPagamento() {
   $$('#painel-pagamento input').forEach((i) => { if (i.type === 'radio') i.checked = false; else i.value = ''; });
+  if ($('#pg-diretor')) $('#pg-diretor').value = '';
   $('#pg-erro').textContent = '';
 }
 
@@ -1419,11 +1467,21 @@ $('#painel-pagamento').addEventListener('change', renderPagamento);
 
 $('#btn-finalizar').addEventListener('click', async () => {
   const erro = (t) => { $('#pg-erro').textContent = t; };
-  const { itens, subtotal, desconto, total } = totais();
+  const { itens, subtotal, desconto, total, cortesia } = totais();
   const forma = formaEscolhida();
-  if (!itens.length || !total) return erro('Não há valor a pagar.');
+  if (!itens.length || !subtotal || (!total && forma !== 'CORTESIA')) return erro('Não há valor a pagar.');
   if (!forma) return erro('Escolha a forma de pagamento.');
   const pg = { forma, valor: total, subtotal, desconto, itens: itens.map(({ nome, valor }) => ({ nome, valor })), dataHora: agoraIso() };
+  if (forma === 'CORTESIA') {
+    const motivo = $('#pg-motivo').value.trim();
+    if (!$('#pg-diretor').value) return erro('Escolha quem da diretoria autorizou a cortesia.');
+    if (!$('#pg-senha-diretor').value) return erro('Digite a senha de autorização da diretoria.');
+    if (motivo.length < 5) return erro('Escreva o motivo da cortesia.');
+    const aut = await Banco.autorizarCortesia({ diretorId: $('#pg-diretor').value, senha: $('#pg-senha-diretor').value });
+    $('#pg-senha-diretor').value = '';
+    if (!aut.ok) return erro(aut.motivo);
+    pg.cortesia = { valor: cortesia, autorizadoPor: aut.diretor.nome, cargo: aut.diretor.cargo, diretorId: aut.diretor.id, motivo, autorizadoEm: pg.dataHora };
+  }
   if (forma === 'CREDITO') Object.assign(pg, { parcelas: Number($('#pg-parcelas').value), autorizacao: $('#pg-nsu-credito').value.trim() });
   if (forma === 'DEBITO') pg.autorizacao = $('#pg-nsu-debito').value.trim();
   if (forma === 'PIX') pg.idTransacao = $('#pg-pix').value.trim();
@@ -1508,6 +1566,8 @@ function mostrarRecibo(p) {
   const referente = p.referente === 'CONSULTA' ? (TIPOS[p.tipoConsulta]?.descricao.toLowerCase() || 'consulta') : 'exames';
   const det = [
     ['Forma de pagamento', NOMES_FORMA[p.forma]],
+    p.cortesia && ['Autorizado por', `${p.cortesia.autorizadoPor} · ${p.cortesia.cargo}`],
+    p.cortesia && ['Motivo', p.cortesia.motivo],
     p.parcelas > 1 && ['Parcelas', `${p.parcelas}x de ${moeda(p.valor / p.parcelas)}`],
     p.autorizacao && ['Autorização (NSU)', p.autorizacao],
     p.idTransacao && ['ID da transação Pix', p.idTransacao],
@@ -1520,21 +1580,25 @@ function mostrarRecibo(p) {
     <div class="recibo">
       <div class="recibo-topo">
         <div><strong>${esc(h.nome)}</strong><span>CNPJ ${esc(h.cnpj)}</span><span>${esc(h.endereco)}</span><span>Tel. ${esc(h.telefone)}</span></div>
-        <div class="recibo-num"><h3>RECIBO</h3><span>Nº ${esc(p.numeroRecibo)}</span><span>${dataBR(p.dataHora)} às ${horaBR(p.dataHora)}</span><span class="recibo-valor">${moeda(p.valor)}</span></div>
+        <div class="recibo-num"><h3>${p.cortesia ? 'CORTESIA' : 'RECIBO'}</h3><span>Nº ${esc(p.numeroRecibo)}</span><span>${dataBR(p.dataHora)} às ${horaBR(p.dataHora)}</span><span class="recibo-valor">${moeda(p.valor)}</span></div>
       </div>
-      <p class="recibo-texto">Recebemos de <strong>${esc(p.pacienteNome)}</strong>${p.cpf ? `, CPF ${esc(p.cpf)},` : ''} a importância de
-        <strong>${moeda(p.valor)}</strong> (${valorPorExtenso(p.valor)}), referente a ${esc(referente)} em atendimento particular, conforme os itens abaixo.</p>
+      ${p.cortesia ? `<p class="recibo-texto">Declaramos que <strong>${esc(p.pacienteNome)}</strong>${p.cpf ? `, CPF ${esc(p.cpf)},` : ''} recebeu como
+        <strong>cortesia</strong>, autorizada pela diretoria, o atendimento referente a ${esc(referente)} no valor de
+        <strong>${moeda(p.cortesia.valor)}</strong> (${valorPorExtenso(p.cortesia.valor)}), <strong>sem cobrança</strong>, conforme os itens abaixo.</p>`
+      : `<p class="recibo-texto">Recebemos de <strong>${esc(p.pacienteNome)}</strong>${p.cpf ? `, CPF ${esc(p.cpf)},` : ''} a importância de
+        <strong>${moeda(p.valor)}</strong> (${valorPorExtenso(p.valor)}), referente a ${esc(referente)} em atendimento particular, conforme os itens abaixo.</p>`}
       <table>
         <thead><tr><th>Descrição</th><th>Valor</th></tr></thead>
         <tbody>${p.itens.map((i) => `<tr><td>${esc(i.nome)}</td><td>${moeda(i.valor)}</td></tr>`).join('')}</tbody>
         <tfoot>
           ${p.desconto ? `<tr><td>Subtotal</td><td>${moeda(p.subtotal)}</td></tr><tr><td>Desconto</td><td>− ${moeda(p.desconto)}</td></tr>` : ''}
+          ${p.cortesia ? `<tr><td>Valor do serviço</td><td>${moeda(p.subtotal)}</td></tr><tr><td>Cortesia (diretoria)</td><td>− ${moeda(p.cortesia.valor)}</td></tr>` : ''}
           <tr class="total"><td>Total pago</td><td>${moeda(p.valor)}</td></tr>
         </tfoot>
       </table>
       <div class="recibo-forma">${det.map(([k, v]) => `<div><span>${esc(k)}:</span> <strong>${esc(v)}</strong></div>`).join('')}</div>
-      <div class="recibo-assinaturas"><div>Atendente</div><div>Assinatura / carimbo</div></div>
-      <p class="recibo-rodape">Este recibo comprova o pagamento e não substitui a nota fiscal.</p>
+      <div class="recibo-assinaturas"><div>Atendente</div><div>${p.cortesia ? `Diretoria · ${esc(p.cortesia.autorizadoPor)}` : 'Assinatura / carimbo'}</div></div>
+      <p class="recibo-rodape">${p.cortesia ? 'Comprovante de cortesia autorizada pela diretoria. Não houve pagamento.' : 'Este recibo comprova o pagamento e não substitui a nota fiscal.'}</p>
     </div>`;
   $('#janela-recibo').hidden = false;
 }
@@ -1547,6 +1611,7 @@ function carregarPrecos() {
   const p = estado.precos;
   $('#pr-ps').value = valorCampo(p.prontoSocorro);
   $('#pr-contraste').value = valorCampo(p.adicionalContraste);
+  $('#pr-diretoria').innerHTML = CONFIG.diretoria.map((d) => `<tr><td>${esc(d.nome)}</td><td>${esc(d.cargo)}</td></tr>`).join('');
   $('#pr-medicos').innerHTML = CONFIG.medicos.map((m) => `<tr><td>${esc(m.nome)}</td><td>${esc(m.especialidade)}</td><td class="num">${moeda(m.valorConsulta)}</td></tr>`).join('');
   $('#pr-categorias').innerHTML = [...new Set(p.exames.map((e) => e.categoria))].map((c) => `<option value="${esc(c)}">`).join('');
   $('#pr-exames').innerHTML = p.exames.map((e, i) => `
@@ -1712,6 +1777,8 @@ function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
   const total = atendimentos.length;
   const recCons = pagamentos.filter((p) => p.referente === 'CONSULTA').reduce((t, p) => t + p.valor, 0);
   const recEx = pagamentos.filter((p) => p.referente !== 'CONSULTA').reduce((t, p) => t + p.valor, 0);
+  const cortesias = pagamentos.filter((p) => p.cortesia);
+  const valCortesia = cortesias.reduce((t, p) => t + Number(p.cortesia.valor || 0), 0);
   const dias = Math.max(1, Math.round((new Date(`${fim}T00:00`) - new Date(`${ini}T00:00`)) / 86400000) + 1);
   const porHora = new Array(24).fill(0); atendimentos.forEach((a) => { porHora[Number(a.abertoEm.slice(11, 13))]++; });
   const pico = porHora.indexOf(Math.max(...porHora));
@@ -1726,6 +1793,7 @@ function renderEstatisticas(atendimentos, pagamentos, ini, fim) {
     ['Horário de pico', total ? `${String(pico).padStart(2, '0')}h` : '—', pico15 ? `faixa mais cheia: ${fmt15(Number(pico15[0]))} (${pico15[1]})` : 'sem movimento'],
     ['Recebido em consultas', moeda(recCons), ''],
     ['Recebido em exames', moeda(recEx), total ? `média ${moeda((recCons + recEx) / total)} por atendimento` : ''],
+    ['Cortesias (diretoria)', cortesias.length, cortesias.length ? `${moeda(valCortesia)} sem cobrança` : 'nenhuma no período'],
   ].map(([t, v, s]) => `<article><span>${t}</span><strong>${v}</strong><small>${s}</small></article>`).join('');
 
   const nome = { mes: 'mês', dia: 'dia', hora: 'hora do dia', minuto: 'minuto (faixas de 15 min)' }[modo];
@@ -1832,6 +1900,10 @@ function gerarExemplos() {
       const pgC = { id: `XG${dd}-${k}`, numeroRecibo: `EX-${++rec}`, exemplo: true, referente: 'CONSULTA', atendimentoId: id, atendimentoNumero: num,
         pacienteNome: paciente, cpf: '', medicoNome: medico?.nome || '', tipoConsulta: ps ? 'PRONTO_SOCORRO' : 'CONSULTA',
         forma: formas[Math.floor(rnd() * formas.length)], valor, subtotal: valor, desconto: 0, itens: [{ nome: 'Consulta', valor }], dataHora: iso(ab) };
+      if (rnd() < 0.03) { // algumas cortesias autorizadas pela diretoria
+        const d = CONFIG.diretoria[Math.floor(rnd() * CONFIG.diretoria.length)];
+        Object.assign(pgC, { forma: 'CORTESIA', valor: 0, cortesia: { valor, autorizadoPor: d.nome, cargo: d.cargo, diretorId: d.id, motivo: 'Exemplo', autorizadoEm: pgC.dataHora } });
+      }
       pags.push(pgC);
       const realizada = new Date(ab.getTime() + (20 + rnd() * 60) * 60000);
       const lista = [];
