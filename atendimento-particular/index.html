@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atendimento Particular</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <a class="marca" href="#atendimentos" aria-label="Atendimento Particular, início">
+        <span class="marca-icone" aria-hidden="true">+</span>
+        <span class="marca-texto"><strong>Atendimento Particular</strong><small id="nome-hospital">Hospital</small></span>
+      </a>
+      <nav class="abas" aria-label="Seções">
+        <a href="#atendimentos" data-tela="atendimentos">Atendimentos</a>
+        <a href="#estatisticas" data-tela="estatisticas">Estatísticas</a>
+        <a href="#precos" data-tela="precos">Preços</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="conteudo">
+
+    <!-- ===================== ATENDIMENTOS ===================== -->
+    <section class="tela" id="tela-atendimentos">
+      <div class="cabecalho">
+        <div>
+          <h1>Atendimentos</h1>
+          <p class="sub">Consulta → pagamento → consulta realizada → exames pedidos pelo médico → pagamento dos exames.</p>
+        </div>
+        <div class="cabecalho-acoes">
+          <label class="sr" for="at-data">Data</label>
+          <input type="date" id="at-data">
+          <button type="button" class="botao primario" id="btn-novo">+ Novo atendimento</button>
+        </div>
+      </div>
+
+      <div class="resumo" id="resumo-dia" aria-live="polite"></div>
+
+      <div class="painel-duplo">
+        <aside class="cartao lista-lado" aria-label="Atendimentos do dia">
+          <div class="lista-busca">
+            <label class="sr" for="at-busca">Buscar atendimento</label>
+            <input type="search" id="at-busca" placeholder="Buscar por nome ou nº">
+          </div>
+          <ul class="lista-atend" id="lista-atend"></ul>
+          <p class="vazio" id="lista-vazia">Nenhum atendimento neste dia.</p>
+        </aside>
+
+        <article class="cartao detalhe" id="detalhe" aria-live="polite">
+          <div class="detalhe-vazio">
+            <p><strong>Selecione um atendimento</strong> na lista ou clique em <strong>+ Novo atendimento</strong>.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== ESTATÍSTICAS ===================== -->
+    <section class="tela" id="tela-estatisticas">
+      <div class="cabecalho">
+        <div>
+          <h1>Estatísticas de consultas</h1>
+          <p class="sub">Consultas por mês, dia, hora e minuto, com o valor recebido em consultas e exames.</p>
+        </div>
+      </div>
+
+      <form class="cartao filtros" id="form-est" autocomplete="off">
+        <div class="campo"><label for="est-inicio">De</label><input type="date" id="est-inicio"></div>
+        <div class="campo"><label for="est-fim">Até</label><input type="date" id="est-fim"></div>
+        <div class="atalhos" role="group" aria-label="Períodos prontos">
+          <button type="button" class="botao pequeno" data-periodo="hoje">Hoje</button>
+          <button type="button" class="botao pequeno" data-periodo="7">7 dias</button>
+          <button type="button" class="botao pequeno" data-periodo="30">30 dias</button>
+          <button type="button" class="botao pequeno" data-periodo="mes">Este mês</button>
+          <button type="button" class="botao pequeno" data-periodo="365">12 meses</button>
+        </div>
+        <fieldset class="segmentos" aria-label="Agrupar por">
+          <legend>Agrupar por</legend>
+          <label><input type="radio" name="agrupar" value="mes"><span>Mês</span></label>
+          <label><input type="radio" name="agrupar" value="dia" checked><span>Dia</span></label>
+          <label><input type="radio" name="agrupar" value="hora"><span>Hora</span></label>
+          <label><input type="radio" name="agrupar" value="minuto"><span>Minuto (15 min)</span></label>
+        </fieldset>
+      </form>
+
+      <div class="indicadores" id="est-indicadores"></div>
+
+      <div class="cartao grafico-cartao">
+        <div class="cartao-topo">
+          <h2 id="est-titulo">Consultas por dia</h2>
+          <div class="legenda" id="est-legenda"></div>
+        </div>
+        <div class="grafico" id="est-grafico"></div>
+        <div class="dica-grafico" id="est-dica" role="tooltip" hidden></div>
+        <p class="vazio" id="est-vazio" hidden>Nenhuma consulta no período.</p>
+      </div>
+
+      <div class="cartao">
+        <div class="cartao-topo"><h2>Tabela</h2><span class="nota">Os mesmos números do gráfico</span></div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th id="est-col">Dia</th><th class="num">Consulta</th><th class="num">Pronto Socorro</th><th class="num">Total</th><th class="num">Recebido consultas</th><th class="num">Recebido exames</th></tr></thead>
+            <tbody id="est-tabela"></tbody>
+            <tfoot id="est-rodape"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="cartao exemplos">
+        <div>
+          <strong>Dados de exemplo</strong>
+          <p class="nota" id="exemplo-info">Para testar as estatísticas sem esperar o movimento real, gere 90 dias de atendimentos fictícios. Eles ficam marcados e podem ser removidos depois.</p>
+        </div>
+        <div class="exemplos-acoes">
+          <button type="button" class="botao" id="btn-gerar-exemplo">Gerar dados de exemplo</button>
+          <button type="button" class="botao" id="btn-remover-exemplo">Remover dados de exemplo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PREÇOS ===================== -->
+    <section class="tela" id="tela-precos">
+      <div class="cabecalho">
+        <div>
+          <h1>Preços</h1>
+          <p class="sub">Valores usados na hora do pagamento. As mudanças ficam salvas neste computador.</p>
+        </div>
+        <div class="cabecalho-acoes"><button type="button" class="botao" id="btn-restaurar-precos">Restaurar padrão</button></div>
+      </div>
+
+      <div class="cartao">
+        <div class="cartao-topo"><h2>Consultas</h2></div>
+        <div class="grade-campos">
+          <div class="campo"><label for="pr-ps">Consulta de Pronto Socorro (R$)</label><input id="pr-ps" class="valor" inputmode="decimal"></div>
+          <div class="campo"><label for="pr-contraste">Adicional de contraste na tomografia (R$)</label><input id="pr-contraste" class="valor" inputmode="decimal"></div>
+        </div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Médico (consulta eletiva)</th><th>Especialidade</th><th class="num">Valor</th></tr></thead>
+            <tbody id="pr-medicos"></tbody>
+          </table>
+        </div>
+        <p class="nota">Os médicos e o valor da consulta de cada um ficam em <code>js/dados.js</code> (lista <code>CONFIG.medicos</code>).</p>
+      </div>
+
+      <div class="cartao">
+        <div class="cartao-topo"><h2>Exames</h2><span class="nota" id="pr-qtd"></span></div>
+        <form class="linha-form" id="form-novo-exame" autocomplete="off">
+          <div class="campo"><label for="pr-cat">Categoria</label><input id="pr-cat" list="pr-categorias" required maxlength="40" placeholder="Ex.: Laboratório"><datalist id="pr-categorias"></datalist></div>
+          <div class="campo cresce"><label for="pr-nome">Nome do exame</label><input id="pr-nome" required maxlength="120"></div>
+          <div class="campo"><label for="pr-valor">Valor (R$)</label><input id="pr-valor" class="valor" inputmode="decimal" required placeholder="0,00"></div>
+          <button type="submit" class="botao primario">Incluir exame</button>
+        </form>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Categoria</th><th>Exame</th><th class="num">Valor (R$)</th></tr></thead>
+            <tbody id="pr-exames"></tbody>
+          </table>
+        </div>
+        <p class="status" id="pr-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== JANELA: NOVO ATENDIMENTO ===================== -->
+  <div class="fundo-janela" id="janela-novo" hidden>
+    <form class="janela" id="form-novo" role="dialog" aria-modal="true" aria-labelledby="novo-titulo" autocomplete="off" novalidate>
+      <div class="janela-topo">
+        <h2 id="novo-titulo">Novo atendimento</h2>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">✕</button>
+      </div>
+
+      <fieldset class="bloco-form">
+        <legend>Paciente</legend>
+        <div class="campo">
+          <label for="nv-busca">Buscar paciente já cadastrado</label>
+          <input type="search" id="nv-busca" placeholder="Nome ou CPF">
+          <ul class="sugestoes" id="nv-sugestoes"></ul>
+        </div>
+        <div class="paciente-escolhido" id="nv-escolhido" hidden></div>
+        <div class="grade-campos" id="nv-campos">
+          <div class="campo largo"><label for="nv-nome">Nome completo *</label><input id="nv-nome" maxlength="120"></div>
+          <div class="campo"><label for="nv-cpf">CPF</label><input id="nv-cpf" maxlength="14" placeholder="000.000.000-00"></div>
+          <div class="campo"><label for="nv-telefone">Telefone</label><input id="nv-telefone" maxlength="15" placeholder="(00) 00000-0000"></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloco-form">
+        <legend>Consulta</legend>
+        <div class="segmentos" role="radiogroup" aria-label="Tipo de consulta">
+          <label><input type="radio" name="tipo" value="CONSULTA" checked><span>Consulta</span></label>
+          <label><input type="radio" name="tipo" value="PRONTO_SOCORRO"><span>Pronto Socorro</span></label>
+        </div>
+        <div class="grade-campos">
+          <div class="campo largo"><label for="nv-medico">Médico *</label><select id="nv-medico"></select></div>
+          <div class="campo"><label for="nv-valor">Valor da consulta (R$)</label><input id="nv-valor" class="valor" inputmode="decimal" placeholder="0,00"></div>
+        </div>
+      </fieldset>
+
+      <p class="erro" id="nv-erro" role="alert"></p>
+      <div class="janela-acoes">
+        <button type="button" class="botao" data-fechar>Cancelar</button>
+        <button type="submit" class="botao primario">Ir para o pagamento</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===================== JANELA: PAGAMENTO ===================== -->
+  <div class="fundo-janela" id="janela-pagamento" hidden>
+    <form class="janela" id="form-pagamento" role="dialog" aria-modal="true" aria-labelledby="pg-titulo" autocomplete="off" novalidate>
+      <div class="janela-topo">
+        <div><h2 id="pg-titulo">Pagamento</h2><p class="sub" id="pg-descricao"></p></div>
+        <button type="button" class="fechar" data-fechar aria-label="Fechar">✕</button>
+      </div>
+      <ul class="itens-pagamento" id="pg-itens"></ul>
+      <div class="grade-campos">
+        <div class="campo"><label for="pg-desconto">Desconto (R$)</label><input id="pg-desconto" class="valor" inputmode="decimal" placeholder="0,00"></div>
+      </div>
+      <div class="total-pagar"><span>Total a pagar</span><strong id="pg-total">R$ 0,00</strong></div>
+
+      <fieldset class="bloco-form">
+        <legend>Forma de pagamento *</legend>
+        <div class="segmentos" role="radiogroup" aria-label="Forma de pagamento">
+          <label><input type="radio" name="forma" value="PIX"><span>Pix</span></label>
+          <label><input type="radio" name="forma" value="CREDITO"><span>Crédito</span></label>
+          <label><input type="radio" name="forma" value="DEBITO"><span>Débito</span></label>
+          <label><input type="radio" name="forma" value="DINHEIRO"><span>Dinheiro</span></label>
+        </div>
+      </fieldset>
+      <div class="grade-campos" id="pg-campos-credito" hidden>
+        <div class="campo"><label for="pg-parcelas">Parcelas</label><select id="pg-parcelas"></select></div>
+        <div class="campo"><label for="pg-nsu-credito">Nº de autorização (NSU)</label><input id="pg-nsu-credito" maxlength="30"></div>
+      </div>
+      <div class="grade-campos" id="pg-campos-debito" hidden>
+        <div class="campo"><label for="pg-nsu-debito">Nº de autorização (NSU)</label><input id="pg-nsu-debito" maxlength="30"></div>
+      </div>
+      <div class="grade-campos" id="pg-campos-pix" hidden>
+        <div class="campo"><label for="pg-pix">ID da transação Pix</label><input id="pg-pix" maxlength="40"></div>
+      </div>
+      <div class="grade-campos" id="pg-campos-dinheiro" hidden>
+        <div class="campo"><label for="pg-recebido">Valor recebido (R$) *</label><input id="pg-recebido" class="valor" inputmode="decimal" placeholder="0,00"></div>
+        <div class="campo"><span class="rotulo">Troco</span><strong class="troco" id="pg-troco">R$ 0,00</strong></div>
+      </div>
+
+      <p class="erro" id="pg-erro" role="alert"></p>
+      <div class="janela-acoes">
+        <button type="button" class="botao" data-fechar>Cancelar</button>
+        <button type="submit" class="botao primario">Confirmar pagamento</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===================== JANELA: RECIBO ===================== -->
+  <div class="fundo-janela" id="janela-recibo" hidden>
+    <div class="janela janela-recibo" role="dialog" aria-modal="true" aria-label="Recibo">
+      <div id="recibo"></div>
+      <div class="janela-acoes nao-imprimir">
+        <button type="button" class="botao" data-fechar>Fechar</button>
+        <button type="button" class="botao primario" id="btn-imprimir">Imprimir recibo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== JANELA: CONFIRMAÇÃO ===================== -->
+  <div class="fundo-janela" id="janela-confirmar" hidden>
+    <div class="janela janela-pequena" role="alertdialog" aria-modal="true" aria-labelledby="cf-texto">
+      <p id="cf-texto"></p>
+      <div class="janela-acoes">
+        <button type="button" class="botao" data-cf="nao">Cancelar</button>
+        <button type="button" class="botao primario" data-cf="sim" id="cf-sim">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="aviso-rapido" id="aviso" role="status" hidden></div>
+
+  <script src="js/dados.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/estatisticas.js"></script>
+</body>
+</html>
