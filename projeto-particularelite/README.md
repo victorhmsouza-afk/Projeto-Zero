@@ -45,24 +45,24 @@ Não existe cancelamento nem estorno de pagamento.
 |---|---|
 | **Caixa** | Fila do dia (com busca, outros dias e resumo), comanda do paciente e painel de pagamento com visor do total. |
 | **Estatísticas** | Consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, recebido em consultas e em exames); gráfico com dica ao passar o mouse e tabela com os mesmos números. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
-| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos e o valor da consulta de cada um ficam em `js/dados.js`. |
+| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos e o valor da consulta de cada um ficam na parte **DADOS** do `index.html` (lista `CONFIG.medicos`). |
 
 ## Arquivos
 
-```
-projeto-particularelite/
-├── index.html            → telas (caixa, estatísticas, preços) e janelas (recibo, confirmação)
-├── css/estilo.css        → visual de caixa/PDV (tema claro e escuro, celular)
-└── js/
-    ├── dados.js          → CONFIG (hospital, médicos), tabela de preços padrão e o objeto Banco (onde os dados são salvos)
-    ├── app.js            → caixa (fila, comanda, pagamento), recibo e preços
-    └── estatisticas.js   → estatísticas e dados de exemplo
-```
+Tudo fica em **um arquivo só**: `index.html` (visual e funcionamento dentro dele), para abrir bonito
+de qualquer lugar — dois cliques no computador, celular ou GitHub Pages — sem depender de outras pastas.
+Dentro do `<script>` ele é dividido em três partes, marcadas com comentários:
+
+| Parte | O que tem |
+|---|---|
+| **DADOS** | `CONFIG` (hospital, médicos), tabela de preços padrão e o objeto `Banco` (onde os dados são salvos) |
+| **CAIXA** | fila, comanda, pagamento, recibo e preços |
+| **ESTATÍSTICAS** | gráficos, tabela e dados de exemplo |
 
 ## Onde os dados ficam
 
 Hoje tudo fica salvo **no navegador** (localStorage), então o sistema funciona de verdade no computador onde for usado.
-Para ligar ao banco de dados / API do hospital, troque **só as funções do objeto `Banco`** em `js/dados.js`
+Para ligar ao banco de dados / API do hospital, troque **só as funções do objeto `Banco`** na parte **DADOS** do `index.html`
 (todas já são `async`, prontas para `fetch`):
 
 | Função | O que faz |
