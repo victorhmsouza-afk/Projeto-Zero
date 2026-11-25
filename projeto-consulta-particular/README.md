@@ -295,3 +295,16 @@ Tela **Ponto do plantão** (menu):
   (concluir consulta → pedido de exames, que são pagos).
 - Se for um problema novo, a recepção usa o pagamento normal.
 - `registrarAtendimento(dados)` recebe `retorno: true`, `valor: 0`, `pagamento: null` e `consultaOrigem` (número da consulta).
+
+## Estatísticas
+
+Tela **Estatísticas** (menu, no lugar de Relatórios):
+
+- **Período:** De / Até, ou os atalhos Hoje, 7 dias, 30 dias, Este mês e 90 dias.
+- **Agrupar por:** **Mês**, **Semana**, **Dia**, **Dia da semana**, **Hora** (0h a 23h) e **Hora e minuto** (faixas de 15 min).
+- **Indicadores:** total de atendimentos e média por dia, consultas, Pronto Socorro, retornos (com %), valor recebido
+  (consultas e PS) e horário de pico / dia da semana mais cheio.
+- **Gráfico** de barras empilhadas (Consulta, Pronto Socorro, Retorno) com dica ao passar o mouse e **tabela** com os mesmos números.
+- Cores das séries validadas para daltonismo; o laranja não é usado porque no sistema ele é cor de risco.
+- Na integração: `carregarEstatisticas()` busca os atendimentos do período e chama
+  `renderEstatisticas([{ entrada, tipo: 'CONSULTA' | 'PRONTO_SOCORRO', retorno, valor }])`.

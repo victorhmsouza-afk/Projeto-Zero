@@ -1,7 +1,7 @@
 # Guia de integração · Consulta Particular
 
 > **Rascunho.** Este guia acompanha o projeto e será atualizado conforme o sistema mudar.
-> Última revisão: 25/11/2026 (inclui retorno da consulta eletiva). Pendências em aberto estão no fim do documento.
+> Última revisão: 25/11/2026 (inclui retorno da consulta eletiva e estatísticas). Pendências em aberto estão no fim do documento.
 
 Este guia é para a equipe de TI que vai ligar o **Consulta Particular** (front-end, nesta pasta) ao sistema do hospital.
 Ele lista cada ponto de integração, os dados que vão e voltam e uma sugestão de rota na API.
@@ -113,6 +113,12 @@ o código não usa caracteres que confundem (0/O, 1/I). Sugestão de tabelas: `P
 | Função | Quando | Dados | Rota sugerida |
 |---|---|---|---|
 | `carregarFinanceiro()` / filtro → `renderFinanceiro(lista)` | Tela Financeiro | `[{ data, paciente, tipo: 'CONSULTA'\|'EXAMES', medico, formaPagamento, valor, pagamento }]` (totais e "Recebido por médico" são calculados na tela) | `GET /api/particular/recebimentos?inicio=&fim=` |
+
+### 2.7.1 Estatísticas
+
+| Função | Quando | Dados | Rota sugerida |
+|---|---|---|---|
+| `carregarEstatisticas()` → `renderEstatisticas(lista)` | Tela Estatísticas (período De/Até) | `[{ entrada: 'AAAA-MM-DDTHH:MM', tipo: 'CONSULTA'\|'PRONTO_SOCORRO', retorno, valor }]` — agrupamentos (mês, semana, dia, dia da semana, hora, 15 min), indicadores e gráfico são calculados na tela | `GET /api/particular/estatisticas/atendimentos?inicio=&fim=` |
 
 ### 2.8 Médicos plantonistas e ponto do plantão
 

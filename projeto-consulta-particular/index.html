@@ -78,7 +78,7 @@
         <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
         <a href="#medicos" data-tela="medicos"><svg class="i"><use href="#i-steth"/></svg><span>Médicos</span></a>
         <a href="#financeiro" data-tela="financeiro"><svg class="i"><use href="#i-dollar"/></svg><span>Financeiro</span></a>
-        <a href="#relatorios" data-tela="relatorios"><svg class="i"><use href="#i-chart"/></svg><span>Relatórios</span></a>
+        <a href="#estatisticas" data-tela="estatisticas"><svg class="i"><use href="#i-chart"/></svg><span>Estatísticas</span></a>
       </nav>
       <div class="sidebar-footer">
         <a href="#configuracoes" data-tela="configuracoes"><svg class="i"><use href="#i-shield"/></svg><span>Administrador</span></a>
@@ -759,9 +759,54 @@
       </section>
 
       <!-- ===================== RELATÓRIOS ===================== -->
-      <section class="tela" id="tela-relatorios">
-        <div class="cabecalho"><h1>Relatórios</h1><p class="sub">Espaço reservado para os seus relatórios.</p></div>
-        <div class="card"><p class="vazio">Em construção.</p></div>
+      <section class="tela" id="tela-estatisticas">
+        <div class="cabecalho"><h1>Estatísticas</h1><p class="sub">Atendimentos particulares por mês, semana, dia, dia da semana, hora e faixas de 15 minutos.</p></div>
+
+        <form class="card est-filtros" id="form-estatisticas" autocomplete="off">
+          <div><label for="est-inicio">De</label><input type="date" id="est-inicio"></div>
+          <div><label for="est-fim">Até</label><input type="date" id="est-fim"></div>
+          <div class="est-atalhos" role="group" aria-label="Períodos prontos">
+            <button type="button" class="btn btn-pequeno" data-est-periodo="hoje">Hoje</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="7">7 dias</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="30">30 dias</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="mes">Este mês</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="90">90 dias</button>
+          </div>
+          <fieldset class="pg-formas est-agrupar">
+            <legend>Agrupar por</legend>
+            <div class="segmentado">
+              <label><input type="radio" name="estAgrupar" value="mes"><span>Mês</span></label>
+              <label><input type="radio" name="estAgrupar" value="semana"><span>Semana</span></label>
+              <label><input type="radio" name="estAgrupar" value="dia" checked><span>Dia</span></label>
+              <label><input type="radio" name="estAgrupar" value="diaSemana"><span>Dia da semana</span></label>
+              <label><input type="radio" name="estAgrupar" value="hora"><span>Hora</span></label>
+              <label><input type="radio" name="estAgrupar" value="quarto"><span>Hora e minuto (15 min)</span></label>
+            </div>
+          </fieldset>
+        </form>
+
+        <div class="est-kpis" id="est-kpis"></div>
+
+        <div class="card tabela-card est-grafico-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo" id="est-titulo-grafico">Atendimentos por dia</h2>
+            <div class="est-legenda" id="est-legenda"></div>
+          </div>
+          <div class="est-grafico" id="est-grafico" role="img" aria-label="Gráfico de atendimentos"></div>
+          <div class="est-tooltip" id="est-tooltip" role="tooltip" hidden></div>
+          <p class="vazio centro" id="est-vazio" hidden>Nenhum atendimento no período.</p>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo">Tabela</h2><span class="dica">Os mesmos números do gráfico</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th id="est-col-periodo">Dia</th><th class="num">Consulta</th><th class="num">Pronto Socorro</th><th class="num">Retorno</th><th class="num">Total</th><th class="num">Recebido</th></tr></thead>
+              <tbody id="est-tabela"></tbody>
+              <tfoot id="est-rodape"></tfoot>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ===================== ADMINISTRADOR ===================== -->

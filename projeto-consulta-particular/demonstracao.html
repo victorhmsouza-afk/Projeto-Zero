@@ -28,6 +28,10 @@
   --risco-vermelho: #d32f2f; --risco-vermelho-claro: #fdecec;
   --risco-laranja: #e8630a;  --risco-laranja-claro: #fff1e6;
   --risco-amarelo: #f2c200;  --risco-amarelo-claro: #fff9dc;
+  /* Séries das estatísticas (paleta validada para daltonismo; não usa laranja, que é cor de risco) */
+  --serie-consulta: #257de0;
+  --serie-ps: #00b894;
+  --serie-retorno: #6a4ce2;
   --risco-verde: #2e9e4f;    --risco-verde-claro: #e8f6ec;
   --texto: #1f2a27;
   --texto-2: #4b5753;
@@ -526,6 +530,40 @@ tr.fora-plantao td { color: var(--muted); }
 .retorno-texto strong { font-size: 14px; color: var(--verde-escuro); }
 .tag-retorno { background: var(--verde-claro); color: var(--verde-escuro); }
 
+/* ---------- Estatísticas ---------- */
+.est-filtros { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; margin-bottom: 12px; }
+.est-filtros > div { min-width: 150px; }
+.est-atalhos { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0 !important; }
+.est-atalhos .btn.ativo { border-color: var(--verde); background: var(--verde-claro); color: var(--verde-escuro); font-weight: 600; }
+.est-agrupar { flex-basis: 100%; }
+.est-agrupar .segmentado { display: flex; flex-wrap: wrap; width: 100%; }
+.est-agrupar .segmentado label { flex: 1 1 auto; }
+.est-agrupar .segmentado span { width: 100%; justify-content: center; }
+.est-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.est-kpi { background: var(--branco); border: 1px solid var(--linha); border-radius: 8px; padding: 12px 14px; }
+.est-kpi span { display: block; font-size: 12px; color: var(--muted); }
+.est-kpi strong { display: block; font-size: 22px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.est-kpi small { display: block; font-size: 11.5px; color: var(--texto-2); margin-top: 2px; }
+.est-legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--texto-2); }
+.est-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.est-legenda i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.est-grafico-card { position: relative; }
+.est-grafico { padding: 12px 14px 8px; overflow-x: auto; }
+.est-grafico svg { display: block; font-family: inherit; }
+.est-grafico .grade { stroke: #e9edeb; stroke-width: 1; }
+.est-grafico .eixo-txt { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.est-grafico .alvo { fill: transparent; cursor: default; }
+.est-grafico .alvo:hover, .est-grafico .alvo.ativo { fill: #2f7d6a0f; }
+.est-tooltip { position: absolute; z-index: 5; pointer-events: none; background: var(--branco); border: 1px solid var(--linha); border-radius: 8px;
+  box-shadow: 0 8px 24px #0000001f; padding: 8px 10px; font-size: 12px; min-width: 170px; }
+.est-tooltip strong { display: block; font-size: 12.5px; margin-bottom: 4px; }
+.est-tooltip div { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-variant-numeric: tabular-nums; }
+.est-tooltip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+.est-tooltip .total { border-top: 1px solid var(--linha); margin-top: 4px; padding-top: 4px; font-weight: 600; }
+#est-tabela td.num, #est-rodape td.num { text-align: right; font-variant-numeric: tabular-nums; }
+#est-rodape td { font-weight: 700; background: #fafbfb; border-top: 2px solid var(--linha); }
+.est-aviso-exemplo { margin: 0 0 12px; }
+
 /* ---------- Confirmação ---------- */
 .confirmacao-fundo { position: fixed; inset: 0; z-index: 50; background: #1f2a2766; display: grid; place-items: center; padding: 16px; }
 .confirmacao { background: var(--branco); border-radius: 10px; padding: 20px; width: min(420px, 100%); box-shadow: 0 20px 60px #0003; }
@@ -656,7 +694,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <a href="#pacientes" data-tela="pacientes"><svg class="i"><use href="#i-users"/></svg><span>Pacientes</span></a>
         <a href="#medicos" data-tela="medicos"><svg class="i"><use href="#i-steth"/></svg><span>Médicos</span></a>
         <a href="#financeiro" data-tela="financeiro"><svg class="i"><use href="#i-dollar"/></svg><span>Financeiro</span></a>
-        <a href="#relatorios" data-tela="relatorios"><svg class="i"><use href="#i-chart"/></svg><span>Relatórios</span></a>
+        <a href="#estatisticas" data-tela="estatisticas"><svg class="i"><use href="#i-chart"/></svg><span>Estatísticas</span></a>
       </nav>
       <div class="sidebar-footer">
         <a href="#configuracoes" data-tela="configuracoes"><svg class="i"><use href="#i-shield"/></svg><span>Administrador</span></a>
@@ -1337,9 +1375,54 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       </section>
 
       <!-- ===================== RELATÓRIOS ===================== -->
-      <section class="tela" id="tela-relatorios">
-        <div class="cabecalho"><h1>Relatórios</h1><p class="sub">Espaço reservado para os seus relatórios.</p></div>
-        <div class="card"><p class="vazio">Em construção.</p></div>
+      <section class="tela" id="tela-estatisticas">
+        <div class="cabecalho"><h1>Estatísticas</h1><p class="sub">Atendimentos particulares por mês, semana, dia, dia da semana, hora e faixas de 15 minutos.</p></div>
+
+        <form class="card est-filtros" id="form-estatisticas" autocomplete="off">
+          <div><label for="est-inicio">De</label><input type="date" id="est-inicio"></div>
+          <div><label for="est-fim">Até</label><input type="date" id="est-fim"></div>
+          <div class="est-atalhos" role="group" aria-label="Períodos prontos">
+            <button type="button" class="btn btn-pequeno" data-est-periodo="hoje">Hoje</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="7">7 dias</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="30">30 dias</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="mes">Este mês</button>
+            <button type="button" class="btn btn-pequeno" data-est-periodo="90">90 dias</button>
+          </div>
+          <fieldset class="pg-formas est-agrupar">
+            <legend>Agrupar por</legend>
+            <div class="segmentado">
+              <label><input type="radio" name="estAgrupar" value="mes"><span>Mês</span></label>
+              <label><input type="radio" name="estAgrupar" value="semana"><span>Semana</span></label>
+              <label><input type="radio" name="estAgrupar" value="dia" checked><span>Dia</span></label>
+              <label><input type="radio" name="estAgrupar" value="diaSemana"><span>Dia da semana</span></label>
+              <label><input type="radio" name="estAgrupar" value="hora"><span>Hora</span></label>
+              <label><input type="radio" name="estAgrupar" value="quarto"><span>Hora e minuto (15 min)</span></label>
+            </div>
+          </fieldset>
+        </form>
+
+        <div class="est-kpis" id="est-kpis"></div>
+
+        <div class="card tabela-card est-grafico-card">
+          <div class="tabela-topo">
+            <h2 class="card-titulo" id="est-titulo-grafico">Atendimentos por dia</h2>
+            <div class="est-legenda" id="est-legenda"></div>
+          </div>
+          <div class="est-grafico" id="est-grafico" role="img" aria-label="Gráfico de atendimentos"></div>
+          <div class="est-tooltip" id="est-tooltip" role="tooltip" hidden></div>
+          <p class="vazio centro" id="est-vazio" hidden>Nenhum atendimento no período.</p>
+        </div>
+
+        <div class="card tabela-card espaco">
+          <div class="tabela-topo"><h2 class="card-titulo">Tabela</h2><span class="dica">Os mesmos números do gráfico</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th id="est-col-periodo">Dia</th><th class="num">Consulta</th><th class="num">Pronto Socorro</th><th class="num">Retorno</th><th class="num">Total</th><th class="num">Recebido</th></tr></thead>
+              <tbody id="est-tabela"></tbody>
+              <tfoot id="est-rodape"></tfoot>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ===================== ADMINISTRADOR ===================== -->
@@ -2299,6 +2382,218 @@ function renderPlantoesMes() {
 // Fecha a câmera ao sair da tela do ponto
 window.addEventListener('hashchange', () => { if (location.hash !== '#ponto') fecharCamera(); });
 
+// =========================================================
+//   ESTATÍSTICAS (mês, semana, dia, dia da semana, hora, 15 min)
+// =========================================================
+// TODO: carregarEstatisticas() deve buscar no seu sistema os atendimentos do período e chamar renderEstatisticas(lista).
+//   Cada item: { entrada: 'AAAA-MM-DDTHH:MM', tipo: 'CONSULTA' | 'PRONTO_SOCORRO', retorno: true|false, valor }
+const SERIES_EST = [
+  { chave: 'consulta', nome: 'Consulta', cor: 'var(--serie-consulta)' },
+  { chave: 'ps', nome: 'Pronto Socorro', cor: 'var(--serie-ps)' },
+  { chave: 'retorno', nome: 'Retorno', cor: 'var(--serie-retorno)' },
+];
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const dataLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function definirPeriodoEst(tipo) {
+  const hoje = new Date();
+  let ini = new Date(hoje);
+  if (tipo === 'mes') ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  else if (tipo !== 'hoje') ini.setDate(hoje.getDate() - Number(tipo) + 1);
+  $('#est-inicio').value = dataLocal(ini);
+  $('#est-fim').value = dataLocal(hoje);
+  document.querySelectorAll('[data-est-periodo]').forEach((b) => b.classList.toggle('ativo', b.dataset.estPeriodo === tipo));
+}
+
+function carregarEstatisticas() {
+  if (!$('#est-inicio').value) definirPeriodoEst('30');
+  // TODO: buscar no sistema os atendimentos entre #est-inicio e #est-fim
+  renderEstatisticas([]);
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-est-periodo]');
+  if (!b) return;
+  definirPeriodoEst(b.dataset.estPeriodo);
+  carregarEstatisticas();
+});
+['#est-inicio', '#est-fim'].forEach((s) => $(s).addEventListener('change', () => {
+  document.querySelectorAll('[data-est-periodo]').forEach((b) => b.classList.remove('ativo'));
+  carregarEstatisticas();
+}));
+document.querySelectorAll('input[name="estAgrupar"]').forEach((r) => r.addEventListener('change', () => carregarEstatisticas()));
+
+function agrupamentoEst() { return document.querySelector('input[name="estAgrupar"]:checked')?.value || 'dia'; }
+
+// Monta os grupos (inclusive os vazios) para o agrupamento escolhido
+function gruposEst(modo, ini, fim) {
+  const g = [];
+  if (modo === 'hora') for (let h = 0; h < 24; h++) g.push({ chave: String(h), rotulo: `${String(h).padStart(2, '0')}h`, longo: `${String(h).padStart(2, '0')}:00 às ${String(h).padStart(2, '0')}:59` });
+  else if (modo === 'quarto') for (let m = 0; m < 24 * 60; m += 15) {
+    const t = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const f = m + 14; g.push({ chave: String(m), rotulo: t, longo: `${t} às ${String(Math.floor(f / 60)).padStart(2, '0')}:${String(f % 60).padStart(2, '0')}` });
+  }
+  else if (modo === 'diaSemana') DIAS_SEMANA.forEach((d, i) => g.push({ chave: String(i), rotulo: d.slice(0, 3), longo: d }));
+  else {
+    const d = new Date(`${ini}T00:00`);
+    const limite = new Date(`${fim}T00:00`);
+    if (modo === 'semana') d.setDate(d.getDate() - d.getDay()); // começa no domingo
+    if (modo === 'mes') d.setDate(1);
+    const vistos = new Set();
+    while (d <= limite) {
+      const ch = chaveGrupo(modo, d);
+      if (!vistos.has(ch)) {
+        vistos.add(ch);
+        if (modo === 'mes') g.push({ chave: ch, rotulo: `${MESES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`, longo: `${MESES[d.getMonth()]} de ${d.getFullYear()}` });
+        else if (modo === 'semana') {
+          const f = new Date(d); f.setDate(d.getDate() + 6);
+          g.push({ chave: ch, rotulo: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`, longo: `Semana de ${d.toLocaleDateString('pt-BR')} a ${f.toLocaleDateString('pt-BR')}` });
+        } else g.push({ chave: ch, rotulo: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`, longo: `${DIAS_SEMANA[d.getDay()]}, ${d.toLocaleDateString('pt-BR')}` });
+      }
+      if (modo === 'mes') d.setMonth(d.getMonth() + 1); else d.setDate(d.getDate() + (modo === 'semana' ? 7 : 1));
+    }
+  }
+  return g;
+}
+
+function chaveGrupo(modo, d) {
+  if (modo === 'mes') return `${d.getFullYear()}-${d.getMonth()}`;
+  if (modo === 'semana') { const s = new Date(d); s.setDate(d.getDate() - d.getDay()); return dataLocal(s); }
+  if (modo === 'dia') return dataLocal(d);
+  if (modo === 'diaSemana') return String(d.getDay());
+  if (modo === 'hora') return String(d.getHours());
+  return String(d.getHours() * 60 + Math.floor(d.getMinutes() / 15) * 15); // quarto de hora
+}
+
+const serieDoAtendimento = (a) => (a.retorno ? 'retorno' : a.tipo === 'PRONTO_SOCORRO' ? 'ps' : 'consulta');
+
+function renderEstatisticas(lista) {
+  const ini = $('#est-inicio').value, fim = $('#est-fim').value;
+  const modo = agrupamentoEst();
+  const noPeriodo = lista.filter((a) => { const d = String(a.entrada).slice(0, 10); return d >= ini && d <= fim; });
+  const grupos = gruposEst(modo, ini, fim).map((g) => ({ ...g, consulta: 0, ps: 0, retorno: 0, valor: 0 }));
+  const porChave = new Map(grupos.map((g) => [g.chave, g]));
+  noPeriodo.forEach((a) => {
+    const g = porChave.get(chaveGrupo(modo, new Date(a.entrada)));
+    if (!g) return;
+    g[serieDoAtendimento(a)]++;
+    g.valor += a.retorno ? 0 : Number(a.valor || 0);
+  });
+  grupos.forEach((g) => { g.total = g.consulta + g.ps + g.retorno; });
+
+  // Faixas de 15 min: mostra só do primeiro ao último horário com movimento (e no mínimo 07:00–19:00)
+  let visiveis = grupos;
+  if (modo === 'quarto') {
+    const comMov = grupos.filter((g) => g.total);
+    const minM = Math.min(7 * 60, ...comMov.map((g) => Number(g.chave)));
+    const maxM = Math.max(19 * 60 - 15, ...comMov.map((g) => Number(g.chave)));
+    visiveis = grupos.filter((g) => Number(g.chave) >= minM && Number(g.chave) <= maxM);
+  }
+
+  // Indicadores
+  const tot = { consulta: 0, ps: 0, retorno: 0, valor: 0 };
+  noPeriodo.forEach((a) => { tot[serieDoAtendimento(a)]++; tot.valor += a.retorno ? 0 : Number(a.valor || 0); });
+  const total = tot.consulta + tot.ps + tot.retorno;
+  const dias = Math.max(1, Math.round((new Date(`${fim}T00:00`) - new Date(`${ini}T00:00`)) / 86400000) + 1);
+  const porHora = new Array(24).fill(0); noPeriodo.forEach((a) => { porHora[new Date(a.entrada).getHours()]++; });
+  const pico = porHora.indexOf(Math.max(...porHora));
+  const porDiaSem = new Array(7).fill(0); noPeriodo.forEach((a) => { porDiaSem[new Date(a.entrada).getDay()]++; });
+  const diaPico = porDiaSem.indexOf(Math.max(...porDiaSem));
+  const pct = (n) => (total ? ` · ${Math.round((n / total) * 100)}%` : '');
+  $('#est-kpis').innerHTML = [
+    ['Atendimentos', total, `${(total / dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por dia em média`],
+    ['Consulta', tot.consulta, `eletiva${pct(tot.consulta)}`],
+    ['Pronto Socorro', tot.ps, `emergência${pct(tot.ps)}`],
+    ['Retorno', tot.retorno, `sem cobrança${pct(tot.retorno)}`],
+    ['Recebido', formatarMoeda(tot.valor), 'consultas e PS (sem exames)'],
+    ['Horário de pico', total ? `${String(pico).padStart(2, '0')}h` : '—', total ? `${porHora[pico]} atendimento(s) · ${DIAS_SEMANA[diaPico]} é o dia mais cheio` : 'sem movimento'],
+  ].map(([t, v, s]) => `<article class="est-kpi"><span>${t}</span><strong>${v}</strong><small>${s}</small></article>`).join('');
+
+  const nomes = { mes: 'mês', semana: 'semana', dia: 'dia', diaSemana: 'dia da semana', hora: 'hora do dia', quarto: 'faixa de 15 minutos' };
+  $('#est-titulo-grafico').textContent = `Atendimentos por ${nomes[modo]}`;
+  $('#est-col-periodo').textContent = { mes: 'Mês', semana: 'Semana', dia: 'Dia', diaSemana: 'Dia da semana', hora: 'Hora', quarto: 'Horário' }[modo];
+  $('#est-legenda').innerHTML = SERIES_EST.map((s) => `<span><i style="background:${s.cor}"></i>${s.nome}</span>`).join('');
+  $('#est-vazio').hidden = total > 0;
+  desenharGraficoEst(visiveis, total > 0);
+
+  // Tabela (os mesmos números do gráfico)
+  const linhasTabela = modo === 'quarto' || modo === 'hora' ? visiveis.filter((g) => g.total) : visiveis;
+  $('#est-tabela').innerHTML = linhasTabela.map((g) => `
+    <tr><td>${esc(g.longo)}</td><td class="num">${g.consulta}</td><td class="num">${g.ps}</td><td class="num">${g.retorno}</td>
+    <td class="num"><strong>${g.total}</strong></td><td class="num">${formatarMoeda(g.valor)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="vazio centro">Nenhum atendimento no período.</td></tr>';
+  $('#est-rodape').innerHTML = `<tr><td>Total do período</td><td class="num">${tot.consulta}</td><td class="num">${tot.ps}</td><td class="num">${tot.retorno}</td><td class="num">${total}</td><td class="num">${formatarMoeda(tot.valor)}</td></tr>`;
+}
+
+// Gráfico de barras empilhadas (SVG), com dica ao passar o mouse
+function desenharGraficoEst(grupos, temDados) {
+  const area = $('#est-grafico');
+  area.hidden = !temDados;
+  if (!temDados) { area.innerHTML = ''; return; }
+  const largura = Math.max(area.clientWidth - 28, Math.min(grupos.length * 9, 2400), 300); // barras finas para caber o dia todo
+  const altura = 260, mEsq = 34, mBaixo = 26, mTopo = 10;
+  const max = Math.max(1, ...grupos.map((g) => g.total));
+  const passo = max <= 5 ? 1 : max <= 10 ? 2 : max <= 25 ? 5 : max <= 50 ? 10 : Math.ceil(max / 5 / 10) * 10;
+  const topo = Math.ceil(max / passo) * passo;
+  const yDe = (v) => mTopo + (altura - mTopo - mBaixo) * (1 - v / topo);
+  const larguraUtil = largura - mEsq - 4;
+  const col = larguraUtil / grupos.length;
+  const barra = Math.max(3, Math.min(36, col * 0.62));
+  const cadaRotulo = Math.max(1, Math.ceil(46 / col)); // evita rótulos encavalados
+  let svg = `<svg width="${largura}" height="${altura}" viewBox="0 0 ${largura} ${altura}" aria-hidden="true">`;
+  for (let v = 0; v <= topo; v += passo) {
+    const y = yDe(v);
+    svg += `<line class="grade" x1="${mEsq}" x2="${largura - 4}" y1="${y}" y2="${y}"/><text class="eixo-txt" x="${mEsq - 6}" y="${y + 4}" text-anchor="end">${v}</text>`;
+  }
+  grupos.forEach((g, i) => {
+    const x = mEsq + i * col + (col - barra) / 2;
+    let base = altura - mBaixo;
+    const partes = SERIES_EST.filter((s) => g[s.chave] > 0);
+    partes.forEach((s, k) => {
+      const h = (altura - mTopo - mBaixo) * (g[s.chave] / topo);
+      const ultimo = k === partes.length - 1;
+      const y = base - h + (k > 0 ? 0 : 0);
+      const alturaDesenho = Math.max(1, h - (ultimo ? 0 : 2)); // 2 px de espaço entre partes
+      const r = ultimo ? Math.min(4, barra / 2, alturaDesenho) : 0;
+      // retângulo com cantos arredondados só em cima
+      svg += r
+        ? `<path fill="${s.cor}" d="M${x},${base} V${y + r} Q${x},${y} ${x + r},${y} H${x + barra - r} Q${x + barra},${y} ${x + barra},${y + r} V${base} Z"/>`
+        : `<rect fill="${s.cor}" x="${x}" y="${y + (ultimo ? 0 : 2)}" width="${barra}" height="${alturaDesenho}"/>`;
+      base -= h;
+    });
+    if (i % cadaRotulo === 0) svg += `<text class="eixo-txt" x="${mEsq + i * col + col / 2}" y="${altura - 8}" text-anchor="middle">${esc(g.rotulo)}</text>`;
+    svg += `<rect class="alvo" data-est-i="${i}" x="${mEsq + i * col}" y="${mTopo}" width="${col}" height="${altura - mTopo - mBaixo}"/>`;
+  });
+  svg += '</svg>';
+  area.innerHTML = svg;
+  area._grupos = grupos;
+}
+
+// Dica (tooltip) de cada barra
+$('#est-grafico').addEventListener('mousemove', (e) => {
+  const alvo = e.target.closest('.alvo');
+  const dica = $('#est-tooltip');
+  document.querySelectorAll('#est-grafico .alvo.ativo').forEach((a) => a.classList.remove('ativo'));
+  if (!alvo) { dica.hidden = true; return; }
+  alvo.classList.add('ativo');
+  const g = $('#est-grafico')._grupos[Number(alvo.dataset.estI)];
+  dica.innerHTML = `<strong>${esc(g.longo)}</strong>`
+    + SERIES_EST.map((s) => `<div><span><i style="background:${s.cor}"></i>${s.nome}</span><span>${g[s.chave]}</span></div>`).join('')
+    + `<div class="total"><span>Total</span><span>${g.total}</span></div><div><span>Recebido</span><span>${formatarMoeda(g.valor)}</span></div>`;
+  dica.hidden = false;
+  const card = $('#est-grafico').closest('.card').getBoundingClientRect();
+  let x = e.clientX - card.left + 14;
+  if (x + 190 > card.width) x = e.clientX - card.left - 200;
+  dica.style.left = `${Math.max(8, x)}px`;
+  dica.style.top = `${e.clientY - card.top + 10}px`;
+});
+$('#est-grafico').addEventListener('mouseleave', () => {
+  $('#est-tooltip').hidden = true;
+  document.querySelectorAll('#est-grafico .alvo.ativo').forEach((a) => a.classList.remove('ativo'));
+});
+window.addEventListener('resize', () => { if ($('#tela-estatisticas').classList.contains('ativa')) carregarEstatisticas(); });
+
 // ---------- Navegação entre telas ----------
 const carregadores = {
   atendimento: carregarAtendimento,
@@ -2313,7 +2608,7 @@ const carregadores = {
   pacientes: carregarPacientes,
   medicos: carregarMedicos,
   financeiro: carregarFinanceiro,
-  relatorios: () => {},
+  estatisticas: () => carregarEstatisticas(),
   configuracoes: () => {},
 };
 
@@ -4302,6 +4597,39 @@ abrirTela(location.hash.slice(1) || 'atendimento');
     g.fillStyle = '#fff'; g.font = '16px sans-serif'; g.fillText('foto de teste', 160, 205);
     mostrarFoto(c.toDataURL('image/jpeg', 0.7));
   });
+
+  // Estatísticas: histórico de EXEMPLO (90 dias), só na demonstração, somado aos atendimentos feitos no teste
+  const EXEMPLO_EST = (() => {
+    let s = 7; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const lista = [];
+    const pesosHora = [1,1,1,1,1,1,2,4,8,10,10,8,5,5,7,8,8,9,10,11,9,6,3,2]; // mais movimento de manhã e no início da noite
+    const somaP = pesosHora.reduce((a, b) => a + b, 0);
+    for (let dd = 1; dd <= 90; dd++) {
+      const dia = new Date(); dia.setDate(dia.getDate() - dd);
+      const fimDeSemana = dia.getDay() === 0 || dia.getDay() === 6;
+      const n = Math.round((fimDeSemana ? 9 : 14) + rnd() * 8);
+      for (let k = 0; k < n; k++) {
+        let r = rnd() * somaP, h = 0; while (r > pesosHora[h]) { r -= pesosHora[h]; h++; }
+        const min = Math.floor(rnd() * 60);
+        const ps = rnd() < (fimDeSemana || h >= 19 || h < 7 ? 0.7 : 0.35);
+        const retorno = !ps && rnd() < 0.18;
+        const valor = ps ? 250 : retorno ? 0 : [350, 300, 320, 200][Math.floor(rnd() * 4)];
+        dia.setHours(h, min, 0, 0);
+        lista.push({ entrada: `${dataLocal(dia)}T${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, tipo: ps ? 'PRONTO_SOCORRO' : 'CONSULTA', retorno, valor });
+      }
+    }
+    return lista;
+  })();
+  const avisoEx = document.createElement('p');
+  avisoEx.className = 'aviso est-aviso-exemplo';
+  avisoEx.innerHTML = '<label style="display:flex;gap:8px;align-items:center;margin:0;font-weight:500"><input type="checkbox" id="est-exemplo" checked style="width:auto"> Incluir histórico de exemplo dos últimos 90 dias (fictício, só na demonstração). Os atendimentos feitos hoje no teste sempre entram.</label>';
+  $('#form-estatisticas').before(avisoEx);
+  carregarEstatisticas = () => {
+    if (!$('#est-inicio').value) definirPeriodoEst('30');
+    const doTeste = Object.values(ANTERIORES).flat().map((a) => ({ entrada: a.entrada, tipo: a.tipo, retorno: !!a.retorno, valor: a.valor }));
+    renderEstatisticas($('#est-exemplo').checked ? [...EXEMPLO_EST, ...doTeste] : doTeste);
+  };
+  $('#est-exemplo').addEventListener('change', () => carregarEstatisticas());
 
   // Banner
   const banner = document.createElement('div');
