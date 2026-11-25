@@ -1,5 +1,5 @@
 /* =========================================================
-   Atendimento Particular · dados.js
+   Particular Elite · dados.js
    Tudo o que é salvo ou lido passa por aqui.
    Hoje os dados ficam no navegador (localStorage).
    Para ligar ao banco/API do hospital, troque SÓ as funções

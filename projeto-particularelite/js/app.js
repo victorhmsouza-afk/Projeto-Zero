@@ -16,7 +16,7 @@
 })();
 
 /* =========================================================
-   Caixa · Atendimento Particular · app.js
+   Particular Elite · Caixa · app.js
    Fluxo: consulta → pagamento → consulta realizada →
    exames pedidos pelo médico → pagamento dos exames
    (tudo de uma vez ou aos poucos) → exame realizado.

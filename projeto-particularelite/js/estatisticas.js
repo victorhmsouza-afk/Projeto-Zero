@@ -1,5 +1,5 @@
 /* =========================================================
-   Atendimento Particular · estatisticas.js
+   Particular Elite · estatisticas.js
    Consultas por mês, dia, hora e minuto (faixas de 15 min),
    com o valor recebido em consultas e em exames.
    ========================================================= */

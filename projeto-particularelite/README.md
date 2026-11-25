@@ -1,4 +1,4 @@
-# Atendimento Particular
+# Particular Elite (projeto-particularelite)
 
 Frontend feito do zero, focado em **serviço e pagamento** do atendimento particular do Hospital da Saúde.
 HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar nada.
@@ -47,7 +47,7 @@ Não existe cancelamento nem estorno de pagamento.
 ## Arquivos
 
 ```
-atendimento-particular/
+projeto-particularelite/
 ├── index.html            → telas (caixa, estatísticas, preços) e janelas (recibo, confirmação)
 ├── css/estilo.css        → visual de caixa/PDV (tema claro e escuro, celular)
 └── js/
