@@ -498,10 +498,10 @@ input[type="date"] { width: auto; }
             <div class="troco"><span>TROCO</span><strong id="pg-troco">R$ 0,00</strong></div>
           </div>
           <div class="campos-forma" id="pg-campos-cortesia" hidden>
-            <p class="cortesia-aviso">O paciente <b>não paga</b>. A cortesia só é liberada com nome, senha e motivo de quem autorizou na diretoria.</p>
+            <p class="cortesia-aviso">O paciente <b>não paga</b>. A cortesia só é liberada com nome e senha de quem autorizou na diretoria, e uma observação.</p>
             <div class="campo"><label for="pg-diretor">Autorizado por (diretoria) *</label><select id="pg-diretor"></select></div>
             <div class="campo"><label for="pg-senha-diretor">Senha de autorização *</label><input type="password" id="pg-senha-diretor" maxlength="30" autocomplete="off"></div>
-            <div class="campo"><label for="pg-motivo">Motivo da cortesia *</label><input id="pg-motivo" maxlength="160" placeholder="Ex.: colaborador, convênio institucional…"></div>
+            <div class="campo"><label for="pg-observacao">Observação *</label><input id="pg-observacao" maxlength="160" placeholder="Ex.: colaborador, convênio institucional…"></div>
           </div>
 
           <p class="erro" id="pg-erro" role="alert"></p>
@@ -607,7 +607,7 @@ input[type="date"] { width: auto; }
             <tbody id="pr-diretoria"></tbody>
           </table>
         </div>
-        <p class="nota">Cortesia = o paciente não paga, com autorização (nome, senha e motivo) de alguém desta lista. Os nomes e as senhas ficam no próprio <code>index.html</code>, parte DADOS (lista <code>CONFIG.diretoria</code>).</p>
+        <p class="nota">Cortesia = o paciente não paga, com autorização (nome e senha) de alguém desta lista e uma observação. Os nomes e as senhas ficam no próprio <code>index.html</code>, parte DADOS (lista <code>CONFIG.diretoria</code>).</p>
       </div>
 
       <div class="cartao">
@@ -1473,14 +1473,14 @@ $('#btn-finalizar').addEventListener('click', async () => {
   if (!forma) return erro('Escolha a forma de pagamento.');
   const pg = { forma, valor: total, subtotal, desconto, itens: itens.map(({ nome, valor }) => ({ nome, valor })), dataHora: agoraIso() };
   if (forma === 'CORTESIA') {
-    const motivo = $('#pg-motivo').value.trim();
+    const observacao = $('#pg-observacao').value.trim();
     if (!$('#pg-diretor').value) return erro('Escolha quem da diretoria autorizou a cortesia.');
     if (!$('#pg-senha-diretor').value) return erro('Digite a senha de autorização da diretoria.');
-    if (motivo.length < 5) return erro('Escreva o motivo da cortesia.');
+    if (observacao.length < 3) return erro('Preencha a observação da cortesia.');
     const aut = await Banco.autorizarCortesia({ diretorId: $('#pg-diretor').value, senha: $('#pg-senha-diretor').value });
     $('#pg-senha-diretor').value = '';
     if (!aut.ok) return erro(aut.motivo);
-    pg.cortesia = { valor: cortesia, autorizadoPor: aut.diretor.nome, cargo: aut.diretor.cargo, diretorId: aut.diretor.id, motivo, autorizadoEm: pg.dataHora };
+    pg.cortesia = { valor: cortesia, autorizadoPor: aut.diretor.nome, cargo: aut.diretor.cargo, diretorId: aut.diretor.id, observacao, autorizadoEm: pg.dataHora };
   }
   if (forma === 'CREDITO') Object.assign(pg, { parcelas: Number($('#pg-parcelas').value), autorizacao: $('#pg-nsu-credito').value.trim() });
   if (forma === 'DEBITO') pg.autorizacao = $('#pg-nsu-debito').value.trim();
@@ -1567,7 +1567,7 @@ function mostrarRecibo(p) {
   const det = [
     ['Forma de pagamento', NOMES_FORMA[p.forma]],
     p.cortesia && ['Autorizado por', `${p.cortesia.autorizadoPor} · ${p.cortesia.cargo}`],
-    p.cortesia && ['Motivo', p.cortesia.motivo],
+    p.cortesia && ['Observação', p.cortesia.observacao || p.cortesia.motivo || '—'],
     p.parcelas > 1 && ['Parcelas', `${p.parcelas}x de ${moeda(p.valor / p.parcelas)}`],
     p.autorizacao && ['Autorização (NSU)', p.autorizacao],
     p.idTransacao && ['ID da transação Pix', p.idTransacao],
@@ -1902,7 +1902,7 @@ function gerarExemplos() {
         forma: formas[Math.floor(rnd() * formas.length)], valor, subtotal: valor, desconto: 0, itens: [{ nome: 'Consulta', valor }], dataHora: iso(ab) };
       if (rnd() < 0.03) { // algumas cortesias autorizadas pela diretoria
         const d = CONFIG.diretoria[Math.floor(rnd() * CONFIG.diretoria.length)];
-        Object.assign(pgC, { forma: 'CORTESIA', valor: 0, cortesia: { valor, autorizadoPor: d.nome, cargo: d.cargo, diretorId: d.id, motivo: 'Exemplo', autorizadoEm: pgC.dataHora } });
+        Object.assign(pgC, { forma: 'CORTESIA', valor: 0, cortesia: { valor, autorizadoPor: d.nome, cargo: d.cargo, diretorId: d.id, observacao: 'Exemplo', autorizadoEm: pgC.dataHora } });
       }
       pags.push(pgC);
       const realizada = new Date(ab.getTime() + (20 + rnd() * 60) * 60000);
