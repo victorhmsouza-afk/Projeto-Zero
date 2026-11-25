@@ -26,7 +26,13 @@ números em Inter, cantos retos e tema claro/escuro automático.
 
 ## Fluxo
 
-1. **+ Novo atendimento** — a comanda abre em branco: paciente (busca um já cadastrado ou cadastra na hora),
+1. **+ Novo atendimento** — a comanda abre em branco. No cartão **Paciente** escolha:
+   - **Paciente já cadastrado** — busca por nome ou CPF;
+   - **+ Novo paciente** — cadastro com nome completo (obrigatório), CPF (com máscara e conferência dos dígitos,
+     sem repetir CPF já cadastrado), data de nascimento (mostra a idade), telefone e e-mail.
+     **Salvar paciente** grava na hora; se esquecer, o cadastro é salvo ao finalizar o pagamento.
+
+   Depois,
    **Consulta** ou **Pronto Socorro**, médico e valor. O valor vai direto para o **visor do total**.
    Escolha **PIX, CRÉDITO (até 6x), DÉBITO ou DINHEIRO (com troco)**, desconto opcional, e **FINALIZAR PAGAMENTO** → recibo.
 2. **Consulta realizada** — botão na comanda. Só depois disso os exames podem ser lançados.
@@ -67,7 +73,7 @@ Para ligar ao banco de dados / API do hospital, troque **só as funções do obj
 
 | Função | O que faz |
 |---|---|
-| `buscarPacientes(texto)` / `salvarPaciente(p)` | pacientes `{ id, nome, cpf, telefone }` |
+| `buscarPacientes(texto)` / `salvarPaciente(p)` | pacientes `{ id, nome, cpf, nascimento, telefone, email, cadastradoEm }` |
 | `listarAtendimentos({ inicio, fim })` / `obterAtendimento(id)` / `salvarAtendimento(a)` | atendimento `{ id, numero, pacienteId, pacienteNome, cpf, telefone, tipo: 'CONSULTA' \| 'PRONTO_SOCORRO', medicoId, medicoNome, valorConsulta, abertoEm, pagamentoConsultaId, consultaRealizadaEm, exames: [{ id, nome, categoria, valor, status: 'PENDENTE' \| 'PAGO' \| 'REALIZADO', pedidoEm, pagoEm, pagamentoId, realizadoEm }] }` |
 | `registrarPagamento(pg)` / `listarPagamentos({ inicio, fim, atendimentoId })` | pagamento `{ id, numeroRecibo, referente: 'CONSULTA' \| 'EXAMES', atendimentoId, atendimentoNumero, pacienteNome, cpf, medicoNome, tipoConsulta, forma, valor, subtotal, desconto, itens, parcelas?, autorizacao?, idTransacao?, recebido?, troco?, dataHora }` |
 | `lerPrecos()` / `salvarPrecos(p)` / `restaurarPrecos()` | `{ prontoSocorro, adicionalContraste, exames: [{ categoria, nome, valor }] }` |

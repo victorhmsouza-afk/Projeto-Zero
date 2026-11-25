@@ -261,6 +261,11 @@ input[type="date"] { width: auto; }
 
 /* Formulário de novo atendimento (dentro da comanda) */
 .novo-form { display: flex; flex-direction: column; gap: 12px; }
+.modo-paciente { display: grid; grid-template-columns: 1fr 1fr; }
+.modo-paciente label span { display: block; text-align: center; }
+.cadastro-novo { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--linha); border-top: 2px solid var(--ouro); border-radius: 4px; background: var(--superficie-2); }
+.cadastro-novo .cresce-2 { grid-column: 1 / -1; }
+.cadastro-acoes { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .sugestoes { list-style: none; margin: 0; padding: 0; border: 1px solid var(--linha); border-radius: 4px; max-height: 170px; overflow-y: auto; }
 .sugestoes:empty { display: none; }
 .sugestoes button { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linha); padding: 8px 10px; cursor: pointer; }
@@ -1194,7 +1199,7 @@ $('#btn-novo').addEventListener('click', () => {
   estado.modo = 'novo';
   estado.selecionadoId = null;
   estado.atual = null;
-  estado.rascunho = { paciente: null, tipo: 'CONSULTA', medicoId: '', valor: 0, nome: '', cpf: '', telefone: '' };
+  estado.rascunho = { paciente: null, modoPaciente: 'buscar', tipo: 'CONSULTA', medicoId: '', valor: 0, nome: '', cpf: '', nascimento: '', telefone: '', email: '' };
   limparPagamento();
   renderFila();
   renderComanda();
@@ -1214,15 +1219,29 @@ function renderNovo() {
       <div class="cupom">
         <div class="cupom-titulo"><span>Paciente</span></div>
         <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
-          ${p ? `<div class="paciente-escolhido"><div><strong>${esc(p.nome)}</strong><br><small class="nota">${[p.cpf && `CPF ${esc(p.cpf)}`, esc(p.telefone || '')].filter(Boolean).join(' · ') || 'Paciente cadastrado'}</small></div>
+          ${p ? `<div class="paciente-escolhido"><div><strong>${esc(p.nome)}</strong><br><small class="nota">${[p.cpf && `CPF ${esc(p.cpf)}`, p.nascimento && `${dataBr(p.nascimento)} (${idade(p.nascimento)} anos)`, esc(p.telefone || ''), esc(p.email || '')].filter(Boolean).join(' · ') || 'Paciente cadastrado'}</small></div>
                   <button type="button" class="link" id="nv-trocar">Trocar</button></div>` : `
-            <div class="campo"><label for="nv-busca">Buscar paciente já cadastrado</label><input type="search" id="nv-busca" placeholder="Nome ou CPF"></div>
+            <div class="segmentos modo-paciente" role="radiogroup" aria-label="Paciente">
+              <label><input type="radio" name="nv-modo-pac" value="buscar" ${r.modoPaciente !== 'novo' ? 'checked' : ''}><span>Paciente já cadastrado</span></label>
+              <label><input type="radio" name="nv-modo-pac" value="novo" ${r.modoPaciente === 'novo' ? 'checked' : ''}><span>+ Novo paciente</span></label>
+            </div>
+            ${r.modoPaciente !== 'novo' ? `
+            <div class="campo"><label for="nv-busca">Buscar por nome ou CPF</label><input type="search" id="nv-busca" placeholder="Digite ao menos 2 letras ou números"></div>
             <ul class="sugestoes" id="nv-sugestoes"></ul>
-            <div class="grade-campos">
-              <div class="campo"><label for="nv-nome">Nome completo *</label><input id="nv-nome" maxlength="120" value="${esc(r.nome)}"></div>
-              <div class="campo"><label for="nv-cpf">CPF</label><input id="nv-cpf" maxlength="14" placeholder="000.000.000-00" value="${esc(r.cpf)}"></div>
-              <div class="campo"><label for="nv-telefone">Telefone</label><input id="nv-telefone" maxlength="15" value="${esc(r.telefone)}"></div>
-            </div>`}
+            <p class="nota">Não achou? <button type="button" class="link" id="nv-ir-novo">+ Cadastrar novo paciente</button></p>` : `
+            <div class="cadastro-novo">
+              <div class="grade-campos">
+                <div class="campo cresce-2"><label for="nv-nome">Nome completo *</label><input id="nv-nome" maxlength="120" autocomplete="off" value="${esc(r.nome)}"></div>
+                <div class="campo"><label for="nv-cpf">CPF</label><input id="nv-cpf" maxlength="14" inputmode="numeric" placeholder="000.000.000-00" value="${esc(r.cpf)}"></div>
+                <div class="campo"><label for="nv-nascimento">Data de nascimento</label><input type="date" id="nv-nascimento" value="${esc(r.nascimento)}"></div>
+                <div class="campo"><label for="nv-telefone">Telefone</label><input id="nv-telefone" maxlength="15" inputmode="tel" placeholder="(00) 00000-0000" value="${esc(r.telefone)}"></div>
+                <div class="campo"><label for="nv-email">E-mail</label><input type="email" id="nv-email" maxlength="120" value="${esc(r.email)}"></div>
+              </div>
+              <div class="cadastro-acoes">
+                <span class="nota">* obrigatório. O cadastro também é salvo ao finalizar o pagamento.</span>
+                <button type="button" class="botao primario" id="nv-salvar-paciente">Salvar paciente</button>
+              </div>
+            </div>`}`}
         </div>
       </div>
       <div class="cupom">
@@ -1259,14 +1278,18 @@ async function atualizarRascunho(e) {
     const txt = t.value.trim();
     estado.sugestoes = txt.length >= 2 ? await Banco.buscarPacientes(txt) : [];
     $('#nv-sugestoes').innerHTML = estado.sugestoes.slice(0, 8).map((p) => `<li><button type="button" data-paciente="${esc(p.id)}">${esc(p.nome)}<small>${esc(p.cpf || p.telefone || '')}</small></button></li>`).join('')
-      || (txt.length >= 2 ? '<li><button type="button" disabled>Nenhum paciente encontrado. Preencha os dados abaixo.</button></li>' : '');
-    if (txt && !/\d/.test(txt)) { $('#nv-nome').value = txt; r.nome = txt; }
+      || (txt.length >= 2 ? '<li><button type="button" data-ir-novo>Nenhum paciente encontrado. <b>+ Cadastrar como novo paciente</b></button></li>' : '');
+    if (txt && !/\d/.test(txt)) r.nome = txt; else if (/\d/.test(txt)) r.cpf = mascaraCpf(txt);
     return;
   }
   if (t.id === 'nv-nome') r.nome = t.value;
-  if (t.id === 'nv-cpf') r.cpf = t.value;
-  if (t.id === 'nv-telefone') r.telefone = t.value;
+  if (t.id === 'nv-cpf') { t.value = mascaraCpf(t.value); r.cpf = t.value; }
+  if (t.id === 'nv-nascimento') r.nascimento = t.value;
+  if (t.id === 'nv-telefone') { t.value = mascaraTelefone(t.value); r.telefone = t.value; }
+  if (t.id === 'nv-email') r.email = t.value;
+  if (String(t.id).startsWith('nv-')) $('#nv-erro').textContent = '';
   if (e.type !== 'change') return;
+  if (t.name === 'nv-modo-pac') { r.modoPaciente = t.value; renderNovo(); $(t.value === 'novo' ? '#nv-nome' : '#nv-busca')?.focus(); return; }
   if (t.name === 'nv-tipo') { r.tipo = t.value; r.valor = valorPadraoConsulta(); renderNovo(); }
   if (t.id === 'nv-medico') { r.medicoId = t.value; r.valor = valorPadraoConsulta(); renderNovo(); }
   if (t.id === 'nv-valor') { r.valor = lerMoeda(t.value); renderNovo(); }
@@ -1277,8 +1300,59 @@ function cliqueNovo(e) {
   const r = estado.rascunho;
   if (e.target.id === 'nv-cancelar') { estado.modo = 'vazio'; limparPagamento(); renderComanda(); return; }
   if (e.target.id === 'nv-trocar') { r.paciente = null; renderNovo(); renderPagamento(); $('#nv-busca').focus(); return; }
+  if (e.target.closest('#nv-ir-novo, [data-ir-novo]')) { r.modoPaciente = 'novo'; renderNovo(); $('#nv-nome').focus(); return; }
+  if (e.target.id === 'nv-salvar-paciente') { salvarNovoPaciente(); return; }
   const b = e.target.closest('[data-paciente]');
   if (b) { r.paciente = estado.sugestoes.find((p) => p.id === b.dataset.paciente) || null; renderNovo(); renderPagamento(); }
+}
+
+// ---------- Cadastro de novo paciente ----------
+function mascaraCpf(v) {
+  const d = String(v).replace(/\D/g, '').slice(0, 11);
+  return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+}
+function mascaraTelefone(v) {
+  const d = String(v).replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d ? `(${d}` : '';
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+function cpfValido(v) {
+  const d = String(v).replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  const dig = (n) => { let s = 0; for (let i = 0; i < n; i++) s += Number(d[i]) * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+  return dig(9) === Number(d[9]) && dig(10) === Number(d[10]);
+}
+function idade(nasc) {
+  const n = new Date(nasc + 'T00:00:00'), h = new Date();
+  let a = h.getFullYear() - n.getFullYear();
+  if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+  return a;
+}
+function dataBr(iso) { const [a, m, d] = String(iso).split('-'); return `${d}/${m}/${a}`; }
+
+// Confere os dados do novo paciente e salva. Devolve o paciente salvo, ou null (com a mensagem de erro na tela).
+async function salvarNovoPaciente({ silencioso = false } = {}) {
+  const r = estado.rascunho;
+  const erro = (t) => { $('#nv-erro').textContent = t; if (!silencioso) $('#nv-erro').scrollIntoView({ block: 'nearest' }); return null; };
+  const nome = (r.nome || '').trim().replace(/\s+/g, ' ');
+  if (nome.length < 3) return erro('Informe o nome completo do paciente.');
+  if (r.cpf && !cpfValido(r.cpf)) return erro('CPF inválido. Confira os números.');
+  if (r.nascimento && (r.nascimento > dataLocal(new Date()) || r.nascimento < '1900-01-01')) return erro('Data de nascimento inválida.');
+  if (r.telefone && r.telefone.replace(/\D/g, '').length < 10) return erro('Telefone incompleto. Use DDD + número.');
+  if (r.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email.trim())) return erro('E-mail inválido.');
+  if (r.cpf) {
+    const cpf = r.cpf.replace(/\D/g, '');
+    const existente = (await Banco.buscarPacientes(cpf)).find((p) => String(p.cpf || '').replace(/\D/g, '') === cpf);
+    if (existente) return erro(`Já existe paciente com este CPF: ${existente.nome}. Use "Paciente já cadastrado".`);
+  }
+  const pac = await Banco.salvarPaciente({ nome, cpf: r.cpf || '', nascimento: r.nascimento || '', telefone: r.telefone || '', email: (r.email || '').trim(), cadastradoEm: agoraIso() });
+  r.paciente = pac;
+  Object.assign(r, { modoPaciente: 'buscar', nome: '', cpf: '', nascimento: '', telefone: '', email: '' });
+  renderNovo(); renderPagamento();
+  if (!silencioso) avisar(`Paciente ${pac.nome} cadastrado.`);
+  return pac;
 }
 
 // =========================================================
@@ -1350,10 +1424,11 @@ $('#btn-finalizar').addEventListener('click', async () => {
 
   if (estado.modo === 'novo') {
     const r = estado.rascunho;
-    const paciente = r.paciente || { nome: (r.nome || '').trim(), cpf: (r.cpf || '').trim(), telefone: (r.telefone || '').trim() };
-    if (!paciente.nome) return erro('Informe o nome do paciente (ou escolha um já cadastrado).');
+    if (!r.paciente && r.modoPaciente !== 'novo') return erro('Escolha um paciente já cadastrado ou clique em "+ Novo paciente".');
     const medico = CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
-    const pac = paciente.id ? paciente : await Banco.salvarPaciente(paciente);
+    if (!medico) return erro('Escolha o médico.');
+    const pac = r.paciente || await salvarNovoPaciente({ silencioso: true });
+    if (!pac) return erro('Confira o cadastro do paciente (mensagem na comanda).');
     let at = await Banco.salvarAtendimento({
       pacienteId: pac.id, pacienteNome: pac.nome, cpf: pac.cpf || '', telefone: pac.telefone || '',
       tipo: r.tipo, medicoId: medico.id, medicoNome: medico.nome, valorConsulta: total, abertoEm: pg.dataHora,
