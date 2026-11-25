@@ -5,16 +5,31 @@ HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar 
 
 > O projeto anterior (`../projeto-consulta-particular/`) continua no repositório só como referência.
 
+## Como é a tela (estilo caixa / PDV)
+
+```
+┌──────────────┬──────────────────────────────┬────────────────────┐
+│ + Novo       │ COMANDA (cupom)              │ TOTAL A PAGAR      │
+│ dia / busca  │ Paciente · nº do atendimento │ R$ 1.025,00        │
+│ resumo do dia│ ─ Consulta ........ R$ 350   │ Desconto           │
+│ FILA DO DIA  │ ─ Hemograma ☑ ..... R$  25   │ [PIX] [CRÉDITO]    │
+│  Maria 19:22 │ ─ Tomografia ☑ .... R$1.000  │ [DÉBITO][DINHEIRO] │
+│  João  18:40 │ ─ Raio-X ☐ ........ R$  90   │ FINALIZAR PAGAMENTO│
+└──────────────┴──────────────────────────────┴────────────────────┘
+```
+
 ## Fluxo
 
-1. **Novo atendimento** — paciente (busca um já cadastrado ou cadastra na hora), tipo (**Consulta** ou **Pronto Socorro**),
-   médico e valor → **pagamento** (Pix, crédito em até 6x, débito, dinheiro com troco; desconto opcional) → **recibo**.
-2. **Consulta realizada** — botão no atendimento. Só depois disso os exames podem ser adicionados.
-3. **Exames pedidos pelo médico** — adicionados pelo nome (imagem e laboratório), com o preço da tabela.
+1. **+ Novo atendimento** — a comanda abre em branco: paciente (busca um já cadastrado ou cadastra na hora),
+   **Consulta** ou **Pronto Socorro**, médico e valor. O valor vai direto para o **visor do total**.
+   Escolha **PIX, CRÉDITO (até 6x), DÉBITO ou DINHEIRO (com troco)**, desconto opcional, e **FINALIZAR PAGAMENTO** → recibo.
+2. **Consulta realizada** — botão na comanda. Só depois disso os exames podem ser lançados.
+3. **Lançar exames pedidos pelo médico** — pelo nome (imagem e laboratório), com o preço da tabela.
    Tomografia pode ser **com contraste** (+ adicional). Raio-X vale para qualquer osso (ex.: "Raio-X de joelho").
-4. **Pagamento dos exames** — o paciente paga **tudo de uma vez ou aos poucos**: marque os exames e clique em *Pagar*.
-   Cada exame passa por **A pagar → Pago → Realizado**. Só exame ainda não pago pode ser removido.
-5. **Pagamentos** — cada pagamento gera um recibo (valor por extenso, itens, forma de pagamento) que pode ser reaberto e impresso.
+4. **Pagar exames** — marque (☑) os exames que o paciente vai pagar agora: o visor mostra o total.
+   O paciente paga **tudo de uma vez ou aos poucos**. Cada exame passa por **A pagar → Pago → Realizado**.
+   Só exame ainda não pago pode ser removido.
+5. **Recibos** — cada pagamento gera um recibo (valor por extenso, itens, forma de pagamento), que pode ser reaberto e impresso.
 
 Não existe cancelamento nem estorno de pagamento.
 
@@ -22,7 +37,7 @@ Não existe cancelamento nem estorno de pagamento.
 
 | Tela | O que tem |
 |---|---|
-| **Atendimentos** | Resumo do dia (atendimentos, recebido, exames a pagar), lista do dia com busca e situação de cada um, e o detalhe do atendimento selecionado. Dá para ver outros dias pelo campo de data. |
+| **Caixa** | Fila do dia (com busca, outros dias e resumo), comanda do paciente e painel de pagamento com visor do total. |
 | **Estatísticas** | Consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, recebido em consultas e em exames); gráfico com dica ao passar o mouse e tabela com os mesmos números. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
 | **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Os médicos e o valor da consulta de cada um ficam em `js/dados.js`. |
 
@@ -30,11 +45,11 @@ Não existe cancelamento nem estorno de pagamento.
 
 ```
 atendimento-particular/
-├── index.html            → telas e janelas (novo atendimento, pagamento, recibo, confirmação)
-├── css/estilo.css        → visual (tema claro e escuro, celular)
+├── index.html            → telas (caixa, estatísticas, preços) e janelas (recibo, confirmação)
+├── css/estilo.css        → visual de caixa/PDV (tema claro e escuro, celular)
 └── js/
     ├── dados.js          → CONFIG (hospital, médicos), tabela de preços padrão e o objeto Banco (onde os dados são salvos)
-    ├── app.js            → atendimentos, pagamento, recibo e preços
+    ├── app.js            → caixa (fila, comanda, pagamento), recibo e preços
     └── estatisticas.js   → estatísticas e dados de exemplo
 ```
 

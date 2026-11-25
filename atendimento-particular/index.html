@@ -3,59 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Atendimento Particular</title>
+  <title>Caixa · Atendimento Particular</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
   <header class="topo">
     <div class="topo-conteudo">
-      <a class="marca" href="#atendimentos" aria-label="Atendimento Particular, início">
+      <div class="marca">
         <span class="marca-icone" aria-hidden="true">+</span>
-        <span class="marca-texto"><strong>Atendimento Particular</strong><small id="nome-hospital">Hospital</small></span>
-      </a>
+        <span class="marca-texto"><strong>Caixa · Atendimento Particular</strong><small id="nome-hospital">Hospital</small></span>
+      </div>
       <nav class="abas" aria-label="Seções">
-        <a href="#atendimentos" data-tela="atendimentos">Atendimentos</a>
+        <a href="#caixa" data-tela="caixa">Caixa</a>
         <a href="#estatisticas" data-tela="estatisticas">Estatísticas</a>
         <a href="#precos" data-tela="precos">Preços</a>
       </nav>
+      <div class="relogio" aria-live="off"><span id="relogio-hora">--:--</span><small id="relogio-data"></small></div>
     </div>
   </header>
 
   <main class="conteudo">
 
-    <!-- ===================== ATENDIMENTOS ===================== -->
-    <section class="tela" id="tela-atendimentos">
-      <div class="cabecalho">
-        <div>
-          <h1>Atendimentos</h1>
-          <p class="sub">Consulta → pagamento → consulta realizada → exames pedidos pelo médico → pagamento dos exames.</p>
-        </div>
-        <div class="cabecalho-acoes">
-          <label class="sr" for="at-data">Data</label>
-          <input type="date" id="at-data">
-          <button type="button" class="botao primario" id="btn-novo">+ Novo atendimento</button>
-        </div>
-      </div>
+    <!-- ===================== CAIXA ===================== -->
+    <section class="tela" id="tela-caixa">
+      <div class="caixa">
 
-      <div class="resumo" id="resumo-dia" aria-live="polite"></div>
-
-      <div class="painel-duplo">
-        <aside class="cartao lista-lado" aria-label="Atendimentos do dia">
-          <div class="lista-busca">
-            <label class="sr" for="at-busca">Buscar atendimento</label>
-            <input type="search" id="at-busca" placeholder="Buscar por nome ou nº">
+        <!-- Fila do dia -->
+        <aside class="fila" aria-label="Atendimentos do dia">
+          <button type="button" class="botao novo" id="btn-novo">+ Novo atendimento</button>
+          <div class="fila-filtros">
+            <label class="sr" for="at-data">Dia</label>
+            <input type="date" id="at-data">
+            <label class="sr" for="at-busca">Buscar</label>
+            <input type="search" id="at-busca" placeholder="Buscar nome ou nº">
           </div>
-          <ul class="lista-atend" id="lista-atend"></ul>
+          <div class="fila-resumo" id="resumo-dia"></div>
+          <ul class="fila-lista" id="lista-atend"></ul>
           <p class="vazio" id="lista-vazia">Nenhum atendimento neste dia.</p>
         </aside>
 
-        <article class="cartao detalhe" id="detalhe" aria-live="polite">
-          <div class="detalhe-vazio">
-            <p><strong>Selecione um atendimento</strong> na lista ou clique em <strong>+ Novo atendimento</strong>.</p>
+        <!-- Comanda (cupom) -->
+        <section class="comanda" id="comanda" aria-live="polite"></section>
+
+        <!-- Pagamento -->
+        <aside class="pagamento" id="painel-pagamento" aria-label="Pagamento">
+          <div class="visor">
+            <span class="visor-rotulo" id="visor-rotulo">TOTAL A PAGAR</span>
+            <strong class="visor-valor" id="visor-total">R$ 0,00</strong>
+            <span class="visor-detalhe" id="visor-detalhe">Nada a pagar</span>
           </div>
-        </article>
+
+          <div class="campo">
+            <label for="pg-desconto">Desconto (R$)</label>
+            <input id="pg-desconto" class="valor" inputmode="decimal" placeholder="0,00">
+          </div>
+
+          <div class="formas" role="radiogroup" aria-label="Forma de pagamento">
+            <label class="forma"><input type="radio" name="forma" value="PIX"><span><b>PIX</b><small>Transferência</small></span></label>
+            <label class="forma"><input type="radio" name="forma" value="CREDITO"><span><b>CRÉDITO</b><small>Até 6x</small></span></label>
+            <label class="forma"><input type="radio" name="forma" value="DEBITO"><span><b>DÉBITO</b><small>À vista</small></span></label>
+            <label class="forma"><input type="radio" name="forma" value="DINHEIRO"><span><b>DINHEIRO</b><small>Com troco</small></span></label>
+          </div>
+
+          <div class="campos-forma" id="pg-campos-credito" hidden>
+            <div class="campo"><label for="pg-parcelas">Parcelas</label><select id="pg-parcelas"></select></div>
+            <div class="campo"><label for="pg-nsu-credito">Nº de autorização (NSU)</label><input id="pg-nsu-credito" maxlength="30"></div>
+          </div>
+          <div class="campos-forma" id="pg-campos-debito" hidden>
+            <div class="campo"><label for="pg-nsu-debito">Nº de autorização (NSU)</label><input id="pg-nsu-debito" maxlength="30"></div>
+          </div>
+          <div class="campos-forma" id="pg-campos-pix" hidden>
+            <div class="campo"><label for="pg-pix">ID da transação Pix</label><input id="pg-pix" maxlength="40"></div>
+          </div>
+          <div class="campos-forma" id="pg-campos-dinheiro" hidden>
+            <div class="campo"><label for="pg-recebido">Valor recebido (R$)</label><input id="pg-recebido" class="valor grande" inputmode="decimal" placeholder="0,00"></div>
+            <div class="troco"><span>TROCO</span><strong id="pg-troco">R$ 0,00</strong></div>
+          </div>
+
+          <p class="erro" id="pg-erro" role="alert"></p>
+          <button type="button" class="botao finalizar" id="btn-finalizar" disabled>FINALIZAR PAGAMENTO</button>
+          <p class="nota pagamento-nota">Sem cancelamento nem estorno. Cada pagamento gera um recibo.</p>
+        </aside>
       </div>
     </section>
 
@@ -127,7 +157,7 @@
       <div class="cabecalho">
         <div>
           <h1>Preços</h1>
-          <p class="sub">Valores usados na hora do pagamento. As mudanças ficam salvas neste computador.</p>
+          <p class="sub">Valores usados no caixa. As mudanças ficam salvas neste computador.</p>
         </div>
         <div class="cabecalho-acoes"><button type="button" class="botao" id="btn-restaurar-precos">Restaurar padrão</button></div>
       </div>
@@ -165,94 +195,6 @@
       </div>
     </section>
   </main>
-
-  <!-- ===================== JANELA: NOVO ATENDIMENTO ===================== -->
-  <div class="fundo-janela" id="janela-novo" hidden>
-    <form class="janela" id="form-novo" role="dialog" aria-modal="true" aria-labelledby="novo-titulo" autocomplete="off" novalidate>
-      <div class="janela-topo">
-        <h2 id="novo-titulo">Novo atendimento</h2>
-        <button type="button" class="fechar" data-fechar aria-label="Fechar">✕</button>
-      </div>
-
-      <fieldset class="bloco-form">
-        <legend>Paciente</legend>
-        <div class="campo">
-          <label for="nv-busca">Buscar paciente já cadastrado</label>
-          <input type="search" id="nv-busca" placeholder="Nome ou CPF">
-          <ul class="sugestoes" id="nv-sugestoes"></ul>
-        </div>
-        <div class="paciente-escolhido" id="nv-escolhido" hidden></div>
-        <div class="grade-campos" id="nv-campos">
-          <div class="campo largo"><label for="nv-nome">Nome completo *</label><input id="nv-nome" maxlength="120"></div>
-          <div class="campo"><label for="nv-cpf">CPF</label><input id="nv-cpf" maxlength="14" placeholder="000.000.000-00"></div>
-          <div class="campo"><label for="nv-telefone">Telefone</label><input id="nv-telefone" maxlength="15" placeholder="(00) 00000-0000"></div>
-        </div>
-      </fieldset>
-
-      <fieldset class="bloco-form">
-        <legend>Consulta</legend>
-        <div class="segmentos" role="radiogroup" aria-label="Tipo de consulta">
-          <label><input type="radio" name="tipo" value="CONSULTA" checked><span>Consulta</span></label>
-          <label><input type="radio" name="tipo" value="PRONTO_SOCORRO"><span>Pronto Socorro</span></label>
-        </div>
-        <div class="grade-campos">
-          <div class="campo largo"><label for="nv-medico">Médico *</label><select id="nv-medico"></select></div>
-          <div class="campo"><label for="nv-valor">Valor da consulta (R$)</label><input id="nv-valor" class="valor" inputmode="decimal" placeholder="0,00"></div>
-        </div>
-      </fieldset>
-
-      <p class="erro" id="nv-erro" role="alert"></p>
-      <div class="janela-acoes">
-        <button type="button" class="botao" data-fechar>Cancelar</button>
-        <button type="submit" class="botao primario">Ir para o pagamento</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- ===================== JANELA: PAGAMENTO ===================== -->
-  <div class="fundo-janela" id="janela-pagamento" hidden>
-    <form class="janela" id="form-pagamento" role="dialog" aria-modal="true" aria-labelledby="pg-titulo" autocomplete="off" novalidate>
-      <div class="janela-topo">
-        <div><h2 id="pg-titulo">Pagamento</h2><p class="sub" id="pg-descricao"></p></div>
-        <button type="button" class="fechar" data-fechar aria-label="Fechar">✕</button>
-      </div>
-      <ul class="itens-pagamento" id="pg-itens"></ul>
-      <div class="grade-campos">
-        <div class="campo"><label for="pg-desconto">Desconto (R$)</label><input id="pg-desconto" class="valor" inputmode="decimal" placeholder="0,00"></div>
-      </div>
-      <div class="total-pagar"><span>Total a pagar</span><strong id="pg-total">R$ 0,00</strong></div>
-
-      <fieldset class="bloco-form">
-        <legend>Forma de pagamento *</legend>
-        <div class="segmentos" role="radiogroup" aria-label="Forma de pagamento">
-          <label><input type="radio" name="forma" value="PIX"><span>Pix</span></label>
-          <label><input type="radio" name="forma" value="CREDITO"><span>Crédito</span></label>
-          <label><input type="radio" name="forma" value="DEBITO"><span>Débito</span></label>
-          <label><input type="radio" name="forma" value="DINHEIRO"><span>Dinheiro</span></label>
-        </div>
-      </fieldset>
-      <div class="grade-campos" id="pg-campos-credito" hidden>
-        <div class="campo"><label for="pg-parcelas">Parcelas</label><select id="pg-parcelas"></select></div>
-        <div class="campo"><label for="pg-nsu-credito">Nº de autorização (NSU)</label><input id="pg-nsu-credito" maxlength="30"></div>
-      </div>
-      <div class="grade-campos" id="pg-campos-debito" hidden>
-        <div class="campo"><label for="pg-nsu-debito">Nº de autorização (NSU)</label><input id="pg-nsu-debito" maxlength="30"></div>
-      </div>
-      <div class="grade-campos" id="pg-campos-pix" hidden>
-        <div class="campo"><label for="pg-pix">ID da transação Pix</label><input id="pg-pix" maxlength="40"></div>
-      </div>
-      <div class="grade-campos" id="pg-campos-dinheiro" hidden>
-        <div class="campo"><label for="pg-recebido">Valor recebido (R$) *</label><input id="pg-recebido" class="valor" inputmode="decimal" placeholder="0,00"></div>
-        <div class="campo"><span class="rotulo">Troco</span><strong class="troco" id="pg-troco">R$ 0,00</strong></div>
-      </div>
-
-      <p class="erro" id="pg-erro" role="alert"></p>
-      <div class="janela-acoes">
-        <button type="button" class="botao" data-fechar>Cancelar</button>
-        <button type="submit" class="botao primario">Confirmar pagamento</button>
-      </div>
-    </form>
-  </div>
 
   <!-- ===================== JANELA: RECIBO ===================== -->
   <div class="fundo-janela" id="janela-recibo" hidden>

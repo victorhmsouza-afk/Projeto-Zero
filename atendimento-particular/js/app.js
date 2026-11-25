@@ -1,5 +1,5 @@
 /* =========================================================
-   Atendimento Particular · app.js
+   Caixa · Atendimento Particular · app.js
    Fluxo: consulta → pagamento → consulta realizada →
    exames pedidos pelo médico → pagamento dos exames
    (tudo de uma vez ou aos poucos) → exame realizado.
@@ -9,7 +9,6 @@
 // ---------- Utilitários ----------
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
-
 function esc(t) {
   return String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -27,12 +26,10 @@ const horaBR = (iso) => String(iso || '').slice(11, 16);
 const dataBR = (iso) => { const [a, m, d] = String(iso || '').slice(0, 10).split('-'); return a ? `${d}/${m}/${a}` : ''; };
 const NOMES_FORMA = { PIX: 'Pix', CREDITO: 'Cartão de crédito', DEBITO: 'Cartão de débito', DINHEIRO: 'Dinheiro' };
 
-// Formata campos de valor ao sair deles (0,00)
 document.addEventListener('focusout', (e) => {
   if (e.target.classList?.contains('valor') && e.target.value.trim()) e.target.value = valorCampo(lerMoeda(e.target.value));
 });
 
-// Aviso rápido no canto da tela
 function avisar(texto) {
   const a = $('#aviso');
   a.textContent = texto;
@@ -41,28 +38,30 @@ function avisar(texto) {
   avisar.t = setTimeout(() => { a.hidden = true; }, 3500);
 }
 
-// ---------- Janelas ----------
-function abrirJanela(id) { $(id).hidden = false; }
-function fecharJanela(el) { el.closest('.fundo-janela').hidden = true; }
+// Relógio do caixa
+function atualizarRelogio() {
+  const d = new Date();
+  $('#relogio-hora').textContent = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  $('#relogio-data').textContent = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+}
+atualizarRelogio();
+setInterval(atualizarRelogio, 20000);
+
+// ---------- Janelas (recibo e confirmação) ----------
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-fechar]');
-  if (b) { fecharJanela(b); if (b.closest('#janela-pagamento')) resolverPagamento(null); }
+  if (b) b.closest('.fundo-janela').hidden = true;
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  const aberta = $$('.fundo-janela').reverse().find((j) => !j.hidden);
-  if (!aberta) return;
-  aberta.hidden = true;
-  if (aberta.id === 'janela-pagamento') resolverPagamento(null);
-  if (aberta.id === 'janela-confirmar') resolverConfirmacao(false);
+  if (!$('#janela-confirmar').hidden) { resolverConfirmacao(false); return; }
+  $('#janela-recibo').hidden = true;
 });
-
-// Confirmação dentro da página
 let resolverConfirmacao = () => {};
 function confirmar(texto, botao = 'Confirmar') {
   $('#cf-texto').textContent = texto;
   $('#cf-sim').textContent = botao;
-  abrirJanela('#janela-confirmar');
+  $('#janela-confirmar').hidden = false;
   $('#cf-sim').focus();
   return new Promise((r) => { resolverConfirmacao = (v) => { $('#janela-confirmar').hidden = true; r(v); }; });
 }
@@ -74,20 +73,25 @@ $('#janela-confirmar').addEventListener('click', (e) => {
 // ---------- Estado ----------
 const estado = {
   precos: null,
-  data: dataLocal(new Date()),  // dia mostrado em Atendimentos
-  atendimentos: [],             // atendimentos do dia
+  data: dataLocal(new Date()),
+  atendimentos: [],
+  modo: 'vazio',            // 'vazio' | 'novo' | 'atendimento'
   selecionadoId: null,
-  novoPaciente: null,           // paciente escolhido na janela Novo atendimento
+  atual: null,              // atendimento aberto na comanda
+  pagamentosAtual: [],
+  selecionados: new Set(),  // exames marcados para pagar
+  rascunho: null,           // novo atendimento: { paciente, tipo, medicoId, valor }
+  sugestoes: [],
 };
 
 // ---------- Navegação ----------
 const carregadores = {
-  atendimentos: () => carregarAtendimentos(),
+  caixa: () => carregarCaixa(),
   precos: () => carregarPrecos(),
   // estatisticas: definido em estatisticas.js
 };
 function abrirTela(nome) {
-  if (!carregadores[nome]) nome = 'atendimentos';
+  if (!carregadores[nome]) nome = 'caixa';
   $$('.tela').forEach((t) => t.classList.toggle('ativa', t.id === `tela-${nome}`));
   $$('[data-tela]').forEach((a) => a.classList.toggle('ativa', a.dataset.tela === nome));
   carregadores[nome]();
@@ -95,55 +99,42 @@ function abrirTela(nome) {
 window.addEventListener('hashchange', () => abrirTela(location.hash.slice(1)));
 
 // =========================================================
-//   ATENDIMENTOS
+//   FILA DO DIA
 // =========================================================
-function statusAtendimento(a) {
+function situacao(a) {
   if (!a.consultaRealizadaEm) return { texto: 'Aguardando consulta', classe: 'pendente' };
   const ex = a.exames || [];
   if (!ex.length) return { texto: 'Consulta realizada', classe: 'pago' };
   const pagos = ex.filter((x) => x.status !== 'PENDENTE').length;
   const feitos = ex.filter((x) => x.status === 'REALIZADO').length;
-  if (pagos < ex.length) return { texto: `Exames: ${pagos} de ${ex.length} pagos`, classe: 'pendente' };
-  if (feitos < ex.length) return { texto: `Exames pagos · ${feitos} de ${ex.length} feitos`, classe: 'pago' };
+  if (pagos < ex.length) return { texto: `Exames ${pagos}/${ex.length} pagos`, classe: 'pendente' };
+  if (feitos < ex.length) return { texto: `Exames pagos · ${feitos}/${ex.length} feitos`, classe: 'pago' };
   return { texto: 'Exames concluídos', classe: 'realizado' };
 }
 
-async function carregarAtendimentos() {
+async function carregarCaixa() {
   $('#at-data').value = estado.data;
   estado.atendimentos = (await Banco.listarAtendimentos({ inicio: estado.data, fim: estado.data }))
     .sort((a, b) => b.abertoEm.localeCompare(a.abertoEm));
-  const pagamentos = await Banco.listarPagamentos({ inicio: estado.data, fim: estado.data });
-  renderResumo(pagamentos);
-  renderLista();
-  await renderDetalhe();
+  const pagamentosDia = await Banco.listarPagamentos({ inicio: estado.data, fim: estado.data });
+  $('#resumo-dia').innerHTML = `
+    <div><span>Atendimentos</span><strong>${estado.atendimentos.length}</strong></div>
+    <div><span>Recebido</span><strong>${moeda(pagamentosDia.reduce((t, p) => t + p.valor, 0))}</strong></div>`;
+  renderFila();
+  if (estado.modo === 'atendimento' && estado.selecionadoId) await abrirAtendimento(estado.selecionadoId, false);
+  else renderComanda();
 }
 
-function renderResumo(pagamentosDoDia) {
-  const lista = estado.atendimentos;
-  const consultas = lista.filter((a) => a.tipo === 'CONSULTA').length;
-  const ps = lista.length - consultas;
-  const recebido = pagamentosDoDia.reduce((t, p) => t + p.valor, 0);
-  const pendentes = lista.flatMap((a) => (a.exames || []).filter((x) => x.status === 'PENDENTE'));
-  const aPagar = pendentes.reduce((t, x) => t + x.valor, 0);
-  const hoje = estado.data === dataLocal(new Date());
-  $('#resumo-dia').innerHTML = [
-    [hoje ? 'Atendimentos hoje' : 'Atendimentos no dia', lista.length, `${consultas} consulta(s) · ${ps} pronto socorro`],
-    ['Recebido', moeda(recebido), `${pagamentosDoDia.length} pagamento(s)`],
-    ['Exames a pagar', pendentes.length, pendentes.length ? `${moeda(aPagar)} em aberto` : 'nenhum em aberto'],
-  ].map(([t, v, s]) => `<article><span>${t}</span><strong>${v}</strong><small>${s}</small></article>`).join('');
-}
-
-function renderLista() {
+function renderFila() {
   const busca = $('#at-busca').value.trim().toLowerCase();
   const lista = estado.atendimentos.filter((a) => !busca || a.pacienteNome.toLowerCase().includes(busca) || String(a.numero).includes(busca));
   $('#lista-atend').innerHTML = lista.map((a) => {
-    const s = statusAtendimento(a);
-    return `
-      <li><button type="button" data-atend="${esc(a.id)}" class="${a.id === estado.selecionadoId ? 'selecionado' : ''}">
-        <span class="lista-linha"><strong>${esc(a.pacienteNome)}</strong><small>${horaBR(a.abertoEm)}</small></span>
-        <span class="lista-meta"><span class="chip tipo">${TIPOS[a.tipo].nome}</span>${esc(a.medicoNome)} · nº ${a.numero}</span>
-        <span><span class="chip ${s.classe}">${s.texto}</span></span>
-      </button></li>`;
+    const s = situacao(a);
+    return `<li><button type="button" data-atend="${esc(a.id)}" class="${estado.modo === 'atendimento' && a.id === estado.selecionadoId ? 'selecionado' : ''}">
+      <strong>${esc(a.pacienteNome)}</strong><span class="hora">${horaBR(a.abertoEm)}</span>
+      <span class="meta">${TIPOS[a.tipo].nome} · nº ${a.numero}</span>
+      <span class="situacao"><span class="chip ${s.classe}">${s.texto}</span></span>
+    </button></li>`;
   }).join('');
   $('#lista-vazia').hidden = lista.length > 0;
   $('#lista-vazia').textContent = estado.atendimentos.length ? 'Nenhum atendimento encontrado.' : 'Nenhum atendimento neste dia.';
@@ -151,157 +142,137 @@ function renderLista() {
 
 $('#lista-atend').addEventListener('click', (e) => {
   const b = e.target.closest('[data-atend]');
-  if (!b) return;
-  estado.selecionadoId = b.dataset.atend;
-  renderLista();
-  renderDetalhe();
+  if (b) abrirAtendimento(b.dataset.atend, true);
 });
-$('#at-busca').addEventListener('input', renderLista);
-$('#at-data').addEventListener('change', (e) => { estado.data = e.target.value || dataLocal(new Date()); estado.selecionadoId = null; carregarAtendimentos(); });
+$('#at-busca').addEventListener('input', renderFila);
+$('#at-data').addEventListener('change', (e) => {
+  estado.data = e.target.value || dataLocal(new Date());
+  estado.modo = 'vazio'; estado.selecionadoId = null;
+  carregarCaixa();
+});
 
-// ---------- Detalhe do atendimento ----------
-async function renderDetalhe() {
-  const area = $('#detalhe');
-  const a = estado.selecionadoId ? await Banco.obterAtendimento(estado.selecionadoId) : null;
-  if (!a) {
-    area.innerHTML = '<div class="detalhe-vazio"><p><strong>Selecione um atendimento</strong> na lista ou clique em <strong>+ Novo atendimento</strong>.</p></div>';
+// =========================================================
+//   COMANDA
+// =========================================================
+async function abrirAtendimento(id, novaSelecao) {
+  const a = await Banco.obterAtendimento(id);
+  if (!a) { estado.modo = 'vazio'; renderComanda(); return; }
+  const trocou = estado.selecionadoId !== id;
+  estado.modo = 'atendimento';
+  estado.selecionadoId = id;
+  estado.atual = a;
+  estado.pagamentosAtual = (await Banco.listarPagamentos({ atendimentoId: id })).sort((x, y) => x.dataHora.localeCompare(y.dataHora));
+  const pendentes = (a.exames || []).filter((x) => x.status === 'PENDENTE').map((x) => x.id);
+  if (novaSelecao || trocou) { estado.selecionados = new Set(pendentes); limparPagamento(); }
+  else estado.selecionados = new Set([...estado.selecionados].filter((x) => pendentes.includes(x)));
+  renderFila();
+  renderComanda();
+}
+
+function renderComanda() {
+  const c = $('#comanda');
+  if (estado.modo === 'novo') { renderNovo(); renderPagamento(); return; }
+  if (estado.modo !== 'atendimento' || !estado.atual) {
+    c.innerHTML = `<div class="comanda-vazia"><strong>Caixa livre</strong>
+      Clique em <b>+ Novo atendimento</b> para cobrar uma consulta, ou escolha um paciente na fila para cobrar os exames.</div>`;
+    renderPagamento();
     return;
   }
-  const pagamentos = (await Banco.listarPagamentos({ atendimentoId: a.id })).sort((x, y) => x.dataHora.localeCompare(y.dataHora));
-  const totalPago = pagamentos.reduce((t, p) => t + p.valor, 0);
-  const realizada = !!a.consultaRealizadaEm;
+  const a = estado.atual;
   const ex = a.exames || [];
-  const pendentes = ex.filter((x) => x.status === 'PENDENTE');
-  const pagoExames = ex.filter((x) => x.status !== 'PENDENTE').reduce((t, x) => t + x.valor, 0);
-  const aPagar = pendentes.reduce((t, x) => t + x.valor, 0);
-  const pagConsulta = pagamentos.find((p) => p.id === a.pagamentoConsultaId);
+  const realizada = !!a.consultaRealizadaEm;
+  const pgCons = estado.pagamentosAtual.find((p) => p.id === a.pagamentoConsultaId);
+  const pago = ex.filter((x) => x.status !== 'PENDENTE').reduce((t, x) => t + x.valor, 0);
+  const aPagar = ex.filter((x) => x.status === 'PENDENTE').reduce((t, x) => t + x.valor, 0);
+  const totalPago = estado.pagamentosAtual.reduce((t, p) => t + p.valor, 0);
+  const etapa = (txt, feito, atual) => `<span class="etapa ${feito ? 'feito' : atual ? 'atual' : ''}">${feito ? '✓ ' : ''}${txt}</span>`;
+  const todosPagos = ex.length && !ex.some((x) => x.status === 'PENDENTE');
 
-  area.innerHTML = `
-    <div class="detalhe-cabeca">
+  c.innerHTML = `
+    <div class="comanda-cabeca">
       <div>
         <h2>${esc(a.pacienteNome)}</h2>
-        <p>Atendimento nº ${a.numero} · ${TIPOS[a.tipo].descricao} · ${esc(a.medicoNome)} · aberto em ${dataBR(a.abertoEm)} às ${horaBR(a.abertoEm)}</p>
-        <p>${[a.cpf && `CPF ${esc(a.cpf)}`, a.telefone && `Tel. ${esc(a.telefone)}`].filter(Boolean).join(' · ') || 'Sem CPF/telefone cadastrado'}</p>
+        <p>${TIPOS[a.tipo].descricao} · ${esc(a.medicoNome)} · ${dataBR(a.abertoEm)} ${horaBR(a.abertoEm)}</p>
+        <p>${[a.cpf && `CPF ${esc(a.cpf)}`, a.telefone && `Tel. ${esc(a.telefone)}`].filter(Boolean).join(' · ') || 'Sem CPF/telefone'}</p>
       </div>
-      <div class="detalhe-total"><span>Total pago</span><strong>${moeda(totalPago)}</strong></div>
+      <div class="comanda-num">ATENDIMENTO<b>Nº ${a.numero}</b>pago ${moeda(totalPago)}</div>
     </div>
+    <div class="comanda-corpo">
+      <div class="etapas">
+        ${etapa('Consulta paga', true)}
+        ${etapa('Consulta realizada', realizada, !realizada)}
+        ${etapa('Exames pagos', todosPagos, realizada && !todosPagos)}
+      </div>
 
-    <section class="secao">
-      <div class="secao-titulo">
-        <h3><span class="numero-etapa feito">1</span>Consulta paga</h3>
-        <span class="chip pago">Pago ${horaBR(pagConsulta?.dataHora || a.abertoEm)}</span>
+      <div class="cupom">
+        <div class="cupom-titulo"><span>Consulta</span><span>${pgCons ? `${NOMES_FORMA[pgCons.forma]} · ${horaBR(pgCons.dataHora)}` : ''}</span></div>
+        <div class="item pago">
+          <span></span>
+          <span class="descr"><strong>${TIPOS[a.tipo].nome} · ${esc(a.medicoNome)}</strong><small>${realizada ? `Realizada às ${horaBR(a.consultaRealizadaEm)}` : 'Aguardando o médico'}</small></span>
+          <span class="chip ${realizada ? 'realizado' : 'pago'}">${realizada ? 'Realizada' : 'Paga'}</span>
+          <span class="preco">${moeda(a.valorConsulta)}</span>
+        </div>
       </div>
-      <div class="linha-consulta">
-        <p><strong>${TIPOS[a.tipo].nome} · ${esc(a.medicoNome)}</strong><br><small>${moeda(a.valorConsulta)} · ${pagConsulta ? NOMES_FORMA[pagConsulta.forma] : ''}</small></p>
-        ${pagConsulta ? `<button type="button" class="link" data-recibo="${esc(pagConsulta.id)}">Ver recibo</button>` : ''}
-      </div>
-    </section>
 
-    <section class="secao">
-      <div class="secao-titulo">
-        <h3><span class="numero-etapa ${realizada ? 'feito' : ''}">2</span>Consulta realizada</h3>
-        ${realizada ? `<span class="chip realizado">Realizada ${horaBR(a.consultaRealizadaEm)}</span>` : ''}
-      </div>
-      ${realizada
-        ? '<p class="nota" style="margin:0">O médico atendeu o paciente. Os exames pedidos entram abaixo.</p>'
-        : '<button type="button" class="botao primario" id="btn-realizada">Marcar consulta como realizada</button>'}
-    </section>
+      ${realizada ? '' : `<div class="aviso-etapa"><span>Quando o médico terminar a consulta, marque aqui. Depois disso os exames pedidos podem ser lançados.</span>
+        <button type="button" class="botao primario" id="btn-realizada">Consulta realizada</button></div>`}
 
-    <section class="secao">
-      <div class="secao-titulo">
-        <h3><span class="numero-etapa ${ex.length && !pendentes.length ? 'feito' : ''}">3</span>Exames pedidos pelo médico</h3>
-        ${ex.length ? `<span class="nota">${ex.length} exame(s)</span>` : ''}
-      </div>
-      ${!realizada ? '<p class="bloqueado">Disponível depois que a consulta for realizada.</p>' : `
-        <form class="form-exame" id="form-exame" autocomplete="off">
+      ${!realizada ? '' : `
+        <form class="adicionar" id="form-exame" autocomplete="off">
           <div class="campo">
-            <label for="ex-nome">Adicionar exame</label>
-            <input id="ex-nome" list="lista-exames" placeholder="Ex.: Hemograma completo, Tomografia de crânio, Raio-X de joelho">
+            <label for="ex-nome">Lançar exame pedido pelo médico</label>
+            <input id="ex-nome" list="lista-exames" placeholder="Hemograma, Tomografia de crânio, Raio-X de joelho…">
           </div>
           <label class="check" id="ex-contraste-campo" hidden><input type="checkbox" id="ex-contraste">Com contraste (+ ${moeda(estado.precos.adicionalContraste)})</label>
-          <button type="submit" class="botao">Adicionar</button>
+          <button type="submit" class="botao">Lançar</button>
         </form>
-        ${ex.length ? `
-        <div class="tabela-rolagem">
-          <table class="tabela">
-            <thead><tr>
-              <th>${pendentes.length ? '<input type="checkbox" class="selecao" id="sel-todos" aria-label="Selecionar todos os exames a pagar">' : ''}</th>
-              <th>Exame</th><th class="num">Valor</th><th>Situação</th><th class="acoes"></th>
-            </tr></thead>
-            <tbody>${ex.map((x) => linhaExame(x)).join('')}</tbody>
-          </table>
-        </div>
-        <div class="barra-pagar">
-          <div class="totais-exames">
-            <span>Pago: <strong>${moeda(pagoExames)}</strong></span>
-            <span>A pagar: <strong>${moeda(aPagar)}</strong></span>
+        <div class="cupom">
+          <div class="cupom-titulo">
+            <span>Exames ${ex.length ? `(${ex.length})` : ''}</span>
+            ${ex.some((x) => x.status === 'PENDENTE') ? '<label class="check" style="padding:2px 8px;font-size:11px"><input type="checkbox" id="sel-todos">Todos a pagar</label>' : ''}
           </div>
-          <button type="button" class="botao primario" id="btn-pagar-exames" disabled>Pagar exames selecionados</button>
-        </div>` : '<p class="nota" style="margin:0">Nenhum exame pedido. Se o médico pedir, adicione acima.</p>'}
-      `}
-    </section>
+          ${ex.length ? ex.map(linhaExame).join('') : '<p class="vazio">Nenhum exame lançado.</p>'}
+          ${ex.length ? `<div class="cupom-rodape"><span>PAGO <b>${moeda(pago)}</b></span><span>A PAGAR <b>${moeda(aPagar)}</b></span></div>` : ''}
+        </div>`}
 
-    <section class="secao">
-      <div class="secao-titulo"><h3>Pagamentos</h3></div>
-      <ul class="lista-pagamentos">
-        ${pagamentos.map((p) => `
-          <li>
-            <div><strong>${p.referente === 'CONSULTA' ? 'Consulta' : `Exames (${p.itens.length})`} · ${moeda(p.valor)}</strong>
-              <small>${dataBR(p.dataHora)} às ${horaBR(p.dataHora)} · ${NOMES_FORMA[p.forma]}${p.parcelas > 1 ? ` em ${p.parcelas}x` : ''} · recibo ${esc(p.numeroRecibo)}</small></div>
-            <button type="button" class="link" data-recibo="${esc(p.id)}">Ver recibo</button>
-          </li>`).join('')}
-      </ul>
-    </section>`;
-  area.dataset.atendimento = a.id;
-  atualizarBotaoPagarExames();
+      ${estado.pagamentosAtual.length ? `
+        <div>
+          <div class="cupom-titulo" style="border:0;background:none;padding:0 0 6px">Recibos</div>
+          <div class="recibos">
+            ${estado.pagamentosAtual.map((p) => `<button type="button" data-recibo="${esc(p.id)}">
+              <span>${p.referente === 'CONSULTA' ? 'Consulta' : `Exames (${p.itens.length})`} · ${NOMES_FORMA[p.forma]}${p.parcelas > 1 ? ` ${p.parcelas}x` : ''} · ${dataBR(p.dataHora)} ${horaBR(p.dataHora)} · nº ${esc(p.numeroRecibo)}</span>
+              <span class="dinheiro">${moeda(p.valor)}</span></button>`).join('')}
+          </div>
+        </div>` : ''}
+    </div>`;
+  const todos = $('#sel-todos');
+  if (todos) todos.checked = ex.filter((x) => x.status === 'PENDENTE').every((x) => estado.selecionados.has(x.id));
+  renderPagamento();
 }
 
 function linhaExame(x) {
-  const situacao = {
-    PENDENTE: '<span class="chip pendente">A pagar</span>',
-    PAGO: `<span class="chip pago">Pago ${horaBR(x.pagoEm)}</span>`,
-    REALIZADO: `<span class="chip realizado">Realizado ${horaBR(x.realizadoEm)}</span>`,
-  }[x.status];
-  const acao = x.status === 'PENDENTE'
+  const pendente = x.status === 'PENDENTE';
+  const chip = { PENDENTE: '<span class="chip pendente">A pagar</span>', PAGO: '<span class="chip pago">Pago</span>', REALIZADO: '<span class="chip realizado">Realizado</span>' }[x.status];
+  const acoes = pendente
     ? `<button type="button" class="link perigo" data-remover-exame="${esc(x.id)}">Remover</button>`
-    : x.status === 'PAGO' ? `<button type="button" class="link" data-realizar-exame="${esc(x.id)}">Marcar como realizado</button>` : '';
+    : x.status === 'PAGO'
+      ? `<small class="nota">pago às ${horaBR(x.pagoEm)}</small><button type="button" class="link" data-realizar-exame="${esc(x.id)}">Marcar como realizado</button>`
+      : `<small class="nota">pago às ${horaBR(x.pagoEm)} · realizado às ${horaBR(x.realizadoEm)}</small>`;
   return `
-    <tr>
-      <td>${x.status === 'PENDENTE' ? `<input type="checkbox" class="selecao" data-sel-exame="${esc(x.id)}" aria-label="Selecionar ${esc(x.nome)}">` : ''}</td>
-      <td><strong>${esc(x.nome)}</strong><br><small class="nota">${esc(x.categoria)}</small></td>
-      <td class="num">${x.status === 'PENDENTE'
-        ? `<input class="valor" data-valor-exame="${esc(x.id)}" value="${valorCampo(x.valor)}" inputmode="decimal" aria-label="Valor de ${esc(x.nome)}">`
-        : moeda(x.valor)}</td>
-      <td>${situacao}</td>
-      <td class="acoes">${acao}</td>
-    </tr>`;
+    <div class="item ${pendente ? '' : 'pago'}">
+      <span>${pendente ? `<input type="checkbox" class="marcar" data-sel-exame="${esc(x.id)}" ${estado.selecionados.has(x.id) ? 'checked' : ''} aria-label="Pagar ${esc(x.nome)}">` : ''}</span>
+      <span class="descr"><strong>${esc(x.nome)}</strong><small>${esc(x.categoria)}</small></span>
+      ${chip}
+      <span class="preco">${pendente ? `<input class="valor" data-valor-exame="${esc(x.id)}" value="${valorCampo(x.valor)}" inputmode="decimal" aria-label="Valor de ${esc(x.nome)}">` : moeda(x.valor)}</span>
+      <span class="acoes-item">${acoes}</span>
+    </div>`;
 }
 
-function selecionadosExames() { return $$('[data-sel-exame]:checked').map((c) => c.dataset.selExame); }
-
-function atualizarBotaoPagarExames() {
-  const b = $('#btn-pagar-exames');
-  if (!b) return;
-  const a = estado.atendimentos.find((x) => x.id === estado.selecionadoId);
-  const ids = selecionadosExames();
-  const soma = (a?.exames || []).filter((x) => ids.includes(x.id)).reduce((t, x) => t + x.valor, 0);
-  b.disabled = !ids.length;
-  b.textContent = ids.length ? `Pagar ${ids.length} exame(s) · ${moeda(soma)}` : 'Pagar exames selecionados';
-}
-
-async function atendimentoAtual() { return Banco.obterAtendimento(estado.selecionadoId); }
-
-async function salvarEAtualizar(a, mensagem) {
-  await Banco.salvarAtendimento(a);
-  if (mensagem) avisar(mensagem);
-  await carregarAtendimentos();
-}
-
-// Catálogo para o campo de exames
+// Catálogo de exames
 function identificarExame(texto) {
   const t = String(texto || '').trim();
-  const semContraste = t.replace(/ com contraste$/i, '');
-  const item = estado.precos.exames.find((e) => e.nome.toLowerCase() === semContraste.toLowerCase());
+  const sem = t.replace(/ com contraste$/i, '');
+  const item = estado.precos.exames.find((e) => e.nome.toLowerCase() === sem.toLowerCase());
   if (item) return { ...item };
   if (/^(raio[\s-]?x|rx)\b/i.test(t)) {
     const rx = estado.precos.exames.find((e) => e.categoria === 'Raio-X');
@@ -310,259 +281,239 @@ function identificarExame(texto) {
   return null;
 }
 
-$('#detalhe').addEventListener('input', async (e) => {
+async function salvarAtual(msg) {
+  await Banco.salvarAtendimento(estado.atual);
+  if (msg) avisar(msg);
+  await carregarCaixa();
+}
+
+$('#comanda').addEventListener('input', (e) => {
   if (e.target.id === 'ex-nome') {
-    const item = identificarExame(e.target.value);
-    $('#ex-contraste-campo').hidden = item?.categoria !== 'Tomografia';
+    $('#ex-contraste-campo').hidden = identificarExame(e.target.value)?.categoria !== 'Tomografia';
     e.target.setCustomValidity('');
   }
+  if (estado.modo === 'novo') atualizarRascunho(e);
 });
 
-$('#detalhe').addEventListener('change', async (e) => {
-  if (e.target.dataset.selExame !== undefined || e.target.id === 'sel-todos') {
-    if (e.target.id === 'sel-todos') $$('[data-sel-exame]').forEach((c) => { c.checked = e.target.checked; });
-    atualizarBotaoPagarExames();
+$('#comanda').addEventListener('change', async (e) => {
+  if (estado.modo === 'novo') { atualizarRascunho(e); return; }
+  const id = e.target.dataset.selExame;
+  if (id !== undefined) {
+    if (e.target.checked) estado.selecionados.add(id); else estado.selecionados.delete(id);
+    const todos = $('#sel-todos');
+    if (todos) todos.checked = (estado.atual.exames || []).filter((x) => x.status === 'PENDENTE').every((x) => estado.selecionados.has(x.id));
+    renderPagamento();
+    return;
+  }
+  if (e.target.id === 'sel-todos') {
+    (estado.atual.exames || []).filter((x) => x.status === 'PENDENTE').forEach((x) => { if (e.target.checked) estado.selecionados.add(x.id); else estado.selecionados.delete(x.id); });
+    renderComanda();
     return;
   }
   const idValor = e.target.dataset.valorExame;
   if (idValor) {
-    const a = await atendimentoAtual();
-    const x = a.exames.find((y) => y.id === idValor);
-    if (x && x.status === 'PENDENTE') { x.valor = lerMoeda(e.target.value); await Banco.salvarAtendimento(a); await carregarAtendimentos(); }
+    const x = estado.atual.exames.find((y) => y.id === idValor);
+    if (x && x.status === 'PENDENTE') { x.valor = lerMoeda(e.target.value); await salvarAtual(); }
   }
 });
 
-$('#detalhe').addEventListener('submit', async (e) => {
-  if (e.target.id !== 'form-exame') return;
+$('#comanda').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (e.target.id !== 'form-exame') return;
   const campo = $('#ex-nome');
   const item = identificarExame(campo.value);
   if (!item) { campo.setCustomValidity('Exame não encontrado na tabela de preços. Escolha um item da lista.'); campo.reportValidity(); return; }
-  if (item.categoria === 'Tomografia' && $('#ex-contraste').checked) {
-    item.nome += ' com contraste';
-    item.valor += Number(estado.precos.adicionalContraste || 0);
-  }
-  const a = await atendimentoAtual();
-  a.exames = a.exames || [];
-  a.exames.push({ id: `E${Date.now()}${Math.floor(Math.random() * 100)}`, nome: item.nome, categoria: item.categoria, valor: item.valor, status: 'PENDENTE', pedidoEm: agoraIso() });
-  await salvarEAtendimentoFocando(a);
+  if (item.categoria === 'Tomografia' && $('#ex-contraste').checked) { item.nome += ' com contraste'; item.valor += Number(estado.precos.adicionalContraste || 0); }
+  const novo = { id: `E${Date.now()}${Math.floor(Math.random() * 100)}`, nome: item.nome, categoria: item.categoria, valor: item.valor, status: 'PENDENTE', pedidoEm: agoraIso() };
+  estado.atual.exames = [...(estado.atual.exames || []), novo];
+  estado.selecionados.add(novo.id);
+  await salvarAtual();
+  $('#ex-nome')?.focus();
 });
 
-async function salvarEAtendimentoFocando(a) {
-  await salvarEAtualizar(a);
-  $('#ex-nome')?.focus();
-}
-
-$('#detalhe').addEventListener('click', async (e) => {
-  const recibo = e.target.closest('[data-recibo]');
-  if (recibo) { mostrarRecibo((await Banco.listarPagamentos()).find((p) => p.id === recibo.dataset.recibo)); return; }
+$('#comanda').addEventListener('click', async (e) => {
+  const rec = e.target.closest('[data-recibo]');
+  if (rec) { mostrarRecibo(estado.pagamentosAtual.find((p) => p.id === rec.dataset.recibo)); return; }
+  if (estado.modo === 'novo') { cliqueNovo(e); return; }
 
   if (e.target.id === 'btn-realizada') {
-    if (!(await confirmar('Marcar a consulta como realizada? Depois disso os exames pedidos pelo médico podem ser adicionados.', 'Consulta realizada'))) return;
-    const a = await atendimentoAtual();
-    a.consultaRealizadaEm = agoraIso();
-    await salvarEAtualizar(a, 'Consulta marcada como realizada.');
+    if (!(await confirmar('Marcar a consulta como realizada? Depois disso os exames pedidos pelo médico podem ser lançados.', 'Consulta realizada'))) return;
+    estado.atual.consultaRealizadaEm = agoraIso();
+    await salvarAtual('Consulta realizada.');
     return;
   }
-
   const rem = e.target.closest('[data-remover-exame]');
   if (rem) {
-    const a = await atendimentoAtual();
-    const x = a.exames.find((y) => y.id === rem.dataset.removerExame);
+    const x = estado.atual.exames.find((y) => y.id === rem.dataset.removerExame);
     if (!x || x.status !== 'PENDENTE' || !(await confirmar(`Remover "${x.nome}"? Só exames ainda não pagos podem ser removidos.`, 'Remover'))) return;
-    a.exames = a.exames.filter((y) => y !== x);
-    await salvarEAtualizar(a, 'Exame removido.');
+    estado.atual.exames = estado.atual.exames.filter((y) => y !== x);
+    estado.selecionados.delete(x.id);
+    await salvarAtual('Exame removido.');
     return;
   }
-
   const feito = e.target.closest('[data-realizar-exame]');
   if (feito) {
-    const a = await atendimentoAtual();
-    const x = a.exames.find((y) => y.id === feito.dataset.realizarExame);
+    const x = estado.atual.exames.find((y) => y.id === feito.dataset.realizarExame);
     if (!x || x.status !== 'PAGO') return;
     x.status = 'REALIZADO';
     x.realizadoEm = agoraIso();
-    await salvarEAtualizar(a, `${x.nome}: realizado.`);
+    await salvarAtual(`${x.nome}: realizado.`);
+  }
+});
+
+// =========================================================
+//   NOVO ATENDIMENTO (comanda em branco)
+// =========================================================
+$('#btn-novo').addEventListener('click', () => {
+  if (location.hash !== '#caixa') location.hash = '#caixa';
+  estado.modo = 'novo';
+  estado.selecionadoId = null;
+  estado.atual = null;
+  estado.rascunho = { paciente: null, tipo: 'CONSULTA', medicoId: '', valor: 0, nome: '', cpf: '', telefone: '' };
+  limparPagamento();
+  renderFila();
+  renderComanda();
+  $('#nv-busca')?.focus();
+});
+
+function renderNovo() {
+  const r = estado.rascunho;
+  const p = r.paciente;
+  const medico = CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
+  $('#comanda').innerHTML = `
+    <div class="comanda-cabeca">
+      <div><h2>Novo atendimento</h2><p>Preencha o paciente e a consulta. O valor aparece no total ao lado.</p></div>
+      <div class="comanda-num">ATENDIMENTO<b>Novo</b><button type="button" class="link" id="nv-cancelar">Cancelar</button></div>
+    </div>
+    <div class="comanda-corpo novo-form">
+      <div class="cupom">
+        <div class="cupom-titulo"><span>Paciente</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+          ${p ? `<div class="paciente-escolhido"><div><strong>${esc(p.nome)}</strong><br><small class="nota">${[p.cpf && `CPF ${esc(p.cpf)}`, esc(p.telefone || '')].filter(Boolean).join(' · ') || 'Paciente cadastrado'}</small></div>
+                  <button type="button" class="link" id="nv-trocar">Trocar</button></div>` : `
+            <div class="campo"><label for="nv-busca">Buscar paciente já cadastrado</label><input type="search" id="nv-busca" placeholder="Nome ou CPF"></div>
+            <ul class="sugestoes" id="nv-sugestoes"></ul>
+            <div class="grade-campos">
+              <div class="campo"><label for="nv-nome">Nome completo *</label><input id="nv-nome" maxlength="120" value="${esc(r.nome)}"></div>
+              <div class="campo"><label for="nv-cpf">CPF</label><input id="nv-cpf" maxlength="14" placeholder="000.000.000-00" value="${esc(r.cpf)}"></div>
+              <div class="campo"><label for="nv-telefone">Telefone</label><input id="nv-telefone" maxlength="15" value="${esc(r.telefone)}"></div>
+            </div>`}
+        </div>
+      </div>
+      <div class="cupom">
+        <div class="cupom-titulo"><span>Consulta</span></div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+          <div class="segmentos" role="radiogroup" aria-label="Tipo de consulta">
+            <label><input type="radio" name="nv-tipo" value="CONSULTA" ${r.tipo === 'CONSULTA' ? 'checked' : ''}><span>Consulta</span></label>
+            <label><input type="radio" name="nv-tipo" value="PRONTO_SOCORRO" ${r.tipo === 'PRONTO_SOCORRO' ? 'checked' : ''}><span>Pronto Socorro</span></label>
+          </div>
+          <div class="grade-campos">
+            <div class="campo"><label for="nv-medico">Médico *</label><select id="nv-medico">
+              <option value="">Selecione</option>
+              ${CONFIG.medicos.map((m) => `<option value="${m.id}" ${String(m.id) === String(r.medicoId) ? 'selected' : ''}>${esc(m.nome)} · ${esc(m.especialidade)}</option>`).join('')}
+            </select></div>
+            <div class="campo"><label for="nv-valor">Valor (R$)</label><input id="nv-valor" class="valor" inputmode="decimal" value="${valorCampo(r.valor)}" placeholder="0,00"></div>
+          </div>
+        </div>
+        ${medico && r.valor ? `<div class="item"><span></span><span class="descr"><strong>${TIPOS[r.tipo].nome} · ${esc(medico.nome)}</strong><small>${TIPOS[r.tipo].descricao}</small></span><span class="chip pendente">A pagar</span><span class="preco">${moeda(r.valor)}</span></div>` : ''}
+      </div>
+      <p class="erro" id="nv-erro" role="alert"></p>
+    </div>`;
+}
+
+function valorPadraoConsulta() {
+  const r = estado.rascunho;
+  const m = CONFIG.medicos.find((x) => String(x.id) === String(r.medicoId));
+  return r.tipo === 'PRONTO_SOCORRO' ? estado.precos.prontoSocorro : (m?.valorConsulta || 0);
+}
+
+async function atualizarRascunho(e) {
+  const r = estado.rascunho;
+  const t = e.target;
+  if (t.id === 'nv-busca' && e.type === 'input') {
+    const txt = t.value.trim();
+    estado.sugestoes = txt.length >= 2 ? await Banco.buscarPacientes(txt) : [];
+    $('#nv-sugestoes').innerHTML = estado.sugestoes.slice(0, 8).map((p) => `<li><button type="button" data-paciente="${esc(p.id)}">${esc(p.nome)}<small>${esc(p.cpf || p.telefone || '')}</small></button></li>`).join('')
+      || (txt.length >= 2 ? '<li><button type="button" disabled>Nenhum paciente encontrado. Preencha os dados abaixo.</button></li>' : '');
+    if (txt && !/\d/.test(txt)) { $('#nv-nome').value = txt; r.nome = txt; }
     return;
   }
-
-  if (e.target.closest('#btn-pagar-exames')) {
-    const ids = selecionadosExames();
-    const a = await atendimentoAtual();
-    const itens = a.exames.filter((x) => ids.includes(x.id) && x.status === 'PENDENTE');
-    if (!itens.length) return;
-    if (itens.some((x) => !x.valor)) { avisar('Há exame selecionado sem valor. Informe o valor antes de pagar.'); return; }
-    const pg = await abrirPagamento({
-      descricao: `Exames · ${a.pacienteNome} · atendimento nº ${a.numero}`,
-      itens: itens.map((x) => ({ nome: x.nome, valor: x.valor })),
-    });
-    if (!pg) return;
-    const salvo = await Banco.registrarPagamento({
-      ...pg, referente: 'EXAMES', atendimentoId: a.id, atendimentoNumero: a.numero,
-      pacienteNome: a.pacienteNome, cpf: a.cpf || '', medicoNome: a.medicoNome, tipoConsulta: a.tipo,
-    });
-    itens.forEach((x) => { x.status = 'PAGO'; x.pagoEm = salvo.dataHora; x.pagamentoId = salvo.id; });
-    await Banco.salvarAtendimento(a);
-    await carregarAtendimentos();
-    mostrarRecibo(salvo);
-  }
-});
-
-// =========================================================
-//   NOVO ATENDIMENTO (consulta → pagamento)
-// =========================================================
-function tipoNovo() { return document.querySelector('input[name="tipo"]:checked').value; }
-
-function preencherMedicosNovo() {
-  $('#nv-medico').innerHTML = '<option value="">Selecione o médico</option>'
-    + CONFIG.medicos.map((m) => `<option value="${m.id}">${esc(m.nome)} · ${esc(m.especialidade)}</option>`).join('');
+  if (t.id === 'nv-nome') r.nome = t.value;
+  if (t.id === 'nv-cpf') r.cpf = t.value;
+  if (t.id === 'nv-telefone') r.telefone = t.value;
+  if (e.type !== 'change') return;
+  if (t.name === 'nv-tipo') { r.tipo = t.value; r.valor = valorPadraoConsulta(); renderNovo(); }
+  if (t.id === 'nv-medico') { r.medicoId = t.value; r.valor = valorPadraoConsulta(); renderNovo(); }
+  if (t.id === 'nv-valor') { r.valor = lerMoeda(t.value); renderNovo(); }
+  renderPagamento();
 }
 
-function atualizarValorNovo() {
-  const m = CONFIG.medicos.find((x) => String(x.id) === $('#nv-medico').value);
-  const valor = tipoNovo() === 'PRONTO_SOCORRO' ? estado.precos.prontoSocorro : m?.valorConsulta;
-  $('#nv-valor').value = valor ? valorCampo(valor) : '';
-}
-
-function mostrarPacienteEscolhido() {
-  const p = estado.novoPaciente;
-  $('#nv-escolhido').hidden = !p;
-  $('#nv-campos').hidden = !!p;
-  $('#nv-busca').closest('.campo').hidden = !!p;
-  if (p) {
-    $('#nv-escolhido').innerHTML = `<div><strong>${esc(p.nome)}</strong><br><small class="nota">${[p.cpf && `CPF ${esc(p.cpf)}`, p.telefone].filter(Boolean).map(esc).join(' · ') || 'Paciente cadastrado'}</small></div>
-      <button type="button" class="link" id="nv-trocar">Trocar</button>`;
-  }
-}
-
-$('#btn-novo').addEventListener('click', () => {
-  $('#form-novo').reset();
-  estado.novoPaciente = null;
-  $('#nv-sugestoes').innerHTML = '';
-  $('#nv-erro').textContent = '';
-  preencherMedicosNovo();
-  mostrarPacienteEscolhido();
-  abrirJanela('#janela-novo');
-  $('#nv-busca').focus();
-});
-
-$('#nv-busca').addEventListener('input', async (e) => {
-  const t = e.target.value.trim();
-  if (t.length < 2) { $('#nv-sugestoes').innerHTML = ''; return; }
-  const lista = await Banco.buscarPacientes(t);
-  estado.sugestoes = lista;
-  $('#nv-sugestoes').innerHTML = lista.slice(0, 8).map((p) => `
-    <li><button type="button" data-paciente="${esc(p.id)}">${esc(p.nome)}<small>${esc(p.cpf || p.telefone || '')}</small></button></li>`).join('')
-    || '<li><button type="button" disabled>Nenhum paciente encontrado. Preencha os dados abaixo.</button></li>';
-  if (!/\d/.test(t)) $('#nv-nome').value = t; // aproveita o nome digitado
-});
-
-$('#nv-sugestoes').addEventListener('click', async (e) => {
+function cliqueNovo(e) {
+  const r = estado.rascunho;
+  if (e.target.id === 'nv-cancelar') { estado.modo = 'vazio'; limparPagamento(); renderComanda(); return; }
+  if (e.target.id === 'nv-trocar') { r.paciente = null; renderNovo(); renderPagamento(); $('#nv-busca').focus(); return; }
   const b = e.target.closest('[data-paciente]');
-  if (!b) return;
-  estado.novoPaciente = (estado.sugestoes || []).find((p) => p.id === b.dataset.paciente) || null;
-  $('#nv-sugestoes').innerHTML = '';
-  mostrarPacienteEscolhido();
-});
-
-$('#nv-escolhido').addEventListener('click', (e) => {
-  if (e.target.id !== 'nv-trocar') return;
-  estado.novoPaciente = null;
-  $('#nv-busca').value = '';
-  mostrarPacienteEscolhido();
-  $('#nv-busca').focus();
-});
-
-$('#nv-medico').addEventListener('change', atualizarValorNovo);
-$$('input[name="tipo"]').forEach((r) => r.addEventListener('change', atualizarValorNovo));
-
-$('#form-novo').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const erro = (t) => { $('#nv-erro').textContent = t; };
-  const paciente = estado.novoPaciente || {
-    nome: $('#nv-nome').value.trim(), cpf: $('#nv-cpf').value.trim(), telefone: $('#nv-telefone').value.trim(),
-  };
-  if (!paciente.nome) return erro('Informe o nome do paciente (ou escolha um paciente já cadastrado).');
-  const medico = CONFIG.medicos.find((m) => String(m.id) === $('#nv-medico').value);
-  if (!medico) return erro('Escolha o médico.');
-  const valor = lerMoeda($('#nv-valor').value);
-  if (!valor) return erro('Informe o valor da consulta.');
-  erro('');
-  const tipo = tipoNovo();
-  $('#janela-novo').hidden = true;
-
-  const pg = await abrirPagamento({
-    descricao: `${TIPOS[tipo].descricao} · ${paciente.nome}`,
-    itens: [{ nome: `${TIPOS[tipo].nome} · ${medico.nome}`, valor }],
-  });
-  if (!pg) { $('#janela-novo').hidden = false; return; } // cancelou: volta para a janela
-
-  const pacienteSalvo = paciente.id ? paciente : await Banco.salvarPaciente(paciente);
-  let atendimento = await Banco.salvarAtendimento({
-    pacienteId: pacienteSalvo.id, pacienteNome: pacienteSalvo.nome, cpf: pacienteSalvo.cpf || '', telefone: pacienteSalvo.telefone || '',
-    tipo, medicoId: medico.id, medicoNome: medico.nome, valorConsulta: pg.valor, abertoEm: pg.dataHora,
-    consultaRealizadaEm: null, exames: [],
-  });
-  const salvo = await Banco.registrarPagamento({
-    ...pg, referente: 'CONSULTA', atendimentoId: atendimento.id, atendimentoNumero: atendimento.numero,
-    pacienteNome: pacienteSalvo.nome, cpf: pacienteSalvo.cpf || '', medicoNome: medico.nome, tipoConsulta: tipo,
-  });
-  atendimento.pagamentoConsultaId = salvo.id;
-  atendimento = await Banco.salvarAtendimento(atendimento);
-  estado.data = dataLocal(new Date());
-  estado.selecionadoId = atendimento.id;
-  if (location.hash !== '#atendimentos') location.hash = '#atendimentos';
-  await carregarAtendimentos();
-  mostrarRecibo(salvo);
-});
-
-// =========================================================
-//   PAGAMENTO
-// =========================================================
-let resolverPagamento = () => {};
-let itensPagamentoAtual = [];
-
-function abrirPagamento({ descricao, itens }) {
-  const f = $('#form-pagamento');
-  f.reset();
-  itensPagamentoAtual = itens;
-  $('#pg-descricao').textContent = descricao;
-  $('#pg-itens').innerHTML = itens.map((i) => `<li><span>${esc(i.nome)}</span><span>${moeda(i.valor)}</span></li>`).join('');
-  $('#pg-erro').textContent = '';
-  atualizarPagamento();
-  abrirJanela('#janela-pagamento');
-  f.querySelector('input[name="forma"]').focus();
-  return new Promise((r) => { resolverPagamento = (v) => { resolverPagamento = () => {}; r(v); }; });
+  if (b) { r.paciente = estado.sugestoes.find((p) => p.id === b.dataset.paciente) || null; renderNovo(); renderPagamento(); }
 }
 
-function totaisPagamento() {
-  const subtotal = itensPagamentoAtual.reduce((t, i) => t + Number(i.valor || 0), 0);
+// =========================================================
+//   PAINEL DE PAGAMENTO
+// =========================================================
+function itensParaPagar() {
+  if (estado.modo === 'novo') {
+    const r = estado.rascunho;
+    const m = CONFIG.medicos.find((x) => String(x.id) === String(r.medicoId));
+    return m && r.valor ? [{ nome: `${TIPOS[r.tipo].nome} · ${m.nome}`, valor: r.valor }] : [];
+  }
+  if (estado.modo === 'atendimento' && estado.atual) {
+    return (estado.atual.exames || []).filter((x) => x.status === 'PENDENTE' && estado.selecionados.has(x.id)).map((x) => ({ id: x.id, nome: x.nome, valor: x.valor }));
+  }
+  return [];
+}
+
+function totais() {
+  const itens = itensParaPagar();
+  const subtotal = itens.reduce((t, i) => t + Number(i.valor || 0), 0);
   const desconto = Math.min(lerMoeda($('#pg-desconto').value), subtotal);
-  return { subtotal, desconto, total: Math.round((subtotal - desconto) * 100) / 100 };
+  return { itens, subtotal, desconto, total: Math.round((subtotal - desconto) * 100) / 100 };
 }
 
-function atualizarPagamento() {
-  const forma = document.querySelector('input[name="forma"]:checked')?.value || '';
+const formaEscolhida = () => document.querySelector('input[name="forma"]:checked')?.value || '';
+
+function renderPagamento() {
+  const { itens, subtotal, desconto, total } = totais();
+  const forma = formaEscolhida();
+  $('#visor-rotulo').textContent = estado.modo === 'novo' ? 'CONSULTA · TOTAL A PAGAR' : estado.modo === 'atendimento' ? 'EXAMES · TOTAL A PAGAR' : 'TOTAL A PAGAR';
+  $('#visor-total').textContent = moeda(total);
+  $('#visor-detalhe').textContent = !itens.length
+    ? (estado.modo === 'atendimento' ? 'Marque os exames que o paciente vai pagar agora' : estado.modo === 'novo' ? 'Escolha o médico para ver o valor' : 'Nada a pagar')
+    : `${itens.length} item(ns)${desconto ? ` · subtotal ${moeda(subtotal)} · desconto ${moeda(desconto)}` : ''}`;
   ['credito', 'debito', 'pix', 'dinheiro'].forEach((f) => { $(`#pg-campos-${f}`).hidden = forma !== f.toUpperCase(); });
-  const { total } = totaisPagamento();
-  $('#pg-total').textContent = moeda(total);
   const sel = $('#pg-parcelas'); const atual = sel.value || '1';
   sel.innerHTML = [1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}">${n}x de ${moeda(total / n)}${n === 1 ? ' (à vista)' : ''}</option>`).join('');
   sel.value = atual;
   const troco = lerMoeda($('#pg-recebido').value) - total;
   $('#pg-troco').textContent = moeda(troco > 0 ? troco : 0);
+  $('#btn-finalizar').disabled = !(itens.length && total && forma);
+  $$('input[name="forma"]').forEach((r) => { r.disabled = !itens.length; });
+  $('#pg-desconto').disabled = !itens.length;
 }
-$('#form-pagamento').addEventListener('input', () => { $('#pg-erro').textContent = ''; atualizarPagamento(); });
-$('#form-pagamento').addEventListener('change', atualizarPagamento);
 
-$('#form-pagamento').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const forma = document.querySelector('input[name="forma"]:checked')?.value;
-  const { subtotal, desconto, total } = totaisPagamento();
+function limparPagamento() {
+  $$('#painel-pagamento input').forEach((i) => { if (i.type === 'radio') i.checked = false; else i.value = ''; });
+  $('#pg-erro').textContent = '';
+}
+
+$('#painel-pagamento').addEventListener('input', () => { $('#pg-erro').textContent = ''; renderPagamento(); });
+$('#painel-pagamento').addEventListener('change', renderPagamento);
+
+$('#btn-finalizar').addEventListener('click', async () => {
   const erro = (t) => { $('#pg-erro').textContent = t; };
-  if (!total) return erro('O total está zerado. Confira o desconto.');
+  const { itens, subtotal, desconto, total } = totais();
+  const forma = formaEscolhida();
+  if (!itens.length || !total) return erro('Não há valor a pagar.');
   if (!forma) return erro('Escolha a forma de pagamento.');
-  const pg = { forma, valor: total, subtotal, desconto, itens: itensPagamentoAtual, dataHora: agoraIso() };
+  const pg = { forma, valor: total, subtotal, desconto, itens: itens.map(({ nome, valor }) => ({ nome, valor })), dataHora: agoraIso() };
   if (forma === 'CREDITO') Object.assign(pg, { parcelas: Number($('#pg-parcelas').value), autorizacao: $('#pg-nsu-credito').value.trim() });
   if (forma === 'DEBITO') pg.autorizacao = $('#pg-nsu-debito').value.trim();
   if (forma === 'PIX') pg.idTransacao = $('#pg-pix').value.trim();
@@ -571,10 +522,43 @@ $('#form-pagamento').addEventListener('submit', (e) => {
     if (recebido < total) return erro(`O valor recebido é menor que o total (${moeda(total)}).`);
     Object.assign(pg, { recebido, troco: Math.round((recebido - total) * 100) / 100 });
   }
-  $('#janela-pagamento').hidden = true;
-  resolverPagamento(pg);
+
+  if (estado.modo === 'novo') {
+    const r = estado.rascunho;
+    const paciente = r.paciente || { nome: (r.nome || '').trim(), cpf: (r.cpf || '').trim(), telefone: (r.telefone || '').trim() };
+    if (!paciente.nome) return erro('Informe o nome do paciente (ou escolha um já cadastrado).');
+    const medico = CONFIG.medicos.find((m) => String(m.id) === String(r.medicoId));
+    const pac = paciente.id ? paciente : await Banco.salvarPaciente(paciente);
+    let at = await Banco.salvarAtendimento({
+      pacienteId: pac.id, pacienteNome: pac.nome, cpf: pac.cpf || '', telefone: pac.telefone || '',
+      tipo: r.tipo, medicoId: medico.id, medicoNome: medico.nome, valorConsulta: total, abertoEm: pg.dataHora,
+      consultaRealizadaEm: null, exames: [],
+    });
+    const salvo = await Banco.registrarPagamento({ ...pg, referente: 'CONSULTA', atendimentoId: at.id, atendimentoNumero: at.numero,
+      pacienteNome: pac.nome, cpf: pac.cpf || '', medicoNome: medico.nome, tipoConsulta: r.tipo });
+    at.pagamentoConsultaId = salvo.id;
+    at = await Banco.salvarAtendimento(at);
+    estado.data = dataLocal(new Date());
+    estado.modo = 'atendimento';
+    estado.selecionadoId = at.id;
+    limparPagamento();
+    await carregarCaixa();
+    mostrarRecibo(salvo);
+    return;
+  }
+
+  // Exames do atendimento aberto
+  const a = estado.atual;
+  const ids = itens.map((i) => i.id);
+  const salvo = await Banco.registrarPagamento({ ...pg, referente: 'EXAMES', atendimentoId: a.id, atendimentoNumero: a.numero,
+    pacienteNome: a.pacienteNome, cpf: a.cpf || '', medicoNome: a.medicoNome, tipoConsulta: a.tipo });
+  a.exames.forEach((x) => { if (ids.includes(x.id)) Object.assign(x, { status: 'PAGO', pagoEm: salvo.dataHora, pagamentoId: salvo.id }); });
+  await Banco.salvarAtendimento(a);
+  estado.selecionados = new Set();
+  limparPagamento();
+  await carregarCaixa();
+  mostrarRecibo(salvo);
 });
-$('#janela-pagamento').addEventListener('click', (e) => { if (e.target.id === 'janela-pagamento') { $('#janela-pagamento').hidden = true; resolverPagamento(null); } });
 
 // =========================================================
 //   RECIBO
@@ -609,8 +593,8 @@ function valorPorExtenso(valor) {
 function mostrarRecibo(p) {
   if (!p) return;
   const h = CONFIG.hospital;
-  const referente = p.referente === 'CONSULTA' ? TIPOS[p.tipoConsulta]?.descricao.toLowerCase() || 'consulta' : 'exames';
-  const detalhes = [
+  const referente = p.referente === 'CONSULTA' ? (TIPOS[p.tipoConsulta]?.descricao.toLowerCase() || 'consulta') : 'exames';
+  const det = [
     ['Forma de pagamento', NOMES_FORMA[p.forma]],
     p.parcelas > 1 && ['Parcelas', `${p.parcelas}x de ${moeda(p.valor / p.parcelas)}`],
     p.autorizacao && ['Autorização (NSU)', p.autorizacao],
@@ -636,24 +620,23 @@ function mostrarRecibo(p) {
           <tr class="total"><td>Total pago</td><td>${moeda(p.valor)}</td></tr>
         </tfoot>
       </table>
-      <div class="recibo-forma">${detalhes.map(([k, v]) => `<div><span>${esc(k)}:</span> <strong>${esc(v)}</strong></div>`).join('')}</div>
+      <div class="recibo-forma">${det.map(([k, v]) => `<div><span>${esc(k)}:</span> <strong>${esc(v)}</strong></div>`).join('')}</div>
       <div class="recibo-assinaturas"><div>Atendente</div><div>Assinatura / carimbo</div></div>
       <p class="recibo-rodape">Este recibo comprova o pagamento e não substitui a nota fiscal.</p>
     </div>`;
-  abrirJanela('#janela-recibo');
+  $('#janela-recibo').hidden = false;
 }
 $('#btn-imprimir').addEventListener('click', () => window.print());
 
 // =========================================================
 //   PREÇOS
 // =========================================================
-async function carregarPrecos() {
+function carregarPrecos() {
   const p = estado.precos;
   $('#pr-ps').value = valorCampo(p.prontoSocorro);
   $('#pr-contraste').value = valorCampo(p.adicionalContraste);
   $('#pr-medicos').innerHTML = CONFIG.medicos.map((m) => `<tr><td>${esc(m.nome)}</td><td>${esc(m.especialidade)}</td><td class="num">${moeda(m.valorConsulta)}</td></tr>`).join('');
-  const cats = [...new Set(p.exames.map((e) => e.categoria))];
-  $('#pr-categorias').innerHTML = cats.map((c) => `<option value="${esc(c)}">`).join('');
+  $('#pr-categorias').innerHTML = [...new Set(p.exames.map((e) => e.categoria))].map((c) => `<option value="${esc(c)}">`).join('');
   $('#pr-exames').innerHTML = p.exames.map((e, i) => `
     <tr><td>${esc(e.categoria)}</td><td>${esc(e.nome)}</td>
     <td class="num"><input class="valor" data-preco-exame="${i}" value="${valorCampo(e.valor)}" inputmode="decimal" aria-label="Valor de ${esc(e.nome)}"></td></tr>`).join('');
@@ -672,7 +655,6 @@ async function salvarPrecos(msg) {
   $('#pr-status').textContent = msg;
   atualizarListaExames();
 }
-
 $('#pr-ps').addEventListener('change', (e) => { estado.precos.prontoSocorro = lerMoeda(e.target.value); salvarPrecos(`Consulta de Pronto Socorro: ${moeda(estado.precos.prontoSocorro)}.`); });
 $('#pr-contraste').addEventListener('change', (e) => { estado.precos.adicionalContraste = lerMoeda(e.target.value); salvarPrecos(`Adicional de contraste: ${moeda(estado.precos.adicionalContraste)}.`); });
 $('#pr-exames').addEventListener('change', (e) => {
@@ -686,9 +668,9 @@ $('#form-novo-exame').addEventListener('submit', async (e) => {
   e.preventDefault();
   const nome = $('#pr-nome').value.trim(), categoria = $('#pr-cat').value.trim(), valor = lerMoeda($('#pr-valor').value);
   if (!nome || !categoria || !valor) { $('#pr-status').textContent = 'Preencha categoria, nome e valor.'; return; }
-  const existente = estado.precos.exames.find((x) => x.nome.toLowerCase() === nome.toLowerCase());
-  if (existente) Object.assign(existente, { categoria, valor }); else estado.precos.exames.push({ categoria, nome, valor });
-  await salvarPrecos(existente ? `${nome}: valor atualizado.` : `${nome} incluído.`);
+  const ex = estado.precos.exames.find((x) => x.nome.toLowerCase() === nome.toLowerCase());
+  if (ex) Object.assign(ex, { categoria, valor }); else estado.precos.exames.push({ categoria, nome, valor });
+  await salvarPrecos(ex ? `${nome}: valor atualizado.` : `${nome} incluído.`);
   e.target.reset();
   carregarPrecos();
 });
@@ -706,5 +688,5 @@ $('#nome-hospital').textContent = CONFIG.hospital.nome;
 document.addEventListener('DOMContentLoaded', async () => {
   estado.precos = await Banco.lerPrecos();
   atualizarListaExames();
-  abrirTela(location.hash.slice(1) || 'atendimentos');
+  abrirTela(location.hash.slice(1) || 'caixa');
 });
