@@ -18,6 +18,9 @@ HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar 
 └──────────────┴──────────────────────────────┴────────────────────┘
 ```
 
+Visual **executivo**: azul-marinho com detalhes dourados, títulos em serifa (Playfair Display),
+números em Inter, cantos retos e tema claro/escuro automático.
+
 ## Fluxo
 
 1. **+ Novo atendimento** — a comanda abre em branco: paciente (busca um já cadastrado ou cadastra na hora),
