@@ -1,3 +1,20 @@
+// ---------- Cor do sistema (verde ou azul-marinho), salva no navegador ----------
+(function () {
+  let cor = 'verde';
+  try { cor = localStorage.getItem('ap.cor') || 'verde'; } catch (e) {}
+  const aplicar = (c) => {
+    document.documentElement.dataset.cor = c;
+    document.querySelectorAll('.cor-opcao').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cor === c)));
+  };
+  aplicar(cor);
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.cor-opcao');
+    if (!b) return;
+    aplicar(b.dataset.cor);
+    try { localStorage.setItem('ap.cor', b.dataset.cor); } catch (e) {}
+  });
+})();
+
 /* =========================================================
    Caixa · Atendimento Particular · app.js
    Fluxo: consulta → pagamento → consulta realizada →

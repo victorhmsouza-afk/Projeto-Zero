@@ -18,7 +18,7 @@ HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar 
 └──────────────┴──────────────────────────────┴────────────────────┘
 ```
 
-Visual **executivo**: azul-marinho com detalhes dourados, títulos em serifa (Playfair Display),
+Visual **executivo** em **verde** (padrão) ou **azul-marinho**, com detalhes dourados — a cor é escolhida nas bolinhas do topo e fica salva; títulos em serifa (Playfair Display),
 números em Inter, cantos retos e tema claro/escuro automático.
 
 ## Fluxo
