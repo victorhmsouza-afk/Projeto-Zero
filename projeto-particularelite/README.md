@@ -1,5 +1,8 @@
 # Particular Elite (projeto-particularelite)
 
+**Demonstrativo on-line:** https://victorhmsouza-afk.github.io/Projeto-Zero/projeto-particularelite/
+(os dados ficam no navegador de quem abre; use "Gerar dados de exemplo" em Estatísticas para ver os gráficos)
+
 Frontend feito do zero, focado em **serviço e pagamento** do atendimento particular do Hospital da Saúde.
 HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar nada.
 
