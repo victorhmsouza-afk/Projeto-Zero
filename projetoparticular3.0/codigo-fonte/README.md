@@ -1,11 +1,11 @@
-# Particular Elite — código-fonte (React)
+# Projeto Particular 3.0 — código-fonte (React)
 
 Este é o **código-fonte** do sistema **Particular Elite** (agendamento do atendimento particular do Hospital da Saúde).
-O resultado pronto para usar fica em **`../projeto-particularelite/index.html`** (um arquivo só — abre com dois cliques).
+O resultado pronto para usar fica em **`../index.html`** (pasta `projetoparticular3.0`, um arquivo só — abre com dois cliques).
 
 ## Como usar o sistema (sem programar)
 
-1. Abra `projeto-particularelite/index.html` com dois cliques (ou pelo GitHub Pages).
+1. Abra `projetoparticular3.0/index.html` com dois cliques (ou pelo GitHub Pages).
 2. Entre com um dos acessos de demonstração (ou clique nos botões da tela de login):
 
 | Usuário | Senha | Perfil | Vê |
@@ -33,10 +33,10 @@ Não existe cancelamento nem estorno. Os dados ficam salvos **no navegador** do 
 Precisa do **Node.js 20+**.
 
 ```bash
-cd particular-elite-app
+cd projetoparticular3.0/codigo-fonte
 npm install        # instala as dependências (uma vez)
 npm run dev        # abre em http://localhost:5173 com recarga automática
-npm run build      # gera ../projeto-particularelite/index.html (arquivo único)
+npm run build      # gera ../index.html (projetoparticular3.0/index.html, arquivo único)
 npm run check      # confere os tipos (TypeScript)
 ```
 
@@ -77,4 +77,4 @@ src/
 > As senhas da diretoria e dos usuários estão no código **só para demonstração**.
 > No sistema do hospital, login e autorização de cortesia devem ser conferidos no servidor.
 
-Os dados usam as mesmas chaves do navegador da versão anterior (`ap.*`), então o que já foi lançado continua aparecendo.
+Os dados usam as mesmas chaves do navegador da versão anterior (`ap.*`): no mesmo navegador, o que foi lançado numa versão aparece na outra.

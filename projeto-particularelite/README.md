@@ -1,26 +1,96 @@
-# Particular Elite
+# Particular Elite (projeto-particularelite)
 
-Sistema do **agendamento do atendimento particular** do Hospital da Saúde: consulta → pagamento → consulta realizada → exames pagos aos poucos,
-com cortesia autorizada pela diretoria, estatísticas e contábil.
+**Demonstrativo on-line:** https://victorhmsouza-afk.github.io/Projeto-Zero/projeto-particularelite/
+(os dados ficam no navegador de quem abre; use "Gerar dados de exemplo" em Estatísticas para ver os gráficos)
 
-**Para usar:** abra o `index.html` desta pasta com dois cliques (é um arquivo único, funciona sem internet depois de aberto e sem instalar nada).
+Frontend feito do zero, focado em **serviço e pagamento** do atendimento particular do Hospital da Saúde.
+HTML, CSS e JavaScript puro: abra o `index.html` com dois cliques, sem instalar nada.
 
-**Demonstrativo on-line:** https://victorhmsouza-afk.github.io/Projeto-Zero/projeto-particularelite/ (depois de ligar o GitHub Pages)
+> O projeto anterior (`../projeto-consulta-particular/`) continua no repositório só como referência.
 
-## Acessos de demonstração
+## Como é a tela (estilo caixa / PDV)
 
-| Usuário | Senha | Perfil |
-|---|---|---|
-| `admin` | `admin123` | Administrador (vê tudo, inclusive Contábil e Preços) |
-| `agendamento` | `agenda123` | Agendamento (Dashboard, Agendamento e Estatísticas) |
+```
+┌──────────────┬──────────────────────────────┬────────────────────┐
+│ + Novo       │ COMANDA (cupom)              │ TOTAL A PAGAR      │
+│ dia / busca  │ Paciente · nº do atendimento │ R$ 1.025,00        │
+│ resumo do dia│ ─ Consulta ........ R$ 350   │ Desconto           │
+│ FILA DO DIA  │ ─ Hemograma ☑ ..... R$  25   │ [PIX] [CRÉDITO]    │
+│  Maria 19:22 │ ─ Tomografia ☑ .... R$1.000  │ [DÉBITO][DINHEIRO] │
+│  João  18:40 │ ─ Raio-X ☐ ........ R$  90   │ FINALIZAR PAGAMENTO│
+└──────────────┴──────────────────────────────┴────────────────────┘
+```
 
-Cortesia (senhas da diretoria): Dr. Henrique Albuquerque `1234` · Dra. Lúcia Fontes `4321` · Marcos Vieira `2468`.
+Visual **executivo** em **verde** (padrão) ou **azul-marinho**, com detalhes dourados — a cor é escolhida nas bolinhas do topo e fica salva; títulos em serifa (Playfair Display),
+números em Inter, cantos retos e tema claro/escuro automático.
+
+## Fluxo
+
+1. **+ Novo atendimento** — a comanda abre em branco. No cartão **Paciente** escolha:
+   - **Paciente já cadastrado** — busca por nome ou CPF;
+   - **+ Novo paciente** — cadastro com nome completo (obrigatório), CPF (com máscara e conferência dos dígitos,
+     sem repetir CPF já cadastrado), data de nascimento (mostra a idade), telefone e e-mail.
+     **Salvar paciente** grava na hora; se esquecer, o cadastro é salvo ao finalizar o pagamento.
+
+   Depois,
+   **Consulta** (escolhe o médico; valor do médico) ou **Pronto Socorro** (só o serviço, sem nome de médico,
+   porque o plantonista muda sempre; valor da tabela). O valor vai direto para o **visor do total**.
+   Escolha **PIX, CRÉDITO (até 6x), DÉBITO ou DINHEIRO (com troco)**, desconto opcional, e **FINALIZAR PAGAMENTO** → recibo.
+2. **Consulta realizada** — botão na comanda. Só depois disso os exames podem ser lançados.
+3. **Lançar exames pedidos pelo médico** — pelo nome (imagem e laboratório), com o preço da tabela.
+   Tomografia pode ser **com contraste** (+ adicional). Raio-X vale para qualquer osso (ex.: "Raio-X de joelho").
+4. **Pagar exames** — marque (☑) os exames que o paciente vai pagar agora: o visor mostra o total.
+   O paciente paga **tudo de uma vez ou aos poucos**. Cada exame passa por **A pagar → Pago → Realizado**.
+   Só exame ainda não pago pode ser removido.
+5. **Recibos** — cada pagamento gera um recibo (valor por extenso, itens, forma de pagamento), que pode ser reaberto e impresso.
+
+6. **Cortesia (diretoria)** — quinta opção do painel de pagamento. O paciente **não paga** (consulta e/ou exames marcados),
+   mas só é liberada com **quem autorizou na diretoria, a senha dessa pessoa e uma observação**. Gera um **comprovante de cortesia**
+   (valor do serviço, "sem cobrança", autorizado por, observação, assinatura da diretoria) e aparece nas Estatísticas
+   (quantidade e valor das cortesias). A lista da diretoria fica em `CONFIG.diretoria`; senhas de demonstração:
+   Dr. Henrique Albuquerque `1234`, Dra. Lúcia Fontes `4321`, Marcos Vieira `2468`.
+   No sistema do hospital, a senha deve ser conferida no servidor (função `Banco.autorizarCortesia`).
+
+Não existe cancelamento nem estorno de pagamento.
+
+## Telas
+
+| Tela | O que tem |
+|---|---|
+| **Caixa** | Fila do dia **sem valores em dinheiro**: mostra os atendimentos **em andamento** e só o **último atendido** (concluído = consulta realizada e nenhum exame esperando pagamento). Os outros concluídos do dia aparecem pela busca (nome ou nº). Comanda do paciente e painel de pagamento com visor do total. |
+| **Estatísticas** | Só **quantidades**: consultas por **mês, dia, hora e minuto (faixas de 15 min)**, separando Consulta e Pronto Socorro; indicadores (total, média por dia, %, horário de pico e faixa mais cheia, nº de cortesias); gráfico e tabela. Botões para **gerar/remover dados de exemplo** (90 dias fictícios, marcados). |
+| **Contábil** | **Único lugar com os valores**: total recebido, consultas, exames, ticket médio, descontos e cortesias; tabela **por forma de pagamento** (Pix, crédito, débito, dinheiro, cortesia), tabela **por dia** e lista de **recibos emitidos** (clique para reabrir). Filtro de período e **Exportar planilha (CSV)** para o Excel. |
+| **Preços** | Valor da consulta de Pronto Socorro, adicional de contraste e preço de cada exame (editável, com inclusão de novos). Lista da diretoria que autoriza cortesias. Os médicos e o valor da consulta de cada um ficam no `index.html`, parte DADOS. |
 
 ## Arquivos
 
-| Arquivo | O que é |
-|---|---|
-| `index.html` | **Sistema atual** (React), gerado a partir de `../particular-elite-app/` — não edite à mão. |
-| `versao-anterior.html` | A versão anterior (HTML/JS puro), guardada como referência. Abre com dois cliques e usa os mesmos dados. |
+Tudo fica em **um arquivo só**: `index.html` (visual e funcionamento dentro dele), para abrir bonito
+de qualquer lugar — dois cliques no computador, celular ou GitHub Pages — sem depender de outras pastas.
+Dentro do `<script>` ele é dividido em três partes, marcadas com comentários:
 
-O manual completo, o código-fonte e onde mudar cada coisa estão em **[`../particular-elite-app/README.md`](../particular-elite-app/README.md)**.
+| Parte | O que tem |
+|---|---|
+| **DADOS** | `CONFIG` (hospital, médicos), tabela de preços padrão e o objeto `Banco` (onde os dados são salvos) |
+| **CAIXA** | fila, comanda, pagamento, recibo e preços |
+| **ESTATÍSTICAS** | gráficos, tabela e dados de exemplo |
+| **CONTÁBIL** | valores recebidos, por forma e por dia, recibos e exportação CSV |
+
+## Onde os dados ficam
+
+Hoje tudo fica salvo **no navegador** (localStorage), então o sistema funciona de verdade no computador onde for usado.
+Para ligar ao banco de dados / API do hospital, troque **só as funções do objeto `Banco`** na parte **DADOS** do `index.html`
+(todas já são `async`, prontas para `fetch`):
+
+| Função | O que faz |
+|---|---|
+| `buscarPacientes(texto)` / `salvarPaciente(p)` | pacientes `{ id, nome, cpf, nascimento, telefone, email, cadastradoEm }` |
+| `listarAtendimentos({ inicio, fim })` / `obterAtendimento(id)` / `salvarAtendimento(a)` | atendimento `{ id, numero, pacienteId, pacienteNome, cpf, telefone, tipo: 'CONSULTA' \| 'PRONTO_SOCORRO', medicoId, medicoNome (vazio no Pronto Socorro), valorConsulta, abertoEm, pagamentoConsultaId, consultaRealizadaEm, exames: [{ id, nome, categoria, valor, status: 'PENDENTE' \| 'PAGO' \| 'REALIZADO', pedidoEm, pagoEm, pagamentoId, realizadoEm }] }` |
+| `autorizarCortesia({ diretorId, senha })` | confere a autorização da diretoria → `{ ok, diretor }` |
+| `registrarPagamento(pg)` / `listarPagamentos({ inicio, fim, atendimentoId })` | pagamento `{ id, numeroRecibo, referente: 'CONSULTA' \| 'EXAMES', atendimentoId, atendimentoNumero, pacienteNome, cpf, medicoNome, tipoConsulta, forma: 'PIX' \| 'CREDITO' \| 'DEBITO' \| 'DINHEIRO' \| 'CORTESIA', valor, subtotal, desconto, itens, parcelas?, autorizacao?, idTransacao?, recebido?, troco?, cortesia?: { valor, autorizadoPor, cargo, diretorId, observacao, autorizadoEm }, dataHora }` |
+| `lerPrecos()` / `salvarPrecos(p)` / `restaurarPrecos()` | `{ prontoSocorro, adicionalContraste, exames: [{ categoria, nome, valor }] }` |
+
+## Observações
+
+- Valores de laboratório e de alguns exames são **exemplos**: ajuste na tela Preços.
+- Os dados de exemplo das estatísticas têm `exemplo: true` e somem com **Remover dados de exemplo**.
+- Imprimir recibo usa `window.print()` e imprime só o recibo.
