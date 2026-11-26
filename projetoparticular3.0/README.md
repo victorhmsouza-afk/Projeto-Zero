@@ -35,6 +35,7 @@ Sidebar verde autorretrátil (abre ao passar o mouse), tema claro/escuro e funci
 | Pasta / arquivo | O que é |
 |---|---|
 | `index.html` | O sistema pronto (gerado a partir do código-fonte — não edite à mão). |
+| `PROMPT-NOVO-CHAT.md` | Prompt completo para continuar o projeto num chat novo (por exemplo, num computador da rede do hospital). |
 | `codigo-fonte/` | Código React. Manual completo, como rodar e **onde mudar cada coisa** em [`codigo-fonte/README.md`](codigo-fonte/README.md). |
 
 As versões anteriores continuam intactas em `../projeto-particularelite/` e `../projeto-consulta-particular/`.
