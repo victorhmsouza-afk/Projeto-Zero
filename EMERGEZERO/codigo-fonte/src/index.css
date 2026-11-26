@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   Particular Elite — Design System (CSS variables em HSL, sem "hsl()")
+   ===================================================================== */
+@layer base {
+  :root {
+    --background: 0 0% 98%;             /* cinza muito claro */
+    --foreground: 155 30% 25%;          /* verde escuro */
+    --card: 0 0% 100%;                  /* branco puro */
+    --card-foreground: 155 30% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 155 30% 25%;
+    --primary: 155 85% 19%;             /* verde institucional #0d6955 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 16% 55%;           /* cinza azulado */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 155 48% 52%;              /* verde médio */
+    --accent-foreground: 155 85% 12%;
+    --muted: 155 10% 95%;               /* cinza esverdeado claro */
+    --muted-foreground: 155 8% 45%;
+    --destructive: 0 84% 60%;           /* vermelho */
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 31%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 42%;
+    --warning-foreground: 0 0% 100%;
+    --border: 155 15% 88%;              /* borda suave */
+    --input: 155 15% 88%;
+    --ring: 155 85% 19%;                /* foco em verde */
+    --radius: 0.5rem;
+
+    --medical-green: 155 85% 19%;
+    --medical-green-dark: 155 85% 13%;
+    --medical-green-light: 155 48% 92%;
+
+    /* Sidebar verde (padrão do sistema) */
+    --sidebar-background: 155 85% 19%;
+    --sidebar-foreground: 155 30% 92%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 155 85% 19%;
+    --sidebar-accent: 155 70% 26%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 155 60% 26%;
+    --sidebar-ring: 155 48% 52%;
+
+    /* Gráficos (Consulta x Pronto Socorro) */
+    --chart-consulta: 155 75% 28%;
+    --chart-ps: 32 92% 50%;
+  }
+
+  .dark {
+    --background: 155 35% 12%;          /* verde muito escuro */
+    --foreground: 0 0% 98%;             /* branco */
+    --card: 155 30% 15%;                /* verde escuro */
+    --card-foreground: 0 0% 98%;
+    --popover: 155 30% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 155 60% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 14% 40%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 155 40% 24%;
+    --accent-foreground: 0 0% 98%;
+    --muted: 155 28% 19%;
+    --muted-foreground: 155 12% 70%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 45%;
+    --success-foreground: 155 35% 10%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 155 35% 10%;
+    --border: 155 25% 25%;              /* verde escuro */
+    --input: 155 25% 25%;
+    --ring: 155 48% 52%;
+
+    --medical-green-light: 155 30% 20%;
+
+    --sidebar-background: 155 40% 9%;
+    --sidebar-foreground: 155 20% 88%;
+    --sidebar-primary: 155 48% 52%;
+    --sidebar-primary-foreground: 155 35% 10%;
+    --sidebar-accent: 155 30% 17%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 155 25% 18%;
+
+    --chart-consulta: 155 50% 50%;
+    --chart-ps: 32 90% 58%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-background text-foreground antialiased; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Impressão: só o recibo */
+@media print {
+  body * { visibility: hidden !important; }
+  #area-recibo, #area-recibo * { visibility: visible !important; }
+  #area-recibo { position: fixed; inset: 0; padding: 24px; background: #fff; color: #111; }
+  .nao-imprimir { display: none !important; }
+}
