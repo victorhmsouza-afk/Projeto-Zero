@@ -39,7 +39,7 @@ export default function Dashboard() {
         subtitulo="Resumo do atendimento particular de hoje."
         acoes={<>
           <Button asChild variant="outline"><Link to="/estatisticas"><BarChart3 /> Estatísticas</Link></Button>
-          <Button asChild><Link to="/caixa?novo=1"><Plus /> Novo atendimento</Link></Button>
+          <Button asChild><Link to="/agendamento?novo=1"><Plus /> Novo atendimento</Link></Button>
         </>}
       />
 
@@ -75,7 +75,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-primary">Em andamento agora</CardTitle>
-            <CardDescription>Pacientes que ainda não terminaram. Clique para abrir no caixa.</CardDescription>
+            <CardDescription>Pacientes que ainda não terminaram. Clique para abrir no agendamento.</CardDescription>
           </CardHeader>
           <CardContent className="p-0 pb-2">
             {!andamento.length && <p className="px-6 pb-6 text-sm text-muted-foreground">Ninguém em andamento. 🎉</p>}
@@ -84,7 +84,7 @@ export default function Dashboard() {
                 const s = situacao(a);
                 return (
                   <li key={a.id}>
-                    <Link to={`/caixa?at=${a.id}&dia=${hoje}`} className="flex items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-muted/60">
+                    <Link to={`/agendamento?at=${a.id}&dia=${hoje}`} className="flex items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-muted/60">
                       <div className="min-w-0">
                         <p className="truncate font-medium">{a.pacienteNome}</p>
                         <p className="text-xs text-muted-foreground">{horaBR(a.abertoEm)} · {TIPOS[a.tipo].nome} · nº {a.numero}</p>
@@ -95,7 +95,7 @@ export default function Dashboard() {
                 );
               })}
             </ul>
-            {andamento.length > 8 && <p className="px-6 pt-2 text-xs text-muted-foreground">+ {andamento.length - 8} no caixa</p>}
+            {andamento.length > 8 && <p className="px-6 pt-2 text-xs text-muted-foreground">+ {andamento.length - 8} no agendamento</p>}
           </CardContent>
         </Card>
       </div>

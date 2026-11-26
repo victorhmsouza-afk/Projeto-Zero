@@ -26,7 +26,7 @@ const esquemaExame = z.object({
 });
 type NovoExame = z.infer<typeof esquemaExame>;
 
-/** PREÇOS — valores usados no caixa (salvos ao sair de cada campo). */
+/** PREÇOS — valores usados no agendamento (salvos ao sair de cada campo). */
 export default function Precos() {
   const { data: precos } = usePrecos();
   const atualizar = useAtualizar();
@@ -74,7 +74,7 @@ export default function Precos() {
     <>
       <PageHeader
         titulo="Preços"
-        subtitulo="Valores usados no caixa. Cada alteração é salva ao sair do campo."
+        subtitulo="Valores usados no agendamento. Cada alteração é salva ao sair do campo."
         acoes={<Button variant="outline" onClick={restaurar}><RotateCcw /> Restaurar padrão</Button>}
       />
 

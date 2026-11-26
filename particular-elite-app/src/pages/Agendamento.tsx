@@ -4,12 +4,12 @@ import { MousePointerClick, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ReciboDialog } from '@/components/Recibo';
-import { Fila } from '@/components/caixa/Fila';
-import { NovoAtendimento } from '@/components/caixa/NovoAtendimento';
-import { Comanda } from '@/components/caixa/Comanda';
-import { PainelPagamento } from '@/components/caixa/PainelPagamento';
-import { salvarNovoPaciente } from '@/components/caixa/paciente';
-import { rascunhoVazio, type DadosPagamento, type ItemPagar, type Rascunho } from '@/components/caixa/tipos';
+import { Fila } from '@/components/agendamento/Fila';
+import { NovoAtendimento } from '@/components/agendamento/NovoAtendimento';
+import { Comanda } from '@/components/agendamento/Comanda';
+import { PainelPagamento } from '@/components/agendamento/PainelPagamento';
+import { salvarNovoPaciente } from '@/components/agendamento/paciente';
+import { rascunhoVazio, type DadosPagamento, type ItemPagar, type Rascunho } from '@/components/agendamento/tipos';
 import { useAtendimentos, useAtualizar, usePagamentosDoAtendimento, usePrecos } from '@/hooks/use-dados';
 import { toast } from '@/hooks/use-toast';
 import { agoraIso, dataLocal } from '@/lib/format';
@@ -20,10 +20,10 @@ import type { Atendimento, Pagamento } from '@/types';
 type Modo = 'vazio' | 'novo' | 'atendimento';
 
 /**
- * CAIXA — três colunas: fila do dia | comanda (ou novo atendimento) | pagamento.
+ * AGENDAMENTO — três colunas: fila do dia | comanda (ou novo atendimento) | pagamento.
  * Fluxo: consulta → pagamento → consulta realizada → exames → pagamento dos exames (aos poucos).
  */
-export default function Caixa() {
+export default function Agendamento() {
   const [params, setParams] = useSearchParams();
   const [dia, setDia] = useState(dataLocal());
   const [busca, setBusca] = useState('');
@@ -42,7 +42,7 @@ export default function Caixa() {
   const atualizar = useAtualizar();
   const limparPainel = () => setResetKey(String(Date.now()));
 
-  // Atalhos vindos do Dashboard: #/caixa?novo=1 ou #/caixa?at=ID&dia=AAAA-MM-DD
+  // Atalhos vindos do Dashboard: #/agendamento?novo=1 ou #/agendamento?at=ID&dia=AAAA-MM-DD
   useEffect(() => {
     if (params.get('novo')) abrirNovo();
     const at = params.get('at');
@@ -152,7 +152,7 @@ export default function Caixa() {
     <>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-primary">Caixa</h1>
+          <h1 className="text-2xl font-bold text-primary">Agendamento</h1>
           <p className="mt-1 text-sm text-muted-foreground">Consulta → pagamento → consulta realizada → exames → pagamento dos exames.</p>
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function Caixa() {
             <Card>
               <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-primary"><MousePointerClick className="h-7 w-7" /></span>
-                <h2 className="text-lg font-semibold">Caixa livre</h2>
+                <h2 className="text-lg font-semibold">Nenhum paciente aberto</h2>
                 <p className="max-w-md text-sm text-muted-foreground">
                   Clique em <strong>Novo atendimento</strong> para cobrar uma consulta, ou escolha um paciente na fila para cobrar os exames.
                 </p>

@@ -73,7 +73,7 @@ export default function Contabil() {
     <>
       <PageHeader
         titulo="Contábil"
-        subtitulo="Valores recebidos no caixa: por forma de pagamento, por dia e cada recibo emitido."
+        subtitulo="Valores recebidos no agendamento: por forma de pagamento, por dia e cada recibo emitido."
         acoes={<Button variant="outline" onClick={exportar} disabled={!pags.length}><Download /> Exportar planilha (CSV)</Button>}
       />
       <PeriodoFiltro valor={periodo} onChange={(p) => { setPeriodo(p); setLimite(100); }} />

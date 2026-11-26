@@ -3,7 +3,7 @@
 export type TipoAtendimento = 'CONSULTA' | 'PRONTO_SOCORRO';
 export type StatusExame = 'PENDENTE' | 'PAGO' | 'REALIZADO';
 export type FormaPagamento = 'PIX' | 'CREDITO' | 'DEBITO' | 'DINHEIRO' | 'CORTESIA';
-export type Perfil = 'ADMIN' | 'CAIXA';
+export type Perfil = 'ADMIN' | 'AGENDAMENTO';
 
 export interface Paciente {
   id: string;

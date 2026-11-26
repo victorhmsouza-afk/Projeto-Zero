@@ -21,6 +21,7 @@ export function sessaoAtual(): Usuario | null {
   try {
     const s = JSON.parse(localStorage.getItem(CHAVE) || 'null');
     if (!s || s.expira < Date.now()) return null;
+    if (s.usuario?.perfil === 'CAIXA') return null; // sessão da versão antiga: pede login de novo
     return s.usuario as Usuario;
   } catch {
     return null;

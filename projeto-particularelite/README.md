@@ -1,6 +1,6 @@
 # Particular Elite
 
-Sistema do **caixa do atendimento particular** do Hospital da Saúde: consulta → pagamento → consulta realizada → exames pagos aos poucos,
+Sistema do **agendamento do atendimento particular** do Hospital da Saúde: consulta → pagamento → consulta realizada → exames pagos aos poucos,
 com cortesia autorizada pela diretoria, estatísticas e contábil.
 
 **Para usar:** abra o `index.html` desta pasta com dois cliques (é um arquivo único, funciona sem internet depois de aberto e sem instalar nada).
@@ -12,7 +12,7 @@ com cortesia autorizada pela diretoria, estatísticas e contábil.
 | Usuário | Senha | Perfil |
 |---|---|---|
 | `admin` | `admin123` | Administrador (vê tudo, inclusive Contábil e Preços) |
-| `caixa` | `caixa123` | Caixa (Dashboard, Caixa e Estatísticas) |
+| `agendamento` | `agenda123` | Agendamento (Dashboard, Agendamento e Estatísticas) |
 
 Cortesia (senhas da diretoria): Dr. Henrique Albuquerque `1234` · Dra. Lúcia Fontes `4321` · Marcos Vieira `2468`.
 

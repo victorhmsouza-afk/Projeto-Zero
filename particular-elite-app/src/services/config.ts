@@ -27,10 +27,10 @@ export const DIRETORIA = [
   { id: 3, nome: 'Marcos Vieira', cargo: 'Diretor Administrativo', senha: '2468' },
 ];
 
-/** Usuários do sistema (demonstração). ADMIN vê tudo; CAIXA não vê Contábil nem Preços. */
+/** Usuários do sistema (demonstração). ADMIN vê tudo; AGENDAMENTO não vê Contábil nem Preços. */
 export const USUARIOS = [
   { login: 'admin', senha: 'admin123', nome: 'Administrador', perfil: 'ADMIN' as const },
-  { login: 'caixa', senha: 'caixa123', nome: 'Atendente do Caixa', perfil: 'CAIXA' as const },
+  { login: 'agendamento', senha: 'agenda123', nome: 'Atendente do Agendamento', perfil: 'AGENDAMENTO' as const },
 ];
 
 export const TIPOS: Record<TipoAtendimento, { nome: string; descricao: string }> = {

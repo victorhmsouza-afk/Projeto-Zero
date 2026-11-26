@@ -1,6 +1,6 @@
 # Particular Elite — código-fonte (React)
 
-Este é o **código-fonte** do sistema **Particular Elite** (caixa do atendimento particular do Hospital da Saúde).
+Este é o **código-fonte** do sistema **Particular Elite** (agendamento do atendimento particular do Hospital da Saúde).
 O resultado pronto para usar fica em **`../projeto-particularelite/index.html`** (um arquivo só — abre com dois cliques).
 
 ## Como usar o sistema (sem programar)
@@ -10,15 +10,15 @@ O resultado pronto para usar fica em **`../projeto-particularelite/index.html`**
 
 | Usuário | Senha | Perfil | Vê |
 |---|---|---|---|
-| `admin` | `admin123` | Administrador | Dashboard, Caixa, Estatísticas, **Contábil**, **Preços** |
-| `caixa` | `caixa123` | Caixa | Dashboard, Caixa, Estatísticas |
+| `admin` | `admin123` | Administrador | Dashboard, Agendamento, Estatísticas, **Contábil**, **Preços** |
+| `agendamento` | `agenda123` | Agendamento | Dashboard, Agendamento, Estatísticas |
 
 3. Use a **sidebar verde** à esquerda: ela fica recolhida (só ícones) e abre ao passar o mouse. No celular, abra pelo botão ☰.
 
 | Aba | Para que serve |
 |---|---|
 | **Dashboard** | Resumo de hoje (só quantidades): atendimentos, em andamento, consultas, Pronto Socorro, gráfico por hora e quem está em andamento. |
-| **Caixa** | Fila do dia (sem valores) · Novo atendimento (paciente já cadastrado ou **novo paciente**) · Consulta (com médico) ou **Pronto Socorro** (só o serviço) · pagamento (Pix, crédito até 6x, débito, dinheiro com troco ou **cortesia da diretoria**) · consulta realizada · exames pagos **aos poucos** · recibo. |
+| **Agendamento** | Fila do dia (sem valores) · Novo atendimento (paciente já cadastrado ou **novo paciente**) · Consulta (com médico) ou **Pronto Socorro** (só o serviço) · pagamento (Pix, crédito até 6x, débito, dinheiro com troco ou **cortesia da diretoria**) · consulta realizada · exames pagos **aos poucos** · recibo. |
 | **Estatísticas** | Consultas por **mês, dia, hora e minuto** (gráfico e tabela). Gera/remove dados de exemplo. |
 | **Contábil** *(admin)* | **Único lugar com valores**: total recebido, por forma de pagamento, por dia, cortesias, recibos e **planilha CSV** para o Excel. |
 | **Preços** *(admin)* | Valor do Pronto Socorro, contraste e de cada exame (salva ao sair do campo); inclui exames novos. |
@@ -51,11 +51,11 @@ src/
 ├── components/
 │   ├── ui/            → componentes shadcn/ui (button, card, input, label, select, badge, dialog, table, checkbox, radio-group, tooltip, sonner…)
 │   ├── layout/        → AppLayout, Sidebar (verde, autorretrátil), Header (topo), Logo, menu.ts (abas e perfis)
-│   ├── caixa/         → Fila, NovoAtendimento, Comanda, PainelPagamento, paciente.ts (validação do cadastro)
+│   ├── agendamento/   → Fila, NovoAtendimento, Comanda, PainelPagamento, paciente.ts (validação do cadastro)
 │   ├── Recibo.tsx · Confirmar.tsx · StatCard.tsx · PeriodoFiltro.tsx · PageHeader.tsx · GraficoConsultas.tsx
 ├── hooks/             → use-auth, use-toast, use-mobile, use-tema, use-dados (TanStack Query)
 ├── lib/               → utils.ts (função cn), format.ts (moeda, datas, CPF, telefone, valor por extenso)
-├── pages/             → Login, Dashboard, Caixa, Estatisticas, Contabil, Precos, NaoEncontrada
+├── pages/             → Login, Dashboard, Agendamento, Estatisticas, Contabil, Precos, NaoEncontrada
 ├── services/          → banco.ts (onde os dados são salvos), auth.ts (login), config.ts (hospital, médicos, diretoria, usuários, preços), regras.ts, exemplos.ts
 ├── types/             → tipos TypeScript (Paciente, Atendimento, Pagamento…)
 └── index.css          → cores do design system (variáveis HSL, claro e escuro)

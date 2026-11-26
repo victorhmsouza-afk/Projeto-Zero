@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { BarChart3, Eye, EyeOff, Landmark, Loader2, LogIn, ShieldCheck, Wallet } from 'lucide-react';
+import { BarChart3, CalendarCheck2, Eye, EyeOff, Landmark, Loader2, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ const esquema = z.object({
 type Dados = z.infer<typeof esquema>;
 
 const RECURSOS = [
-  { icone: Wallet, titulo: 'Caixa simples', texto: 'Consulta, pagamento e exames pagos aos poucos, com recibo na hora.' },
+  { icone: CalendarCheck2, titulo: 'Agendamento simples', texto: 'Consulta, pagamento e exames pagos aos poucos, com recibo na hora.' },
   { icone: ShieldCheck, titulo: 'Cortesia com autorização', texto: 'Só sai com nome, senha e observação da diretoria.' },
   { icone: BarChart3, titulo: 'Estatísticas', texto: 'Consultas por mês, dia, hora e minuto.' },
   { icone: Landmark, titulo: 'Contábil separado', texto: 'Valores recebidos só para quem tem acesso.' },
@@ -67,7 +67,7 @@ export default function Login() {
           </div>
         </div>
         <div className="relative mt-8 lg:mt-0">
-          <h2 className="text-3xl font-bold leading-tight lg:text-4xl">Bem-vindo(a) ao caixa do atendimento particular</h2>
+          <h2 className="text-3xl font-bold leading-tight lg:text-4xl">Bem-vindo(a) ao agendamento do atendimento particular</h2>
           <p className="mt-3 max-w-md text-white/80">
             Do pagamento da consulta até o último exame, tudo num só lugar — com recibo, cortesia autorizada e números claros.
           </p>
@@ -92,13 +92,13 @@ export default function Login() {
           <CardHeader className="items-center text-center">
             <Logo tamanho="lg" />
             <CardTitle className="mt-3 text-2xl font-bold text-medical-green dark:text-primary">Entrar no sistema</CardTitle>
-            <CardDescription className="text-[#666] dark:text-muted-foreground">Use seu usuário e senha do caixa.</CardDescription>
+            <CardDescription className="text-[#666] dark:text-muted-foreground">Use seu usuário e senha do agendamento.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(enviar)} className="grid gap-4" noValidate>
               <div className="grid gap-2">
                 <Label htmlFor="login">Usuário</Label>
-                <Input id="login" autoComplete="username" placeholder="Ex.: caixa" autoFocus {...form.register('login')} aria-invalid={!!form.formState.errors.login} />
+                <Input id="login" autoComplete="username" placeholder="Ex.: agendamento" autoFocus {...form.register('login')} aria-invalid={!!form.formState.errors.login} />
                 {form.formState.errors.login && <p className="text-sm text-destructive">{form.formState.errors.login.message}</p>}
               </div>
               <div className="grid gap-2">
@@ -122,7 +122,7 @@ export default function Login() {
               <p className="mt-0.5 text-xs text-muted-foreground">Clique para preencher e depois em Entrar.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => demo('admin', 'admin123')}>Administrador</Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => demo('caixa', 'caixa123')}>Caixa</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => demo('agendamento', 'agenda123')}>Agendamento</Button>
               </div>
             </div>
           </CardContent>

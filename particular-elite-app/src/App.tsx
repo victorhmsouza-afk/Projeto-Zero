@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import type { Perfil } from '@/types';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
-import Caixa from '@/pages/Caixa';
+import Agendamento from '@/pages/Agendamento';
 import Estatisticas from '@/pages/Estatisticas';
 import Contabil from '@/pages/Contabil';
 import Precos from '@/pages/Precos';
@@ -26,7 +26,7 @@ function Protegida({ children, perfis }: { children: ReactNode; perfis?: Perfil[
   return <>{children}</>;
 }
 
-// HashRouter: as rotas ficam depois do "#" (ex.: index.html#/caixa) — nunca dá 404 no servidor.
+// HashRouter: as rotas ficam depois do "#" (ex.: index.html#/agendamento) — nunca dá 404 no servidor.
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -38,7 +38,8 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route element={<Protegida><AppLayout /></Protegida>}>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/caixa" element={<Caixa />} />
+                  <Route path="/agendamento" element={<Agendamento />} />
+                  <Route path="/caixa" element={<Navigate to="/agendamento" replace />} />
                   <Route path="/estatisticas" element={<Estatisticas />} />
                   <Route path="/contabil" element={<Protegida perfis={['ADMIN']}><Contabil /></Protegida>} />
                   <Route path="/precos" element={<Protegida perfis={['ADMIN']}><Precos /></Protegida>} />

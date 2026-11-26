@@ -89,7 +89,7 @@ export function Header({ aoAbrirMenu }: { aoAbrirMenu: () => void }) {
             <div className="hidden leading-tight lg:block">
               <p className="text-sm font-medium">{usuario?.nome}</p>
               <Badge variant={usuario?.perfil === 'ADMIN' ? 'default' : 'secondary'} className="mt-0.5 px-2 py-0 text-[10px]">
-                {usuario?.perfil === 'ADMIN' ? 'Administrador' : 'Caixa'}
+                {usuario?.perfil === 'ADMIN' ? 'Administrador' : 'Agendamento'}
               </Badge>
             </div>
           </div>
