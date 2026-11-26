@@ -11,6 +11,7 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Agendamento from '@/pages/Agendamento';
 import Estatisticas from '@/pages/Estatisticas';
+import FilaPS from '@/pages/FilaPS';
 import Contabil from '@/pages/Contabil';
 import Precos from '@/pages/Precos';
 import NaoEncontrada from '@/pages/NaoEncontrada';
@@ -40,6 +41,7 @@ export default function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/agendamento" element={<Agendamento />} />
                   <Route path="/caixa" element={<Navigate to="/agendamento" replace />} />
+                  <Route path="/fila-ps" element={<FilaPS />} />
                   <Route path="/estatisticas" element={<Estatisticas />} />
                   <Route path="/contabil" element={<Protegida perfis={['ADMIN']}><Contabil /></Protegida>} />
                   <Route path="/precos" element={<Protegida perfis={['ADMIN']}><Precos /></Protegida>} />

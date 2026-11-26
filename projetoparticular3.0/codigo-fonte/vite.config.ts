@@ -9,6 +9,17 @@ export default defineConfig({
   base: './',
   plugins: [react(), viteSingleFile()],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+  // Em desenvolvimento, /api-prontuario/* é repassado para a API do prontuário (evita CORS).
+  server: {
+    proxy: {
+      '/api-prontuario': {
+        target: 'https://api-prontuario.samel.com.br',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/api-prontuario/, ''),
+      },
+    },
+  },
   build: {
     outDir: '..',
     emptyOutDir: false,

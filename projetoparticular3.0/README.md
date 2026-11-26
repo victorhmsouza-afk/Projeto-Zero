@@ -11,8 +11,8 @@ feita em **React + TypeScript + Tailwind + shadcn/ui**, com o design system verd
 
 | Usuário | Senha | O que vê |
 |---|---|---|
-| `admin` | `admin123` | Dashboard, Agendamento, Estatísticas, **Contábil** e **Preços** |
-| `agendamento` | `agenda123` | Dashboard, Agendamento e Estatísticas |
+| `admin` | `admin123` | Dashboard, Agendamento, Fila do PS, Estatísticas, **Contábil** e **Preços** |
+| `agendamento` | `agenda123` | Dashboard, Agendamento, Fila do PS e Estatísticas |
 
 Cortesia (senhas da diretoria): Dr. Henrique Albuquerque `1234` · Dra. Lúcia Fontes `4321` · Marcos Vieira `2468`.
 
@@ -23,6 +23,7 @@ Cortesia (senhas da diretoria): Dr. Henrique Albuquerque `1234` · Dra. Lúcia F
 | **Login** | 40% com as boas-vindas e o que o sistema faz, 60% com o formulário. |
 | **Dashboard** | Resumo de hoje (só quantidades), gráfico por hora e quem está em andamento. |
 | **Agendamento** | Fila do dia (sem valores) · novo atendimento (paciente cadastrado ou novo) · Consulta (com médico) ou Pronto Socorro · pagamento (Pix, crédito até 6x, débito, dinheiro com troco ou cortesia da diretoria) · exames pagos aos poucos · recibo. |
+| **Fila do PS** | Fila do Pronto Socorro **ao vivo**, lida da API do prontuário (GET `…/ps/filaDeAtendimentoProntoSocorroV2/49/Pronto Socorro`). Atualiza sozinha a cada 1 minuto, com busca e contagem por classificação. Precisa estar na rede do hospital (ou VPN) e a API precisa permitir o acesso (CORS). |
 | **Estatísticas** | Consultas por mês, dia, hora e minuto. |
 | **Contábil** *(admin)* | Único lugar com valores: total recebido, por forma de pagamento, por dia, cortesias, recibos e planilha CSV. |
 | **Preços** *(admin)* | Valores do Pronto Socorro, contraste e exames. |

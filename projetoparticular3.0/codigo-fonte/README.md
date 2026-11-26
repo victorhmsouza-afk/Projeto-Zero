@@ -19,6 +19,7 @@ O resultado pronto para usar fica em **`../index.html`** (pasta `projetoparticul
 |---|---|
 | **Dashboard** | Resumo de hoje (só quantidades): atendimentos, em andamento, consultas, Pronto Socorro, gráfico por hora e quem está em andamento. |
 | **Agendamento** | Fila do dia (sem valores) · Novo atendimento (paciente já cadastrado ou **novo paciente**) · Consulta (com médico) ou **Pronto Socorro** (só o serviço) · pagamento (Pix, crédito até 6x, débito, dinheiro com troco ou **cortesia da diretoria**) · consulta realizada · exames pagos **aos poucos** · recibo. |
+| **Fila do PS** | Fila do Pronto Socorro ao vivo, da API do prontuário (GET). Colunas montadas a partir dos campos que a API devolve; atualiza a cada 1 minuto; busca e contagem por classificação. |
 | **Estatísticas** | Consultas por **mês, dia, hora e minuto** (gráfico e tabela). Gera/remove dados de exemplo. |
 | **Contábil** *(admin)* | **Único lugar com valores**: total recebido, por forma de pagamento, por dia, cortesias, recibos e **planilha CSV** para o Excel. |
 | **Preços** *(admin)* | Valor do Pronto Socorro, contraste e de cada exame (salva ao sair do campo); inclui exames novos. |
@@ -56,7 +57,7 @@ src/
 ├── hooks/             → use-auth, use-toast, use-mobile, use-tema, use-dados (TanStack Query)
 ├── lib/               → utils.ts (função cn), format.ts (moeda, datas, CPF, telefone, valor por extenso)
 ├── pages/             → Login, Dashboard, Agendamento, Estatisticas, Contabil, Precos, NaoEncontrada
-├── services/          → banco.ts (onde os dados são salvos), auth.ts (login), config.ts (hospital, médicos, diretoria, usuários, preços), regras.ts, exemplos.ts
+├── services/          → prontuario.ts (API da fila do PS), banco.ts (onde os dados são salvos), auth.ts (login), config.ts (hospital, médicos, diretoria, usuários, preços), regras.ts, exemplos.ts
 ├── types/             → tipos TypeScript (Paciente, Atendimento, Pagamento…)
 └── index.css          → cores do design system (variáveis HSL, claro e escuro)
 ```
@@ -72,6 +73,7 @@ src/
 | Tabela de preços padrão | `src/services/config.ts` → `PRECOS_PADRAO` |
 | Abas da sidebar e quem vê cada uma | `src/components/layout/menu.ts` |
 | Cores (verde institucional etc.) | `src/index.css` (variáveis) e `tailwind.config.ts` |
+| Endereço da API da fila do Pronto Socorro | `src/services/prontuario.ts` (no `npm run dev` passa pelo proxy do Vite, sem CORS) |
 | Ligar ao banco de dados / API do hospital | **só** `src/services/banco.ts` e `src/services/auth.ts` (todas as funções já são `async`) |
 
 > As senhas da diretoria e dos usuários estão no código **só para demonstração**.
